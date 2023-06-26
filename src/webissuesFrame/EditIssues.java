@@ -166,7 +166,7 @@ public class EditIssues extends javax.swing.JFrame {
                                         String userName = attrResultSet.getString("user_name");
                                         comboBoxModel.addElement(userName);
                                     }
-
+                                    //checking row data 
                                     if (rowData[i] != null) {
                                         String selectedValue = rowData[i] != null ? rowData[i].toString() : null;
                                         if (selectedValue != null) {
