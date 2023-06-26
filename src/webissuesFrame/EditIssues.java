@@ -1,6 +1,7 @@
 package webissuesFrame;
 import org.jdatepicker.JDatePicker;
 import dbConnection.DbConnection;
+import java.awt.Component;
 import java.awt.Image;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -46,7 +47,7 @@ public class EditIssues extends javax.swing.JFrame {
 
     public void setRowData(Object[] rowData, String[] columnNames) {
         int numFields = columnNames.length;
-        System.out.println("numfieldss " + numFields);
+      //  System.out.println("numfieldss " + numFields);
         Connection con = null;
         Statement statement = null;
         ResultSet resultSet = null;
@@ -86,7 +87,7 @@ public class EditIssues extends javax.swing.JFrame {
         try {
             con = DbConnection.getConnection();
             statement = con.createStatement();
-            System.out.println("location value " + locationValue);
+            //System.out.println("location value " + locationValue);
             if (locationValue != null) {
                 resultSet = statement.executeQuery("SELECT type_id FROM folders WHERE folder_name = '" + locationValue + "'");
                 if (resultSet.next()) {
@@ -200,8 +201,8 @@ public class EditIssues extends javax.swing.JFrame {
 
                         if (!matchFound) {
 
-                            System.out.println("Attribute name not matched: " + attrName);
-                            System.out.println("Attribute Def not matched: " + attrDef);
+//                            System.out.println("Attribute name not matched: " + attrName);
+//                            System.out.println("Attribute Def not matched: " + attrDef);
 
                             if (attrDef.startsWith("DATETIME")) {
                                 int atr_id = 0;
@@ -385,7 +386,7 @@ public class EditIssues extends javax.swing.JFrame {
                                     jPanel3.add(textField);
                                 }
                             }
-                            System.out.println("Attribute name in the end: " + attrName);
+                            //System.out.println("Attribute name in the end: " + attrName);
                             JLabel label = new JLabel(attrName);
                             label.setBounds(x, y, labelWidth, height);
                             jPanel3.add(label);
@@ -404,6 +405,33 @@ public class EditIssues extends javax.swing.JFrame {
         jPanel3.revalidate();
         jPanel3.repaint();
     }
+ 
+private void handleOkButtonClick() {
+    // Retrieve the values from text fields, combo boxes, and date component
+    Component[] components = jPanel3.getComponents();
+    for (Component component : components) {
+        if (component instanceof JTextField) {
+            JTextField textField = (JTextField) component;
+            String textValue = textField.getText();
+            System.out.println("Text Field Value: " + textValue);
+        } else if (component instanceof JComboBox) {
+            JComboBox<?> comboBox = (JComboBox<?>) component;
+            Object selectedValue = comboBox.getSelectedItem();
+            if (selectedValue != null) {
+                System.out.println("Selected Combo Box Value: " + selectedValue.toString());
+            }
+        } else if (component instanceof JXDatePicker) {
+            JXDatePicker datePicker = (JXDatePicker) component;
+            Date selectedDate = datePicker.getDate();
+            if (selectedDate != null) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                String dateString = dateFormat.format(selectedDate);
+                System.out.println("Selected Date Value: " + dateString);
+            }
+        }
+    }
+  // Close the dialog or window
+}
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -600,9 +628,10 @@ public class EditIssues extends javax.swing.JFrame {
     private void nametextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nametextActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_nametextActionPerformed
-
+     
     private void okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okActionPerformed
         // TODO add your handling code here:
+       handleOkButtonClick();
 
         dispose();
     }//GEN-LAST:event_okActionPerformed
