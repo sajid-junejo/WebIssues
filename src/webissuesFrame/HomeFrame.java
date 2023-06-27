@@ -485,7 +485,8 @@ public class HomeFrame extends javax.swing.JFrame {
         JMenuItem insertItem = new JMenuItem("Insert");
         JMenuItem deleteItem = new JMenuItem("Delete");
         JMenuItem editItem = new   JMenuItem("Edit");
- 
+        ImageIcon insertIcon = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\edit.png");
+        updateItem.setIcon(insertIcon);
         updateItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -554,10 +555,7 @@ public class HomeFrame extends javax.swing.JFrame {
     private void jTable1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTable1KeyPressed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTable1KeyPressed
-
-    /**
-     * @param args the command line arguments
-     */
+ 
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">

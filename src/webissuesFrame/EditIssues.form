@@ -107,9 +107,6 @@
       <SubComponents>
         <Component class="javax.swing.JLabel" name="name">
           <Properties>
-            <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\document-edit-icon-19.png"/>
-            </Property>
             <Property name="text" type="java.lang.String" value="Edit Attributes of issue "/>
           </Properties>
         </Component>

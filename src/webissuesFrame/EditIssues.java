@@ -12,6 +12,8 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import javafx.scene.control.DatePicker;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
@@ -270,7 +272,6 @@ public class EditIssues extends javax.swing.JFrame {
                                     e.printStackTrace();
 
                                 }
-
                                 JTextField textField = new JTextField(attr_value);
                                 textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                                 jPanel3.add(textField);
@@ -407,30 +408,49 @@ public class EditIssues extends javax.swing.JFrame {
     }
  
 private void handleOkButtonClick() {
+    // Map to store previous values of components
+    Map<Component, Object> previousValues = new HashMap<>();
+
     // Retrieve the values from text fields, combo boxes, and date component
     Component[] components = jPanel3.getComponents();
     for (Component component : components) {
         if (component instanceof JTextField) {
             JTextField textField = (JTextField) component;
             String textValue = textField.getText();
-            System.out.println("Text Field Value: " + textValue);
+            Object previousValue = previousValues.get(component);
+            if (previousValue != null && !previousValue.equals(textValue)) {
+                System.out.println("Previous Text Field Value: " + previousValue);
+            }
+            System.out.println("Current Text Field Value: " + textValue);
+            previousValues.put(component, textValue);
         } else if (component instanceof JComboBox) {
             JComboBox<?> comboBox = (JComboBox<?>) component;
             Object selectedValue = comboBox.getSelectedItem();
-            if (selectedValue != null) {
-                System.out.println("Selected Combo Box Value: " + selectedValue.toString());
+            Object previousValue = previousValues.get(component);
+            if (previousValue != null && !previousValue.equals(selectedValue)) {
+                System.out.println("Previous Combo Box Value: " + previousValue);
             }
+            if (selectedValue != null) {
+                System.out.println("Current Combo Box Value: " + selectedValue.toString());
+            }
+            previousValues.put(component, selectedValue);
         } else if (component instanceof JXDatePicker) {
             JXDatePicker datePicker = (JXDatePicker) component;
             Date selectedDate = datePicker.getDate();
+            Object previousValue = previousValues.get(component);
+            if (previousValue != null && !previousValue.equals(selectedDate)) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                String previousDateString = dateFormat.format((Date) previousValue);
+                System.out.println("Previous Date Value: " + previousDateString);
+            }
             if (selectedDate != null) {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                String dateString = dateFormat.format(selectedDate);
-                System.out.println("Selected Date Value: " + dateString);
+                String currentDateString = dateFormat.format(selectedDate);
+                System.out.println("Current Date Value: " + currentDateString);
             }
+            previousValues.put(component, selectedDate);
         }
     }
-  // Close the dialog or window
 }
 
     @SuppressWarnings("unchecked")
@@ -630,9 +650,7 @@ private void handleOkButtonClick() {
     }//GEN-LAST:event_nametextActionPerformed
      
     private void okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okActionPerformed
-        // TODO add your handling code here:
-       handleOkButtonClick();
-
+        handleOkButtonClick();
         dispose();
     }//GEN-LAST:event_okActionPerformed
 
