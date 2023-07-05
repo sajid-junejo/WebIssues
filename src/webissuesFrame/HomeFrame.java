@@ -1,4 +1,5 @@
 package webissuesFrame;
+
 import dbConnection.DbConnection;
 import java.awt.Image;
 import java.sql.*;
@@ -10,6 +11,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import DAOImpl.IssuesDAOImpl;
 import DAOImpl.ProjectsDAOImpl;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -19,23 +21,26 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import pojos.Folder;
 import pojos.Project;
+
 public class HomeFrame extends javax.swing.JFrame {
+
     DefaultTreeModel model;
     private IssuesDAOImpl issuesDAO = new IssuesDAOImpl();
     private ProjectsDAOImpl projectsDAO = new ProjectsDAOImpl();
     AddViewFrame view;
-    NewClass newclass;
+    private JLabel[] labels;
+
     public HomeFrame() {
         initComponents();
         this.setExtendedState(HomeFrame.MAXIMIZED_BOTH);
         Load();
-                
+        labels = new JLabel[0];
         Image icon = new ImageIcon(this.getClass().getResource("/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Genetech WI - WebIssues Desktop Client");
         jPanel3.setVisible(false);
     }
-    
+
     DefaultMutableTreeNode courses = new DefaultMutableTreeNode("Projects");
 
     public void Load() {
@@ -53,10 +58,10 @@ public class HomeFrame extends javax.swing.JFrame {
                     String typeName = folder.getTypeName();
                     String nodeValue = folderName + "      [" + typeName + "]";
                     DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(folderName);
-                    childNode.setUserObject(nodeValue); 
+                    childNode.setUserObject(nodeValue);
                     rootNode.add(childNode);
                 }
-                
+
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -65,14 +70,16 @@ public class HomeFrame extends javax.swing.JFrame {
         model = new DefaultTreeModel(courses);
         jTree1.setModel(model);
     }
+
     private String[] getColumnNames(DefaultTableModel tableModel) {
-    int columnCount = tableModel.getColumnCount();
-    String[] columnNames = new String[columnCount];
-    for (int i = 0; i < columnCount; i++) {
-        columnNames[i] = tableModel.getColumnName(i);
+        int columnCount = tableModel.getColumnCount();
+        String[] columnNames = new String[columnCount];
+        for (int i = 0; i < columnCount; i++) {
+            columnNames[i] = tableModel.getColumnName(i);
+        }
+        return columnNames;
     }
-    return columnNames;
-}
+
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -99,7 +106,6 @@ public class HomeFrame extends javax.swing.JFrame {
         jTable1 = new javax.swing.JTable();
         jScrollPane2 = new javax.swing.JScrollPane();
         jPanel2 = new javax.swing.JPanel();
-        jLabel12 = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
         jLabel13 = new javax.swing.JLabel();
         jComboBox2 = new javax.swing.JComboBox();
@@ -213,24 +219,17 @@ public class HomeFrame extends javax.swing.JFrame {
         jScrollPane2.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
         jPanel2.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
-
-        jLabel12.setText("jLabel12");
+        jPanel2.setPreferredSize(new java.awt.Dimension(1031, 283));
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel12, javax.swing.GroupLayout.PREFERRED_SIZE, 133, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(886, Short.MAX_VALUE))
+            .addGap(0, 1029, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel12, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(199, Short.MAX_VALUE))
+            .addGap(0, 281, Short.MAX_VALUE)
         );
 
         jScrollPane2.setViewportView(jPanel2);
@@ -357,16 +356,16 @@ public class HomeFrame extends javax.swing.JFrame {
                         .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 608, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 15, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 364, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 212, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane1))
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 212, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(40, 40, 40))
         );
 
@@ -415,7 +414,7 @@ public class HomeFrame extends javax.swing.JFrame {
 
             resultSet = statement.executeQuery();
             if (resultSet.next()) {
-                typeId = resultSet.getInt("type_id"); 
+                typeId = resultSet.getInt("type_id");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -444,11 +443,11 @@ public class HomeFrame extends javax.swing.JFrame {
         if (evt.getClickCount() != -1) {
             int x = evt.getX();
             int y = evt.getY();
-            TreePath path = jTree1.getPathForLocation(x, y); 
+            TreePath path = jTree1.getPathForLocation(x, y);
             if (path != null) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-                int typeId = getTypeIdFromNode(node); 
-                
+                int typeId = getTypeIdFromNode(node);
+
                 if (typeId != -1) {
                     String folderName = null;
                     Object userObject = node.getUserObject();
@@ -462,7 +461,7 @@ public class HomeFrame extends javax.swing.JFrame {
                             folderName = nodeValue.trim();
                             projectsDAO.setFolderName(folderName);
                         }
-                        
+
                         try {
                             DefaultTableModel tableModel = null;
                             tableModel = issuesDAO.getIssuesByTypeId(typeId, folderName);
@@ -474,76 +473,194 @@ public class HomeFrame extends javax.swing.JFrame {
             }
         }
     }//GEN-LAST:event_jTree1MouseClicked
-   
+
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
-       if (SwingUtilities.isRightMouseButton(evt)) {  
-        int selectedRowIndex = jTable1.getSelectedRow();
- 
-        JPopupMenu popupMenu = new JPopupMenu();
- 
-        JMenuItem updateItem = new JMenuItem("Edit Attributes");
-        JMenuItem insertItem = new JMenuItem("Insert");
-        JMenuItem deleteItem = new JMenuItem("Delete");
-        JMenuItem editItem = new   JMenuItem("Edit");
-        ImageIcon insertIcon = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\edit.png");
-        updateItem.setIcon(insertIcon);
-        updateItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int selectedRowIndex = jTable1.getSelectedRow();
-                DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
-                Object[] rowData = new Object[tableModel.getColumnCount()];
-                for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                    rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
+        if (SwingUtilities.isRightMouseButton(evt)) {
+            int selectedRowIndex = jTable1.getSelectedRow();
+
+            JPopupMenu popupMenu = new JPopupMenu();
+
+            JMenuItem updateItem = new JMenuItem("Edit Attributes");
+            JMenuItem insertItem = new JMenuItem("Insert");
+            JMenuItem deleteItem = new JMenuItem("Delete");
+            JMenuItem editItem = new JMenuItem("Edit");
+            ImageIcon insertIcon = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\edit.png");
+            updateItem.setIcon(insertIcon);
+            updateItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    int selectedRowIndex = jTable1.getSelectedRow();
+                    DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
+                    Object[] rowData = new Object[tableModel.getColumnCount()];
+                    for (int i = 0; i < tableModel.getColumnCount(); i++) {
+                        rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
+                    }
+                    EditIssues edit = new EditIssues();
+                    edit.setVisible(true);
+                    edit.setRowData(rowData, getColumnNames(tableModel));
+                    edit.setDefaultCloseOperation(edit.DISPOSE_ON_CLOSE);
                 }
-                 EditIssues edit = new EditIssues();
-                edit.setVisible(true);
-                edit.setRowData(rowData, getColumnNames(tableModel));
-                edit.setDefaultCloseOperation(edit.DISPOSE_ON_CLOSE);
-            }
-        });
+            });
 
-        insertItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) { 
-                System.out.println("Insert option selected");
-            }
-        });
+            insertItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("Insert option selected");
+                }
+            });
 
-        deleteItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) { 
-                System.out.println("Delete option selected");
-            }
-        });
+            deleteItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("Delete option selected");
+                }
+            });
 
-        editItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                 
-                System.out.println("Edit option selected");
-            }
-        });
- 
-        popupMenu.add(updateItem);
-        popupMenu.add(insertItem);
-        popupMenu.add(deleteItem);
-        popupMenu.add(editItem);
+            editItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
 
-        popupMenu.show(jTable1, evt.getX(), evt.getY());
-    }
- 
+                    System.out.println("Edit option selected");
+                }
+            });
+
+            popupMenu.add(updateItem);
+            popupMenu.add(insertItem);
+            popupMenu.add(deleteItem);
+            popupMenu.add(editItem);
+
+            popupMenu.show(jTable1, evt.getX(), evt.getY());
+        } else if (SwingUtilities.isLeftMouseButton(evt)) {
+    jPanel2.removeAll();
     int selectedRowIndex = jTable1.getSelectedRow();
+    int x = 30;
+    int y = 40;
+    int labelWidth = 400;
+    int height = 20;
+    int labelSpacing = 5; // Spacing between labels
     DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
     Object[] rowData = new Object[tableModel.getColumnCount()];
+    int issueId = 0;
+    String typeName = null;
+    int typeId = 0;
+    String modified_name = "";
+    JLabel attributeLabel = null;
+
     for (int i = 0; i < tableModel.getColumnCount(); i++) {
         rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
+        String columnName = tableModel.getColumnName(i);
+        Connection connection = null;
+        Statement statement = null;
+        System.out.println(modified_name);
+
+        if (columnName.equalsIgnoreCase("ID")) {
+            JLabel idLabel = new JLabel(columnName + ": " + rowData[i]);
+            idLabel.setBounds(x, y, labelWidth, height);
+            idLabel.setHorizontalAlignment(SwingConstants.LEFT);
+            jPanel2.add(idLabel);
+            y += height + labelSpacing; // Update the y coordinate for the next label
+            issueId = (int) rowData[i];
+
+            try {
+                connection = DbConnection.getConnection();
+                statement = connection.createStatement();
+
+                String getTypeQuery = "SELECT it.type_name "
+                        + "FROM issues i "
+                        + "JOIN folders f ON i.folder_id = f.folder_id "
+                        + "JOIN issue_types it ON f.type_id = it.type_id "
+                        + "WHERE i.issue_id = " + rowData[i];
+
+                ResultSet typeResultSet = statement.executeQuery(getTypeQuery);
+                if (typeResultSet.next()) {
+                    typeName = typeResultSet.getString("type_name");
+                    JLabel typeLabel = new JLabel("Type: " + typeName);
+                    typeLabel.setBounds(x, y, labelWidth, height);
+                    typeLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                    jPanel2.add(typeLabel);
+                    y += height + labelSpacing; // Update the y coordinate for the next label
+                } else {
+                    JLabel nullLabel = new JLabel("Type: Null");
+                    nullLabel.setBounds(x, y, labelWidth, height);
+                    nullLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                    jPanel2.add(nullLabel);
+                    y += height + labelSpacing; // Update the y coordinate for the next label
+                }
+            } catch (Exception e) {
+                // Handle exceptions
+            }
+            continue;
+        }
+
+        System.out.println(modified_name);
+        if (columnName.equalsIgnoreCase("modified by")) {
+            modified_name = (String) rowData[i];
+            break;
+        }
+
+        if (columnName.equalsIgnoreCase("issue_name")) {
+            JLabel issue = new JLabel("<html><b>" + rowData[i] + "</b></html>");
+            issue.setBounds(x, 10, labelWidth, height);
+            issue.setHorizontalAlignment(SwingConstants.LEFT);
+            jPanel2.add(issue);
+        } else {
+            JLabel rowLabel = new JLabel(columnName + ": " + rowData[i]);
+            rowLabel.setBounds(x, y, labelWidth, height);
+            rowLabel.setHorizontalAlignment(SwingConstants.LEFT);
+            jPanel2.add(rowLabel);
+            y += height + labelSpacing; // Update the y coordinate for the next label
+        }
     }
     
+    int cx = 30;
+int cy = 40;
+int clabelWidth = 400;
+int cheight = 16;
+int clabelSpacing = 5;
+
+try {
+    Connection connection = DbConnection.getConnection();
+    Statement statement = connection.createStatement();
+    String query = "SELECT type_id FROM issue_types WHERE type_name = '" + typeName + "'";
+    ResultSet getTypeId = statement.executeQuery(query);
+    if (getTypeId.next()) {
+        typeId = getTypeId.getInt("type_id");
+    }
+    String attrQuery = "SELECT attr_name FROM attr_types WHERE type_id = '" + typeId + "'";
+    ResultSet attrNames = statement.executeQuery(attrQuery);
+    int attributeY = cy; // Starting y-coordinate for the attribute labels
+    while (attrNames.next()) {
+        String attrName = attrNames.getString("attr_name");
+        attributeLabel = new JLabel(attrName);
+        attributeLabel.setBounds(cx + clabelWidth, attributeY, clabelWidth, cheight);
+        attributeLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        jPanel2.add(attributeLabel);
+        attributeY += cheight + clabelSpacing; // Update the y coordinate for the next attribute label
+    }
+} catch (Exception e) {
+    // Handle exceptions
+}
+
+
+    jPanel2.revalidate();
+    jPanel2.repaint();
+
+    jScrollPane2.revalidate();
+    jScrollPane2.repaint();
+}
+
+   int selectedRowIndex = jTable1.getSelectedRow();
+        DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
+        Object[] rowData = new Object[tableModel.getColumnCount()];
+        for (int i = 0; i < tableModel.getColumnCount(); i++) {
+            rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
+
+        }
+
     }//GEN-LAST:event_jTable1MouseClicked
 
     private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
-        
+
 //        AddViewFrame view = new AddViewFrame();
 //        view.setVisible(true);
     }//GEN-LAST:event_jComboBox2ActionPerformed
@@ -555,7 +672,7 @@ public class HomeFrame extends javax.swing.JFrame {
     private void jTable1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTable1KeyPressed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTable1KeyPressed
- 
+
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -594,7 +711,6 @@ public class HomeFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
