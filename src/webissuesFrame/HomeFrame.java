@@ -23,7 +23,7 @@ import pojos.Folder;
 import pojos.Project;
 
 public class HomeFrame extends javax.swing.JFrame {
-
+    AddNewIssue issue = new AddNewIssue();
     DefaultTreeModel model;
     private IssuesDAOImpl issuesDAO = new IssuesDAOImpl();
     private ProjectsDAOImpl projectsDAO = new ProjectsDAOImpl();
@@ -43,7 +43,10 @@ public class HomeFrame extends javax.swing.JFrame {
     }
 
     DefaultMutableTreeNode courses = new DefaultMutableTreeNode("Projects");
-
+    public String FolderName(String folder){
+        System.out.println("folder names are following -> "+folder);
+        return folder;
+    }
     public void Load() {
         try {
             List<Project> projects = projectsDAO.getProjects();
@@ -56,6 +59,7 @@ public class HomeFrame extends javax.swing.JFrame {
                 List<Folder> folders = projectsDAO.getFoldersForProject(projectId);
                 for (Folder folder : folders) {
                     String folderName = folder.getFolderName();
+                   // FolderName(folderName);
                     String typeName = folder.getTypeName();
                     String nodeValue = folderName + "      [" + typeName + "]";
                     DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(folderName);
@@ -414,7 +418,7 @@ public class HomeFrame extends javax.swing.JFrame {
         }
         return -1;
     }
-
+    
     private static int getTypeIDFromDB(String typeName) {
         Connection con = null;
         PreparedStatement statement = null;
@@ -458,13 +462,21 @@ public class HomeFrame extends javax.swing.JFrame {
         jLabel12.setEnabled(true);
         jPanel3.setVisible(false);
         jPanel2.setEnabled(false);
-        System.out.println("jtree clicked");
        
         if (evt.getClickCount() != -1) {
              jPanel2.removeAll();
             int x = evt.getX();
             int y = evt.getY();
             TreePath path = jTree1.getPathForLocation(x, y);
+if (path != null) {
+    String pathString = path.toString();
+    int firstCommaIndex = pathString.indexOf(",");
+    int lastCommaIndex = pathString.lastIndexOf(",");
+    if (firstCommaIndex != -1 && lastCommaIndex != -1 && lastCommaIndex > firstCommaIndex) {
+        String valueBetweenCommas = pathString.substring(firstCommaIndex + 1, lastCommaIndex).trim();
+        System.out.println(valueBetweenCommas);
+    }
+}
             if (path != null) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                 int typeId = getTypeIdFromNode(node);
@@ -504,15 +516,17 @@ public class HomeFrame extends javax.swing.JFrame {
             JPopupMenu popupMenu = new JPopupMenu();
 
             JMenuItem updateItem = new JMenuItem("Edit Attributes");
-            JMenuItem insertItem = new JMenuItem("Insert");
+            JMenuItem insertItem = new JMenuItem("Add Issue");
             JMenuItem deleteItem = new JMenuItem("Delete");
             JMenuItem editItem = new JMenuItem("Edit");
             ImageIcon insertIcon = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\edit.png");
+            ImageIcon addIssue = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\addissue.jpg");
             updateItem.setIcon(insertIcon);
+            insertItem.setIcon(addIssue);
             updateItem.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    int selectedRowIndex = jTable1.getSelectedRow();
+                    //int selectedRowIndex = jTable1.getSelectedRow();
                     DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
                     Object[] rowData = new Object[tableModel.getColumnCount()];
                     for (int i = 0; i < tableModel.getColumnCount(); i++) {
@@ -522,13 +536,16 @@ public class HomeFrame extends javax.swing.JFrame {
                     edit.setVisible(true);
                     edit.setRowData(rowData, getColumnNames(tableModel));
                     edit.setDefaultCloseOperation(edit.DISPOSE_ON_CLOSE);
+                    issue.setRowData(rowData, getColumnNames(tableModel));
+                    //frame.setr
                 }
             });
 
             insertItem.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    System.out.println("Insert option selected");
+                    issue.setVisible(true);
+                    issue.setDefaultCloseOperation(issue.DISPOSE_ON_CLOSE);
                 }
             });
 
@@ -574,7 +591,7 @@ public class HomeFrame extends javax.swing.JFrame {
         String columnName = tableModel.getColumnName(i);
         Connection connection = null;
         Statement statement = null;
-        System.out.println(modified_name);
+        //System.out.println(modified_name);
 
         if (columnName.equalsIgnoreCase("ID")) {
             JLabel idLabel = new JLabel(columnName + ": " + rowData[i]);
@@ -615,7 +632,7 @@ public class HomeFrame extends javax.swing.JFrame {
             continue;
         }
 
-        System.out.println(modified_name);
+       // System.out.println(modified_name);
         if (columnName.equalsIgnoreCase("modified by")) {
             modified_name = (String) rowData[i];
             break;
@@ -705,7 +722,7 @@ try {
             rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
 
         }
-
+        issue.setRowData(rowData, getColumnNames(tableModel));
     }//GEN-LAST:event_jTable1MouseClicked
 
     private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
@@ -723,7 +740,7 @@ try {
 
     private void jLabel12MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel12MouseClicked
         // TODO add your handling code here:
-        AddNewIssue issue = new AddNewIssue();
+       // AddNewIssue issue = new AddNewIssue();
         AddNewFolder folder = new AddNewFolder();
         if(jLabel12.getText()=="Add Issue")
         {
@@ -741,11 +758,11 @@ try {
         jLabel12.setText("Add Issue");
         if(jLabel12.getText()=="Add Issue")
         {
-            System.out.println("add issue clicked");
+            //System.out.println("add issue clicked");
         }
         else if(jLabel12.getText()=="Add Folder")
         {
-            System.out.println("add folder is clicked");
+           // System.out.println("add folder is clicked");
         }
         //
     }//GEN-LAST:event_jScrollPane3MouseClicked

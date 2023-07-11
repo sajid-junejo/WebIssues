@@ -43,15 +43,14 @@ public class EditIssues extends javax.swing.JFrame {
         labels = new JLabel[0];
         textFields = new JTextField[0];
         combobox = new JComboBox[0];
-//        this.setLocationRelativeTo(null);
-//        this.setResizable(false);
+        this.setLocationRelativeTo(null);
+        this.setResizable(false);
     }
     String locationValue = "";
     int issueId = 0;
 
     public void setRowData(Object[] rowData, String[] columnNames) {
         int numFields = columnNames.length;
-        //  System.out.println("numfieldss " + numFields);
         Connection con = null;
         Statement statement = null;
         ResultSet resultSet = null;
@@ -407,11 +406,19 @@ public class EditIssues extends javax.swing.JFrame {
                 typeId = typeResultSet.getInt("type_id");
             }
 
-            String changeIssueName = "UPDATE issues SET issue_name = ? WHERE issue_id = ?";
-            PreparedStatement preparedStatement = connection.prepareStatement(changeIssueName);
-            preparedStatement.setString(1, nametext.getText());
-            preparedStatement.setInt(2, issueId);
-            preparedStatement.executeUpdate();
+                String changeIssueName = "UPDATE issues SET issue_name = ? WHERE issue_id = ?";
+                PreparedStatement preparedStatement = connection.prepareStatement(changeIssueName);
+
+                String nameTextValue = nametext.getText();
+                if (nameTextValue == null || nameTextValue.isEmpty()) {
+    JOptionPane.showMessageDialog(null, "Issue name cannot be null or empty", "Error", JOptionPane.ERROR_MESSAGE);
+    return;
+}
+
+preparedStatement.setString(1, nameTextValue);
+preparedStatement.setInt(2, issueId);
+preparedStatement.executeUpdate();
+
 
             int attrId = 0;
             System.out.println("attribute uid" + attrId);
