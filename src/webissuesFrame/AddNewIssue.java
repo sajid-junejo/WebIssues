@@ -13,7 +13,10 @@ import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.DefaultComboBoxModel;
+import static javax.swing.GroupLayout.Alignment.values;
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -22,7 +25,6 @@ import org.jdesktop.swingx.JXDatePicker;
 
 public class AddNewIssue extends javax.swing.JFrame {
 
-    private ProjectsDAOImpl projects = new ProjectsDAOImpl();
 
     public AddNewIssue() {
         initComponents();
@@ -35,6 +37,8 @@ public class AddNewIssue extends javax.swing.JFrame {
     }
     String locationValue = "";
     int issueId = 0;
+    int folderId = 0;
+   private Map<String, String> attrValues = new HashMap<>();
 
     public void setRowData(Object[] rowData, String[] columnNames) {
         int numFields = columnNames.length;
@@ -46,6 +50,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         int componentWidth = 500;
         int height = 28;
         int spacing = 7;
+        attrValues = new HashMap<>();
 
         for (int i = 0; i < numFields; i++) {
             if (columnNames[i].equalsIgnoreCase("LOCATION") && rowData[i] != null) {
@@ -55,7 +60,6 @@ public class AddNewIssue extends javax.swing.JFrame {
                     locationValue = locationString.substring(lastDashIndex + 1).trim();
                 }
             }
-            System.out.println("location name" + locationValue);
         }
 
         if (locationValue != null) {
@@ -128,15 +132,22 @@ public class AddNewIssue extends javax.swing.JFrame {
                         jPanel5.add(label);
 
                         if (attrDef.startsWith("ENUM")) {
+                            String enumItems = attrDef.substring(attrDef.indexOf("items={") + 7, attrDef.lastIndexOf("}"));
+                            String[] values = enumItems.split(",");
                             DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
                             JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
                             comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                            jPanel5.add(comboBox);
-                        } else if (attrDef.startsWith("NUMERIC")) {
-                            double minValue = 0.0;  // Set the default min-value for NUMERIC attributes
-                            double maxValue = 0.0;  // Set the default max-value for NUMERIC attributes
 
-                            // Extract min-value and max-value from attrDef
+                            for (String value : values) {
+                                String trimmedValue = value.trim().replaceAll("\"", "");
+                                comboBoxModel.addElement(trimmedValue);
+                            }
+
+                            jPanel5.add(comboBox);
+                            attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
+                        } else if (attrDef.startsWith("NUMERIC")) {
+                            double minValue = 0.0;
+                            double maxValue = 0.0;
                             String[] parts = attrDef.split(" ");
                             for (String part : parts) {
                                 if (part.startsWith("min-value=")) {
@@ -152,25 +163,42 @@ public class AddNewIssue extends javax.swing.JFrame {
                                 JTextField textField = new JTextField();
                                 textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                                 jPanel5.add(textField);
+                                attrValues.put(attrName, textField.getText());
                             } else {
                                 DefaultComboBoxModel<Integer> comboBoxModel = new DefaultComboBoxModel<>();
                                 JComboBox<Integer> comboBox = new JComboBox<>(comboBoxModel);
                                 comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                for (int value = (int) minValue; value <= maxValue; value++) {
+                                    comboBoxModel.addElement(value);
+                                }
                                 jPanel5.add(comboBox);
+                                attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
                             }
                         } else if (attrDef.startsWith("USER")) {
                             DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
                             JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
                             comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                            Statement attrStatement = con.createStatement();
+                            ResultSet attrResultSet = attrStatement.executeQuery("SELECT user_name FROM users");
+                            while (attrResultSet.next()) {
+                                String userName = attrResultSet.getString("user_name");
+                                comboBoxModel.addElement(userName);
+                            }
                             jPanel5.add(comboBox);
+                            attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
+
+                            attrResultSet.close();
+                            attrStatement.close();
                         } else if (attrDef.startsWith("TEXT")) {
                             JTextField textField = new JTextField();
                             textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                             jPanel5.add(textField);
+                            attrValues.put(attrName, textField.getText());
                         } else if (attrDef.startsWith("DATETIME")) {
                             JXDatePicker datePicker = new JXDatePicker();
                             datePicker.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                             jPanel5.add(datePicker);
+                            attrValues.put(attrName, datePicker.getDate().toString());
                         }
 
                         y += height + spacing;
@@ -180,11 +208,121 @@ public class AddNewIssue extends javax.swing.JFrame {
             con.close();
         } catch (Exception e) {
             e.printStackTrace();
-        }
-
+        } 
         jPanel5.revalidate();
         jPanel5.repaint();
     }
+    
+private void handleOkButton() {
+    Connection con = null;
+    PreparedStatement statement = null;
+    try {
+        con = DbConnection.getConnection();
+        con.setAutoCommit(false);
+        System.out.println("issue name on line number 192 " + newissue.getText());
+        String getSessionQuery = "SELECT user_id FROM sessions";
+        PreparedStatement getSessionStatement = con.prepareStatement(getSessionQuery);
+        ResultSet sessionResultSet = getSessionStatement.executeQuery();
+        int userId = 0;
+        if (sessionResultSet.next()) {
+            userId = sessionResultSet.getInt("user_id");
+            System.out.println("user session id " + userId);
+        }
+
+        // Insert user_id into stamps table
+        String insertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
+        PreparedStatement insertStampsStatement = con.prepareStatement(insertStampsQuery, Statement.RETURN_GENERATED_KEYS);
+        insertStampsStatement.setInt(1, userId);
+        insertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
+        insertStampsStatement.executeUpdate();
+        ResultSet resultSet = insertStampsStatement.getGeneratedKeys();
+        int issueId = 0;
+        if (resultSet.next()) {
+            issueId = resultSet.getInt(1);
+            System.out.println("Issue ID " + issueId);
+        }
+        System.out.println("Inserted into stamps table. issueId: " + issueId);
+
+        String getFolderId = "SELECT folder_id from folders where folder_name = '" + locationValue + "'";
+        System.out.println("query " + getFolderId);
+        PreparedStatement folderid = con.prepareStatement(getFolderId);
+        System.out.println("query on line 205 " + getFolderId);
+        ResultSet get = folderid.executeQuery();
+        if (get.next()) {
+            System.out.println("inside if ");
+            folderId = get.getInt("folder_id");
+            System.out.println("Folder ID " + folderId);
+        }
+
+        String query = "INSERT INTO issues (issue_id, folder_id, issue_name, stamp_id) VALUES (?, ?, ?, ?)";
+        statement = con.prepareStatement(query);
+        statement.setInt(1, issueId);
+        statement.setInt(2, folderId);
+        statement.setString(3, newissue.getText());
+        statement.setInt(4, issueId);
+        statement.executeUpdate();
+
+        System.out.println("Inserted into issues table.");
+
+        String changesQuery = "INSERT INTO changes (change_id, issue_id, change_type, stamp_id, value_new) VALUES (?, ?, ?, ?, ?)";
+        statement = con.prepareStatement(changesQuery);
+        statement.setInt(1, issueId);
+        statement.setInt(2, issueId);
+        statement.setInt(3, 0);
+        statement.setInt(4, issueId);
+        statement.setString(5, newissue.getText());
+        statement.executeUpdate();
+
+        String attrValuesQuery = "INSERT INTO attr_values (issue_id, attr_id, attr_value) VALUES (?, ?, ?)";
+        statement = con.prepareStatement(attrValuesQuery);
+        for (Map.Entry<String, String> entry : attrValues.entrySet()) {
+            statement.setInt(1, issueId);
+            statement.setString(2, entry.getKey());
+            statement.setString(3, entry.getValue());
+            statement.executeUpdate();
+        }
+
+        String updateQuery = "UPDATE folders SET stamp_id = ? WHERE folder_id = ? AND COALESCE(stamp_id, 0) < ?";
+        statement = con.prepareStatement(updateQuery);
+        statement.setInt(1, issueId);
+        statement.setInt(2, folderId);
+        statement.setInt(3, issueId);
+        statement.executeUpdate();
+
+        System.out.println("Updated folders table.");
+
+        con.commit(); // Commit the transaction
+
+        System.out.println("Transaction committed successfully.");
+    } catch (SQLException ex) {
+        if (con != null) {
+            try {
+                con.rollback(); // Rollback the transaction
+                System.out.println("Transaction rolled back.");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        ex.printStackTrace();
+    } finally {
+        if (con != null) {
+            try {
+                con.close();
+                System.out.println("Connection closed.");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        if (statement != null) {
+            try {
+                statement.close();
+                System.out.println("Statement closed.");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -197,7 +335,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         jPanel2 = new javax.swing.JPanel();
         jPanel5 = new javax.swing.JPanel();
         clmname = new javax.swing.JLabel();
-        value = new javax.swing.JLabel();
+        value11 = new javax.swing.JLabel();
         jSeparator3 = new javax.swing.JSeparator();
         jPanel4 = new javax.swing.JPanel();
         jPanel6 = new javax.swing.JPanel();
@@ -248,7 +386,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         clmname.setText("Name");
         clmname.setAlignmentX(20.0F);
 
-        value.setText("Value");
+        value11.setText("Value");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -262,7 +400,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                             .addComponent(clmname, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGap(76, 76, 76)
-                            .addComponent(value, javax.swing.GroupLayout.PREFERRED_SIZE, 326, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(value11, javax.swing.GroupLayout.PREFERRED_SIZE, 326, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGap(214, 214, 214))
                         .addComponent(jSeparator3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 663, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(34, 34, 34))
@@ -273,7 +411,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(clmname, javax.swing.GroupLayout.DEFAULT_SIZE, 23, Short.MAX_VALUE)
-                    .addComponent(value, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(value11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -425,7 +563,7 @@ public class AddNewIssue extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        //setRowData(rowData, columnNames);
+        handleOkButton();
         dispose();
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -487,6 +625,6 @@ public class AddNewIssue extends javax.swing.JFrame {
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField newissue;
     private javax.swing.JLabel typename;
-    private javax.swing.JLabel value;
+    private javax.swing.JLabel value11;
     // End of variables declaration//GEN-END:variables
 }

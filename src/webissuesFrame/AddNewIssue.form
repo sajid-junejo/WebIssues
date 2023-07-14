@@ -180,7 +180,7 @@
                                   <Group type="102" alignment="1" attributes="0">
                                       <Component id="clmname" min="-2" pref="38" max="-2" attributes="0"/>
                                       <EmptySpace min="-2" pref="76" max="-2" attributes="0"/>
-                                      <Component id="value" min="-2" pref="326" max="-2" attributes="0"/>
+                                      <Component id="value11" min="-2" pref="326" max="-2" attributes="0"/>
                                       <EmptySpace min="-2" pref="214" max="-2" attributes="0"/>
                                   </Group>
                                   <Component id="jSeparator3" alignment="1" min="-2" pref="663" max="-2" attributes="0"/>
@@ -196,7 +196,7 @@
                           <EmptySpace max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
                               <Component id="clmname" alignment="3" pref="23" max="32767" attributes="0"/>
-                              <Component id="value" alignment="3" max="32767" attributes="0"/>
+                              <Component id="value11" alignment="3" max="32767" attributes="0"/>
                           </Group>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="jSeparator3" min="-2" max="-2" attributes="0"/>
@@ -234,7 +234,7 @@
                     <Property name="alignmentX" type="float" value="20.0"/>
                   </Properties>
                 </Component>
-                <Component class="javax.swing.JLabel" name="value">
+                <Component class="javax.swing.JLabel" name="value11">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Value"/>
                   </Properties>

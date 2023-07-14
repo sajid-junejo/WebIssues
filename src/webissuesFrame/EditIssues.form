@@ -97,12 +97,12 @@
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Group type="102" alignment="0" attributes="0">
                           <EmptySpace min="2" pref="2" max="-2" attributes="0"/>
-                          <Component id="ok" max="32767" attributes="0"/>
+                          <Group type="103" groupAlignment="3" attributes="0">
+                              <Component id="ok" alignment="3" max="32767" attributes="0"/>
+                              <Component id="cancel" alignment="3" max="32767" attributes="0"/>
+                          </Group>
                       </Group>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="info" alignment="3" max="32767" attributes="0"/>
-                          <Component id="cancel" alignment="3" max="32767" attributes="0"/>
-                      </Group>
+                      <Component id="info" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace min="-2" max="-2" attributes="0"/>
               </Group>

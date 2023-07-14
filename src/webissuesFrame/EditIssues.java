@@ -166,6 +166,7 @@ public class EditIssues extends javax.swing.JFrame {
                                         String userName = attrResultSet.getString("user_name");
                                         comboBoxModel.addElement(userName);
                                     }
+                                    comboBoxModel.addElement(null);
                                     System.out.println("row data " + rowData[i]);
                                     if (rowData[i] != null) {
                                         String selectedValue = rowData[i] != null ? rowData[i].toString() : null;
@@ -406,19 +407,18 @@ public class EditIssues extends javax.swing.JFrame {
                 typeId = typeResultSet.getInt("type_id");
             }
 
-                String changeIssueName = "UPDATE issues SET issue_name = ? WHERE issue_id = ?";
-                PreparedStatement preparedStatement = connection.prepareStatement(changeIssueName);
+            String changeIssueName = "UPDATE issues SET issue_name = ? WHERE issue_id = ?";
+            PreparedStatement preparedStatement = connection.prepareStatement(changeIssueName);
 
-                String nameTextValue = nametext.getText();
-                if (nameTextValue == null || nameTextValue.isEmpty()) {
-    JOptionPane.showMessageDialog(null, "Issue name cannot be null or empty", "Error", JOptionPane.ERROR_MESSAGE);
-    return;
-}
+            String nameTextValue = nametext.getText();
+            if (nameTextValue == null || nameTextValue.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Issue name cannot be null or empty", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
-preparedStatement.setString(1, nameTextValue);
-preparedStatement.setInt(2, issueId);
-preparedStatement.executeUpdate();
-
+            preparedStatement.setString(1, nameTextValue);
+            preparedStatement.setInt(2, issueId);
+            preparedStatement.executeUpdate();
 
             int attrId = 0;
             System.out.println("attribute uid" + attrId);
@@ -452,8 +452,6 @@ preparedStatement.executeUpdate();
                     ResultSet attrDefResult = attrDefStatement.executeQuery();
                     attrDefResult.next();
                     String attrDef = attrDefResult.getString("attr_def");
-
-                    // Validate attr_def based on attribute type
                     if (attrDef.startsWith("NUMERIC")) {
                         double minValue = Double.NEGATIVE_INFINITY;
                         double maxValue = Double.POSITIVE_INFINITY;
@@ -462,14 +460,15 @@ preparedStatement.executeUpdate();
 
                         String[] attrDefParts = attrDef.split(" ");
                         for (String attrDefPart : attrDefParts) {
-                            if (attrDefPart.startsWith("min-value")) {
+                            if (attrDefPart.contains("required")) {
+                                isRequired = true;
+                                System.out.println("attribute name required ");
+                            } else if (attrDefPart.startsWith("min-value")) {
                                 String minValueString = attrDefPart.split("=")[1].replace("\"", "");
                                 minValue = Double.parseDouble(minValueString);
                             } else if (attrDefPart.startsWith("max-value")) {
                                 String maxValueString = attrDefPart.split("=")[1].replace("\"", "");
                                 maxValue = Double.parseDouble(maxValueString);
-                            } else if (attrDefPart.startsWith("required")) {
-                                isRequired = true;
                             } else if (attrDefPart.startsWith("decimal")) {
                                 String decimalString = attrDefPart.split("=")[1].replace("\"", "");
                                 decimalPlaces = Integer.parseInt(decimalString);
@@ -477,38 +476,30 @@ preparedStatement.executeUpdate();
                         }
 
                         if (isRequired && textFieldValue.isEmpty()) {
-                            // Display error message using JOptionPane
                             JOptionPane.showMessageDialog(null, "Invalid input! Numeric value is required.", "Error", JOptionPane.ERROR_MESSAGE);
-                            return; // Exit the method or handle the error case
                         }
 
-                        if (!textFieldValue.matches("-?\\d+(\\.\\d+)?")) {
-                            // Display error message using JOptionPane
+                        if (textFieldValue != null && !textFieldValue.isEmpty() && !textFieldValue.matches("-?\\d+(\\.\\d+)?")) {
                             JOptionPane.showMessageDialog(null, "Invalid input! Numeric value expected.", "Error", JOptionPane.ERROR_MESSAGE);
-                            return; // Exit the method or handle the error case
                         }
-
-                        double numericValue = Double.parseDouble(textFieldValue);
-                        if (numericValue < minValue || numericValue > maxValue) {
-                            // Display error message using JOptionPane
-                            JOptionPane.showMessageDialog(null, "Invalid input! Numeric value should be between " + minValue + " and " + maxValue + ".", "Error", JOptionPane.ERROR_MESSAGE);
-                            return; // Exit the method or handle the error case
+                        if (textFieldValue != null && !textFieldValue.isEmpty()) {
+                            double numericValue = Double.parseDouble(textFieldValue);
+                            if (numericValue < minValue || numericValue > maxValue) {
+                                JOptionPane.showMessageDialog(null, "Invalid input! Numeric value should be between " + minValue + " and " + maxValue + ".", "Error", JOptionPane.ERROR_MESSAGE);
+                            }
                         }
-
-                        // If decimal places are specified, check the number of decimal places
                         if (decimalPlaces > 0) {
                             String[] valueParts = textFieldValue.split("\\.");
                             if (valueParts.length > 1 && valueParts[1].length() > decimalPlaces) {
-                                // Display error message using JOptionPane
                                 JOptionPane.showMessageDialog(null, "Invalid input! Numeric value should have a maximum of " + decimalPlaces + " decimal places.", "Error", JOptionPane.ERROR_MESSAGE);
-                                return; // Exit the method or handle the error case
+                                // Exit the method or handle the error case
                             }
                         }
                     } else if (attrDef.startsWith("TEXT")) {
-                        if (!textFieldValue.matches("[A-Za-z ]+")) {
+                        if (textFieldValue != null && !textFieldValue.isEmpty() && !textFieldValue.matches("[A-Za-z ]+")) {
                             // Display error message using JOptionPane
                             JOptionPane.showMessageDialog(null, "Invalid input! Text value expected.", "Error", JOptionPane.ERROR_MESSAGE);
-                            return; // Exit the method or handle the error case
+                            // Exit the method or handle the error case
                         }
                     }
                     // Check if attrId and issueId exist in the table
@@ -519,7 +510,7 @@ preparedStatement.executeUpdate();
                     ResultSet checkResult = checkStatement.executeQuery();
                     checkResult.next();
                     int rowCount = checkResult.getInt("count");
-
+                    System.out.println("attribute id" + attrDef);
                     if (rowCount > 0) {
                         // Update the existing row
                         String updateQuery = "UPDATE attr_values SET attr_value = ? WHERE attr_id = ? AND issue_id = ?";
@@ -530,14 +521,18 @@ preparedStatement.executeUpdate();
                         updateStatement.executeUpdate();
                         System.out.println("Updated value for TextField attr_id " + attrId + ": " + textFieldValue);
                     } else {
-                        // Insert a new row
-                        String insertQuery = "INSERT INTO attr_values (attr_id, issue_id, attr_value) VALUES (?, ?, ?)";
-                        PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
-                        insertStatement.setInt(1, attrId);
-                        insertStatement.setInt(2, issueId);
-                        insertStatement.setString(3, textFieldValue);
-                        insertStatement.executeUpdate();
-                        System.out.println("Inserted value for TextField attr_id " + attrId + ": " + textFieldValue);
+                        if (attrId == 11 && textFieldValue == null) {
+                            JOptionPane.showMessageDialog(null, "Invalid input! 'Name' value is required.", "Error", JOptionPane.ERROR_MESSAGE);
+                        } else {
+                            System.out.println("textfield value "+textFieldValue);
+                            String insertQuery = "INSERT INTO attr_values (attr_id, issue_id, attr_value) VALUES (?, ?, ?)";
+                            PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
+                            insertStatement.setInt(1, attrId);
+                            insertStatement.setInt(2, issueId);
+                            insertStatement.setString(3, textFieldValue);
+                            insertStatement.executeUpdate();
+                            System.out.println("Inserted value for TextField attr_id " + attrId + ": " + textFieldValue);
+                        }
                     }
                 } else if (component instanceof JComboBox) {
                     JComboBox<?> comboBox = (JComboBox<?>) component;
@@ -545,8 +540,7 @@ preparedStatement.executeUpdate();
                     System.out.println("***********************************");
                     System.out.println("ComboBox Name: " + comboBox.getName());
                     System.out.println("ComboBox Value: " + comboBoxValue);
-
-                    // Check if attrId and issueId exist in the table
+                    
                     String checkQuery = "SELECT COUNT(*) AS count FROM attr_values WHERE attr_id = ? AND issue_id = ?";
                     PreparedStatement checkStatement = connection.prepareStatement(checkQuery);
                     checkStatement.setInt(1, attrId);
@@ -556,21 +550,32 @@ preparedStatement.executeUpdate();
                     int rowCount = checkResult.getInt("count");
 
                     if (rowCount > 0) {
-                        // Update the existing row
-                        String updateQuery = "UPDATE attr_values SET attr_value = ? WHERE attr_id = ? AND issue_id = ?";
-                        PreparedStatement updateStatement = connection.prepareStatement(updateQuery);
-                        updateStatement.setString(1, comboBoxValue.toString());
-                        updateStatement.setInt(2, attrId);
-                        updateStatement.setInt(3, issueId);
-                        updateStatement.executeUpdate();
-                        System.out.println("Updated value for ComboBox attr_id " + attrId + ": " + comboBoxValue);
+                        if (comboBoxValue != null) {
+                            String updateQuery = "UPDATE attr_values SET attr_value = ? WHERE attr_id = ? AND issue_id = ?";
+                            PreparedStatement updateStatement = connection.prepareStatement(updateQuery);
+                            updateStatement.setString(1, comboBoxValue.toString());
+                            updateStatement.setInt(2, attrId);
+                            updateStatement.setInt(3, issueId);
+                            updateStatement.executeUpdate();
+                            System.out.println("Updated value for ComboBox attr_id " + attrId + ": " + comboBoxValue);
+                        } else {
+                            String deleteQuery = "DELETE FROM attr_values WHERE attr_id = ? AND issue_id = ?";
+                            PreparedStatement deleteStatement = connection.prepareStatement(deleteQuery);
+                            deleteStatement.setInt(1, attrId);
+                            deleteStatement.setInt(2, issueId);
+                            deleteStatement.executeUpdate();
+                            System.out.println("Removed value for attr_id " + attrId);
+                        }
                     } else {
-                        // Insert a new row
                         String insertQuery = "INSERT INTO attr_values (attr_id, issue_id, attr_value) VALUES (?, ?, ?)";
                         PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
                         insertStatement.setInt(1, attrId);
                         insertStatement.setInt(2, issueId);
-                        insertStatement.setString(3, comboBoxValue.toString());
+                        if (comboBoxValue != null) {
+                            insertStatement.setString(3, comboBoxValue.toString());
+                        } else {
+
+                        }
                         insertStatement.executeUpdate();
                         System.out.println("Inserted value for attr_id " + attrId + ": " + comboBoxValue);
                     }
@@ -591,23 +596,33 @@ preparedStatement.executeUpdate();
                     int rowCount = checkResult.getInt("count");
 
                     if (rowCount > 0) {
-                        // Update the existing row
-                        String updateQuery = "UPDATE attr_values SET attr_value = ? WHERE attr_id = ? AND issue_id = ?";
-                        PreparedStatement updateStatement = connection.prepareStatement(updateQuery);
-                        updateStatement.setDate(1, new java.sql.Date(date.getTime()));
-                        updateStatement.setInt(2, attrId);
-                        updateStatement.setInt(3, issueId);
-                        updateStatement.executeUpdate();
-                        System.out.println("Updated value for attr_id " + attrId + ": " + date);
+                        if (date != null) {
+                            String updateQuery = "UPDATE attr_values SET attr_value = ? WHERE attr_id = ? AND issue_id = ?";
+                            PreparedStatement updateStatement = connection.prepareStatement(updateQuery);
+                            updateStatement.setDate(1, new java.sql.Date(date.getTime()));
+                            updateStatement.setInt(2, attrId);
+                            updateStatement.setInt(3, issueId);
+                            updateStatement.executeUpdate();
+                            System.out.println("Updated value for attr_id " + attrId + ": " + date);
+                        } else {
+                            // Remove the existing row
+                            String deleteQuery = "DELETE FROM attr_values WHERE attr_id = ? AND issue_id = ?";
+                            PreparedStatement deleteStatement = connection.prepareStatement(deleteQuery);
+                            deleteStatement.setInt(1, attrId);
+                            deleteStatement.setInt(2, issueId);
+                            deleteStatement.executeUpdate();
+                            System.out.println("Removed value for attr_id " + attrId);
+                        }
                     } else {
-                        // Insert a new row
-                        String insertQuery = "INSERT INTO attr_values (attr_id, issue_id, attr_value) VALUES (?, ?, ?)";
-                        PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
-                        insertStatement.setInt(1, attrId);
-                        insertStatement.setInt(2, issueId);
-                        insertStatement.setDate(3, new java.sql.Date(date.getTime()));
-                        insertStatement.executeUpdate();
-                        System.out.println("Inserted value for attr_id " + attrId + ": " + date);
+                        if (date != null) {
+                            String insertQuery = "INSERT INTO attr_values (attr_id, issue_id, attr_value) VALUES (?, ?, ?)";
+                            PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
+                            insertStatement.setInt(1, attrId);
+                            insertStatement.setInt(2, issueId);
+                            insertStatement.setDate(3, new java.sql.Date(date.getTime()));
+                            insertStatement.executeUpdate();
+                            System.out.println("Inserted value for attr_id " + attrId + ": " + date);
+                        }
                     }
                 }
             }
@@ -791,10 +806,10 @@ preparedStatement.executeUpdate();
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(2, 2, 2)
-                        .addComponent(ok, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(info, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(cancel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(ok, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(cancel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                    .addComponent(info))
                 .addContainerGap())
         );
 
