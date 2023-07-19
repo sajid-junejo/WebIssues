@@ -25,7 +25,6 @@ import org.jdesktop.swingx.JXDatePicker;
 
 public class AddNewIssue extends javax.swing.JFrame {
 
-
     public AddNewIssue() {
         initComponents();
         Image icon = new ImageIcon(this.getClass().getResource("/webissueslogo.png")).getImage();
@@ -38,7 +37,7 @@ public class AddNewIssue extends javax.swing.JFrame {
     String locationValue = "";
     int issueId = 0;
     int folderId = 0;
-   private Map<String, String> attrValues = new HashMap<>();
+    private Map<String, String> attrValues = new HashMap<>();
 
     public void setRowData(Object[] rowData, String[] columnNames) {
         int numFields = columnNames.length;
@@ -198,7 +197,9 @@ public class AddNewIssue extends javax.swing.JFrame {
                             JXDatePicker datePicker = new JXDatePicker();
                             datePicker.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                             jPanel5.add(datePicker);
-                            attrValues.put(attrName, datePicker.getDate().toString());
+                            if (datePicker.getDate() != null) {
+                                attrValues.put(attrName, datePicker.getDate().toString());
+                            }
                         }
 
                         y += height + spacing;
@@ -208,121 +209,187 @@ public class AddNewIssue extends javax.swing.JFrame {
             con.close();
         } catch (Exception e) {
             e.printStackTrace();
-        } 
+        }
         jPanel5.revalidate();
         jPanel5.repaint();
     }
-    
-private void handleOkButton() {
-    Connection con = null;
-    PreparedStatement statement = null;
-    try {
-        con = DbConnection.getConnection();
-        con.setAutoCommit(false);
-        System.out.println("issue name on line number 192 " + newissue.getText());
-        String getSessionQuery = "SELECT user_id FROM sessions";
-        PreparedStatement getSessionStatement = con.prepareStatement(getSessionQuery);
-        ResultSet sessionResultSet = getSessionStatement.executeQuery();
-        int userId = 0;
-        if (sessionResultSet.next()) {
-            userId = sessionResultSet.getInt("user_id");
-            System.out.println("user session id " + userId);
-        }
 
-        // Insert user_id into stamps table
-        String insertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
-        PreparedStatement insertStampsStatement = con.prepareStatement(insertStampsQuery, Statement.RETURN_GENERATED_KEYS);
-        insertStampsStatement.setInt(1, userId);
-        insertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
-        insertStampsStatement.executeUpdate();
-        ResultSet resultSet = insertStampsStatement.getGeneratedKeys();
-        int issueId = 0;
-        if (resultSet.next()) {
-            issueId = resultSet.getInt(1);
-            System.out.println("Issue ID " + issueId);
-        }
-        System.out.println("Inserted into stamps table. issueId: " + issueId);
+    private void handleOkButton() {
+        Connection con = null;
+        PreparedStatement statement = null;
+        try {
+            con = DbConnection.getConnection();
+            con.setAutoCommit(false);
+            System.out.println("issue name on line number 192 " + newissue.getText());
+            String getSessionQuery = "SELECT user_id FROM sessions";
+            PreparedStatement getSessionStatement = con.prepareStatement(getSessionQuery);
+            ResultSet sessionResultSet = getSessionStatement.executeQuery();
+            int userId = 0;
+            if (sessionResultSet.next()) {
+                userId = sessionResultSet.getInt("user_id");
+                System.out.println("user session id " + userId);
+            }
 
-        String getFolderId = "SELECT folder_id from folders where folder_name = '" + locationValue + "'";
-        System.out.println("query " + getFolderId);
-        PreparedStatement folderid = con.prepareStatement(getFolderId);
-        System.out.println("query on line 205 " + getFolderId);
-        ResultSet get = folderid.executeQuery();
-        if (get.next()) {
-            System.out.println("inside if ");
-            folderId = get.getInt("folder_id");
-            System.out.println("Folder ID " + folderId);
-        }
+            // Insert user_id into stamps table
+            String insertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
+            PreparedStatement insertStampsStatement = con.prepareStatement(insertStampsQuery, Statement.RETURN_GENERATED_KEYS);
+            insertStampsStatement.setInt(1, userId);
+            insertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
+            insertStampsStatement.executeUpdate();
+            ResultSet resultSet = insertStampsStatement.getGeneratedKeys();
+            int issueId = 0;
+            if (resultSet.next()) {
+                issueId = resultSet.getInt(1);
+                System.out.println("Issue ID " + issueId);
+            }
+            System.out.println("Inserted into stamps table. issueId: " + issueId);
 
-        String query = "INSERT INTO issues (issue_id, folder_id, issue_name, stamp_id) VALUES (?, ?, ?, ?)";
-        statement = con.prepareStatement(query);
-        statement.setInt(1, issueId);
-        statement.setInt(2, folderId);
-        statement.setString(3, newissue.getText());
-        statement.setInt(4, issueId);
-        statement.executeUpdate();
+            String getFolderId = "SELECT folder_id from folders where folder_name = '" + locationValue + "'";
+            System.out.println("query " + getFolderId);
+            PreparedStatement folderid = con.prepareStatement(getFolderId);
+            System.out.println("query on line 205 " + getFolderId);
+            ResultSet get = folderid.executeQuery();
+            if (get.next()) {
+                System.out.println("inside if ");
+                folderId = get.getInt("folder_id");
+                System.out.println("Folder ID " + folderId);
+            }
 
-        System.out.println("Inserted into issues table.");
-
-        String changesQuery = "INSERT INTO changes (change_id, issue_id, change_type, stamp_id, value_new) VALUES (?, ?, ?, ?, ?)";
-        statement = con.prepareStatement(changesQuery);
-        statement.setInt(1, issueId);
-        statement.setInt(2, issueId);
-        statement.setInt(3, 0);
-        statement.setInt(4, issueId);
-        statement.setString(5, newissue.getText());
-        statement.executeUpdate();
-
-        String attrValuesQuery = "INSERT INTO attr_values (issue_id, attr_id, attr_value) VALUES (?, ?, ?)";
-        statement = con.prepareStatement(attrValuesQuery);
-        for (Map.Entry<String, String> entry : attrValues.entrySet()) {
+            String query = "INSERT INTO issues (issue_id, folder_id, issue_name, stamp_id) VALUES (?, ?, ?, ?)";
+            statement = con.prepareStatement(query);
             statement.setInt(1, issueId);
-            statement.setString(2, entry.getKey());
-            statement.setString(3, entry.getValue());
+            statement.setInt(2, folderId);
+            statement.setString(3, newissue.getText());
+            statement.setInt(4, issueId);
             statement.executeUpdate();
-        }
 
-        String updateQuery = "UPDATE folders SET stamp_id = ? WHERE folder_id = ? AND COALESCE(stamp_id, 0) < ?";
-        statement = con.prepareStatement(updateQuery);
-        statement.setInt(1, issueId);
-        statement.setInt(2, folderId);
-        statement.setInt(3, issueId);
-        statement.executeUpdate();
+            System.out.println("Inserted into issues table.");
 
-        System.out.println("Updated folders table.");
+            String changesQuery = "INSERT INTO changes (change_id, issue_id, change_type, stamp_id, value_new) VALUES (?, ?, ?, ?, ?)";
+            statement = con.prepareStatement(changesQuery);
+            statement.setInt(1, issueId);
+            statement.setInt(2, issueId);
+            statement.setInt(3, 0);
+            statement.setInt(4, issueId);
+            statement.setString(5, newissue.getText());
+            statement.executeUpdate();
 
-        con.commit(); // Commit the transaction
+//            String attrValuesQuery = "INSERT INTO attr_values (issue_id, attr_id, attr_value) VALUES (?, ?, ?)";
+//            statement = con.prepareStatement(attrValuesQuery);
+//
+//            for (Map.Entry<String, String> entry : attrValues.entrySet()) {
+//                String attrName = entry.getKey();
+//                String attrValue = entry.getValue();
+//
+//                // Retrieve the attr_id from attr_types based on attr_name
+//                String attrIdQuery = "SELECT attr_id FROM attr_types WHERE attr_name = ?";
+//                PreparedStatement attrIdStatement = con.prepareStatement(attrIdQuery);
+//                attrIdStatement.setString(1, attrName);
+//                ResultSet attrIdResult = attrIdStatement.executeQuery();
+//
+//                if (attrIdResult.next()) {
+//                    int attrId = attrIdResult.getInt("attr_id");
+//                    String attrType = attrIdResult.getString("attr_type");
+//
+//                    statement.setInt(1, issueId);
+//                    statement.setInt(2, attrId);
+//
+//                    // Handle different data types for attr_value based on attr_type
+//                    if ("INT".equals(attrType)) {
+//                        // Convert the attrValue to an integer and set it as an int parameter
+//                        int intValue = Integer.parseInt(attrValue);
+//                        statement.setInt(3, intValue);
+//                    } else {
+//                        // Treat the attrValue as a string and set it as a string parameter
+//                        statement.setString(3, attrValue);
+//                    }
+//
+//                    statement.executeUpdate();
+//                }
+//            }
+            String updateQuery = "UPDATE folders SET stamp_id = ? WHERE folder_id = ? AND COALESCE(stamp_id, 0) < ?";
+            statement = con.prepareStatement(updateQuery);
+            statement.setInt(1, issueId);
+            statement.setInt(2, folderId);
+            statement.setInt(3, issueId);
+            statement.executeUpdate();
 
-        System.out.println("Transaction committed successfully.");
-    } catch (SQLException ex) {
-        if (con != null) {
-            try {
-                con.rollback(); // Rollback the transaction
-                System.out.println("Transaction rolled back.");
-            } catch (SQLException e) {
-                e.printStackTrace();
+            if (description.getText() != null && !description.getText().isEmpty()) {
+                String stampQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
+                PreparedStatement stampStatement = con.prepareStatement(stampQuery, Statement.RETURN_GENERATED_KEYS);
+                stampStatement.setInt(1, userId);
+                stampStatement.setLong(2, System.currentTimeMillis() / 1000);
+                stampStatement.executeUpdate();
+
+                ResultSet stampResult = stampStatement.getGeneratedKeys();
+                int stampId = 0;
+                if (stampResult.next()) {
+                    stampId = stampResult.getInt(1);
+                }
+
+                String descriptionQuery = "INSERT INTO issue_descriptions (issue_id, descr_text, descr_format) VALUES (?, ?, ?)";
+                PreparedStatement descriptionStatement = con.prepareStatement(descriptionQuery);
+                descriptionStatement.setInt(1, issueId);
+                descriptionStatement.setString(2, description.getText());
+                descriptionStatement.setInt(3, 1);
+                descriptionStatement.executeUpdate();
+
+                String updateIssuesQuery = "UPDATE issues SET descr_id = ? WHERE issue_id = ? AND COALESCE(descr_id, descr_stub_id, 0) < ?";
+                PreparedStatement updateIssuesStatement = con.prepareStatement(updateIssuesQuery);
+                updateIssuesStatement.setInt(1, stampId);
+                updateIssuesStatement.setInt(2, issueId);
+                updateIssuesStatement.setInt(3, stampId);
+                updateIssuesStatement.executeUpdate();
+
+                String updateStampQuery = "UPDATE issues SET stamp_id = ? WHERE issue_id = ? AND stamp_id < ?";
+                PreparedStatement updateStampStatement = con.prepareStatement(updateStampQuery);
+                updateStampStatement.setInt(1, stampId);
+                updateStampStatement.setInt(2, issueId);
+                updateStampStatement.setInt(3, stampId);
+                updateStampStatement.executeUpdate();
+
+                String updateFoldersQuery = "UPDATE folders SET stamp_id = ? WHERE folder_id = ? AND COALESCE(stamp_id, 0) < ?";
+                PreparedStatement updateFoldersStatement = con.prepareStatement(updateFoldersQuery);
+                updateFoldersStatement.setInt(1, stampId);
+                updateFoldersStatement.setInt(2, folderId);
+                updateFoldersStatement.setInt(3, stampId);
+                updateFoldersStatement.executeUpdate();
+
+                con.commit(); // Commit the transaction
             }
-        }
-        ex.printStackTrace();
-    } finally {
-        if (con != null) {
-            try {
-                con.close();
-                System.out.println("Connection closed.");
-            } catch (SQLException e) {
-                e.printStackTrace();
+
+            con.commit(); // Commit the transaction
+
+            System.out.println("Transaction committed successfully.");
+        } catch (SQLException ex) {
+            if (con != null) {
+                try {
+                    con.rollback(); // Rollback the transaction
+                    System.out.println("Transaction rolled back.");
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
-        }
-        if (statement != null) {
-            try {
-                statement.close();
-                System.out.println("Statement closed.");
-            } catch (SQLException e) {
-                e.printStackTrace();
+            ex.printStackTrace();
+        } finally {
+            if (con != null) {
+                try {
+                    con.close();
+                    System.out.println("Connection closed.");
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (statement != null) {
+                try {
+                    statement.close();
+                    System.out.println("Statement closed.");
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
-}
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -339,7 +406,8 @@ private void handleOkButton() {
         jSeparator3 = new javax.swing.JSeparator();
         jPanel4 = new javax.swing.JPanel();
         jPanel6 = new javax.swing.JPanel();
-        jTextField1 = new javax.swing.JTextField();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        description = new javax.swing.JTextPane();
         jSeparator1 = new javax.swing.JSeparator();
         info = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
@@ -423,21 +491,17 @@ private void handleOkButton() {
 
         jPanel4.setBackground(new java.awt.Color(255, 255, 255));
 
+        jScrollPane1.setViewportView(description);
+
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel6Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jTextField1, javax.swing.GroupLayout.DEFAULT_SIZE, 676, Short.MAX_VALUE)
-                .addContainerGap())
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 696, Short.MAX_VALUE)
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel6Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jTextField1, javax.swing.GroupLayout.DEFAULT_SIZE, 226, Short.MAX_VALUE)
-                .addContainerGap())
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 248, Short.MAX_VALUE)
         );
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
@@ -607,6 +671,7 @@ private void handleOkButton() {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel clmname;
+    private javax.swing.JTextPane description;
     private javax.swing.JLabel info;
     private javax.swing.JLabel issuename;
     private javax.swing.JButton jButton1;
@@ -619,10 +684,10 @@ private void handleOkButton() {
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
+    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField newissue;
     private javax.swing.JLabel typename;
     private javax.swing.JLabel value11;
