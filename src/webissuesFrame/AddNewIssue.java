@@ -81,8 +81,7 @@ public class AddNewIssue extends javax.swing.JFrame {
 
                 if (typeNameResultSet.next()) {
                     String typeName = typeNameResultSet.getString("type_name");
-                    typename.setText(typeName);
-                    System.out.println("type name " + typeName);
+                    typename.setText(typeName); 
                 }
             } catch (Exception e) {
                 e.printStackTrace();

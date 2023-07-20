@@ -20,7 +20,9 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -36,7 +38,10 @@ public class HomeFrame extends javax.swing.JFrame {
     AddViewFrame view;
     private JLabel[] labels;
     int issueId = 0;
-
+    JLabel attributeLabel = null;
+    int selectedRowIndex = 0;
+    String typeName = null;
+    int typeId = 0;
     public HomeFrame() {
         initComponents();
         this.setExtendedState(HomeFrame.MAXIMIZED_BOTH);
@@ -510,12 +515,12 @@ public class HomeFrame extends javax.swing.JFrame {
             }
         }
     }//GEN-LAST:event_jTree1MouseClicked
-
+    
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
         jLabel12.setEnabled(true);
         jLabel12.setText("Add Issue");
         if (SwingUtilities.isRightMouseButton(evt)) {
-            int selectedRowIndex = jTable1.getSelectedRow();
+            selectedRowIndex = jTable1.getSelectedRow();
             jTable1.setSelectionBackground(Color.YELLOW);
             jTable1.setSelectionForeground(Color.BLACK);
             JPopupMenu popupMenu = new JPopupMenu();
@@ -579,18 +584,143 @@ public class HomeFrame extends javax.swing.JFrame {
             popupMenu.show(jTable1, evt.getX(), evt.getY());
         } else if (SwingUtilities.isLeftMouseButton(evt)) {
             jPanel2.removeAll();
-            int selectedRowIndex = jTable1.getSelectedRow();
-            int x = 30;
+            selectedRowIndex = jTable1.getSelectedRow();
+            history();
+            issueDetails();
+            issueAttributes();
+            buttonsCreation();
+        }
+        int selectedRowIndex = jTable1.getSelectedRow();
+        DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
+        Object[] rowData = new Object[tableModel.getColumnCount()];
+        for (int i = 0; i < tableModel.getColumnCount(); i++) {
+            rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
+
+        }
+        issue.setRowData(rowData, getColumnNames(tableModel));
+    }//GEN-LAST:event_jTable1MouseClicked
+    public void issueAttributes(){
+        int cx = 30;
+            int cy = 40;
+            int clabelWidth = 400;
+            int cheight = 16;
+            int clabelSpacing = 5;
+            try {
+                Connection connection = DbConnection.getConnection();
+                Statement statement = connection.createStatement();
+                String query = "SELECT type_id FROM issue_types WHERE type_name = '" + typeName + "'";
+                ResultSet getTypeId = statement.executeQuery(query);
+                if (getTypeId.next()) {
+                    typeId = getTypeId.getInt("type_id");
+                }
+                String attrQuery = "SELECT attr_name, attr_value "
+                        + "FROM attr_types AS a "
+                        + "LEFT JOIN attr_values AS v ON v.attr_id = a.attr_id AND v.issue_id = " + issueId
+                        + " WHERE a.type_id = " + typeId;
+                ResultSet attrValues = statement.executeQuery(attrQuery);
+
+                int attributeY = cy;
+                while (attrValues.next()) {
+                    String attrName = attrValues.getString("attr_name");
+                    String attrValue = attrValues.getString("attr_value");
+                    if (attrValue == null) {
+                        attrValue = "";
+                    }
+                    attributeLabel = new JLabel(attrName + "    :    " + attrValue);
+                    attributeLabel.setBounds(cx + clabelWidth, attributeY, clabelWidth, cheight);
+                    attributeLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                    jPanel2.add(attributeLabel);
+                    attributeY += cheight + clabelSpacing;
+                }
+                statement.close();
+                connection.close();
+            } catch (Exception e) {
+
+            }
+    }
+    public void buttonsCreation(){
+        int bx = 440;
+            int by = 150;
+            int blabelWidth = 100;
+            int bheight = 20;
+            int blabelSpacing = 5;
+
+            JButton button1 = new JButton("All History");
+            button1.setBounds(bx, by, blabelWidth, bheight);
+            button1.setHorizontalAlignment(SwingConstants.LEADING);
+            button1.addActionListener(new ButtonClickListener());
+
+            JButton button2 = new JButton("Comments");
+            button2.setBounds(bx + (blabelWidth + blabelSpacing), by, blabelWidth, bheight);
+            button2.setHorizontalAlignment(SwingConstants.LEADING);
+            button2.addActionListener(new ButtonClickListener());
+
+            JButton button3 = new JButton("Attachements");
+            button3.setBounds(bx + 2 * (blabelWidth + blabelSpacing), by, blabelWidth, bheight);
+            button3.setHorizontalAlignment(SwingConstants.LEADING);
+            button3.addActionListener(new ButtonClickListener());
+
+            JButton button4 = new JButton("Comments & Attachements");
+            button4.setBounds(bx + 3 * (blabelWidth + blabelSpacing), by, blabelWidth + 50, bheight);
+            button4.setHorizontalAlignment(SwingConstants.LEADING);
+            button4.addActionListener(new ButtonClickListener());
+            jPanel2.add(button1);
+            jPanel2.add(button2);
+            jPanel2.add(button3);
+            jPanel2.add(button4);
+            button1.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    //button1.setBackground(Color.RED);
+                    jPanel2.removeAll();
+                    issueDetails();
+                    issueAttributes();
+                    history();
+                    buttonsCreation();
+                    button2.setBackground(null);
+                    button3.setBackground(null);
+                    button4.setBackground(null);
+                }
+            });
+            button2.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    button1.setBackground(null);
+                    button4.setBackground(null);
+                    button3.setBackground(null);
+                }
+            });
+            button3.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    button1.setBackground(null);
+                    button2.setBackground(null);
+                    button4.setBackground(null);
+                }
+            });
+            button4.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    button1.setBackground(null);
+                    button2.setBackground(null);
+                    button3.setBackground(null);
+                }
+            });
+            jPanel2.revalidate();
+            jPanel2.repaint();
+            jScrollPane2.revalidate();
+            jScrollPane2.repaint();
+    }
+    public void issueDetails(){
+        int x = 30;
             int y = 40;
             int labelWidth = 400;
             int height = 20;
-            int labelSpacing = 5; // Spacing between labels
+            int labelSpacing = 5;
             DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
             Object[] rowData = new Object[tableModel.getColumnCount()];
-            String typeName = null;
-            int typeId = 0;
+            
             String modified_name = "";
-            JLabel attributeLabel = null;
 
             for (int i = 0; i < tableModel.getColumnCount(); i++) {
                 rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
@@ -602,7 +732,7 @@ public class HomeFrame extends javax.swing.JFrame {
                     idLabel.setBounds(x, y, labelWidth, height);
                     idLabel.setHorizontalAlignment(SwingConstants.LEFT);
                     jPanel2.add(idLabel);
-                    y += height + labelSpacing; // Update the y coordinate for the next label
+                    y += height + labelSpacing; 
                     issueId = (int) rowData[i];
 
                     try {
@@ -643,13 +773,13 @@ public class HomeFrame extends javax.swing.JFrame {
                         ResultSet typeResultSet = statement.executeQuery(getTypeQuery);
                         if (typeResultSet.next()) {
                             typeName = typeResultSet.getString("type_name");
-                            JLabel typeLabel = new JLabel("Type: " + typeName);
+                            JLabel typeLabel = new JLabel("TYPE: " + typeName);
                             typeLabel.setBounds(x, y, labelWidth, height);
                             typeLabel.setHorizontalAlignment(SwingConstants.LEFT);
                             jPanel2.add(typeLabel);
                             y += height + labelSpacing;
                         } else {
-                            JLabel nullLabel = new JLabel("Type: Null");
+                            JLabel nullLabel = new JLabel("TYPE: Null");
                             nullLabel.setBounds(x, y, labelWidth, height);
                             nullLabel.setHorizontalAlignment(SwingConstants.LEFT);
                             jPanel2.add(nullLabel);
@@ -678,292 +808,165 @@ public class HomeFrame extends javax.swing.JFrame {
                     y += height + labelSpacing; // Update the y coordinate for the next label
                 }
             }
-            int cx = 30;
-            int cy = 40;
-            int clabelWidth = 400;
-            int cheight = 16;
-            int clabelSpacing = 5;
-            try {
-                Connection connection = DbConnection.getConnection();
-                Statement statement = connection.createStatement();
-                String query = "SELECT type_id FROM issue_types WHERE type_name = '" + typeName + "'";
-                ResultSet getTypeId = statement.executeQuery(query);
-                if (getTypeId.next()) {
-                    typeId = getTypeId.getInt("type_id");
-                }
-                String attrQuery = "SELECT attr_name, attr_value "
-                        + "FROM attr_types AS a "
-                        + "LEFT JOIN attr_values AS v ON v.attr_id = a.attr_id AND v.issue_id = " + issueId
-                        + " WHERE a.type_id = " + typeId;
-                ResultSet attrValues = statement.executeQuery(attrQuery);
+    }
+    public void history() {
+    Connection con = null;
+    PreparedStatement statement = null;
+    JLabel changeLabel = null;
+    JLabel attribute = null;
 
-                int attributeY = cy;
-                while (attrValues.next()) {
-                    String attrName = attrValues.getString("attr_name");
-                    String attrValue = attrValues.getString("attr_value");
-                    if (attrValue == null) {
-                        attrValue = "";
-                    }
-                    attributeLabel = new JLabel(attrName + "    :    " + attrValue);
-                    attributeLabel.setBounds(cx + clabelWidth, attributeY, clabelWidth, cheight);
-                    attributeLabel.setHorizontalAlignment(SwingConstants.LEFT);
-                    jPanel2.add(attributeLabel);
-                    attributeY += cheight + clabelSpacing;
-                }
-                statement.close();
-                connection.close();
-            } catch (Exception e) {
-
-            }
-
-            int bx = 440;
-            int by = 150;
-            int blabelWidth = 100;
-            int bheight = 20;
-            int blabelSpacing = 5;
-
-            JButton button1 = new JButton("All History");
-            button1.setBounds(bx, by, blabelWidth, bheight);
-            button1.setHorizontalAlignment(SwingConstants.LEADING);
-            button1.addActionListener(new ButtonClickListener());
-
-            JButton button2 = new JButton("Only Comments");
-            button2.setBounds(bx + (blabelWidth + blabelSpacing), by, blabelWidth, bheight);
-            button2.setHorizontalAlignment(SwingConstants.LEADING);
-            button2.addActionListener(new ButtonClickListener());
-
-            JButton button3 = new JButton("Only Attachements");
-            button3.setBounds(bx + 2 * (blabelWidth + blabelSpacing), by, blabelWidth, bheight);
-            button3.setHorizontalAlignment(SwingConstants.LEADING);
-            button3.addActionListener(new ButtonClickListener());
-
-            JButton button4 = new JButton("Comments & Attachements");
-            button4.setBounds(bx + 3 * (blabelWidth + blabelSpacing), by, blabelWidth + 50, bheight);
-            button4.setHorizontalAlignment(SwingConstants.LEADING);
-            button4.addActionListener(new ButtonClickListener());
-            jPanel2.add(button1);
-            jPanel2.add(button2);
-            jPanel2.add(button3);
-            jPanel2.add(button4);
-            button1.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    //button1.setBackground(Color.RED);
-                    button2.setBackground(null);
-                    button3.setBackground(null);
-                    button4.setBackground(null);
-                }
-            });
-            button2.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    button1.setBackground(null);
-                    button4.setBackground(null);
-                    button3.setBackground(null);
-                }
-            });
-            button3.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    button1.setBackground(null);
-                    button2.setBackground(null);
-                    button4.setBackground(null);
-                }
-            });
-            button4.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    button1.setBackground(null);
-                    button2.setBackground(null);
-                    button3.setBackground(null);
-                }
-            });
-            jPanel2.revalidate();
-            jPanel2.repaint();
-            jScrollPane2.revalidate();
-            jScrollPane2.repaint();
-        }
-        int selectedRowIndex = jTable1.getSelectedRow();
-        DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
-        Object[] rowData = new Object[tableModel.getColumnCount()];
-        for (int i = 0; i < tableModel.getColumnCount(); i++) {
-            rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
-
-        }
-        issue.setRowData(rowData, getColumnNames(tableModel));
-    }//GEN-LAST:event_jTable1MouseClicked
-
-    private void createLabels() {
-        int hx = -135;
+    try {
+        con = DbConnection.getConnection();
+        int hx = 30;
         int hy = 160;
         int hlabelWidth = 400;
         int hheight = 16;
         int hlabelSpacing = 5;
         int labelY = hy;
 
-        for (int i = 0; i <= 4; i++) {
-            JLabel label = new JLabel("<html><font face=\"Arial\">Issue</font> <font face=\"Times New Roman\">History</font></html>");
-            int labelX = hx + (hlabelWidth - label.getPreferredSize().width) / 2; // Calculate X-coordinate for center alignment
-            label.setBounds(labelX, labelY, hlabelWidth, hheight);
-            label.setHorizontalAlignment(SwingConstants.LEFT);
-            jPanel2.add(label);
-            labelY += hheight + hlabelSpacing;
+        JLabel label = new JLabel("<html><b>Issue History</b></html>");
+        label.setBounds(hx, labelY, hlabelWidth, hheight);
+        labelY += hheight + hlabelSpacing;
+        jPanel2.add(label);
+
+        String sqlQuery = "SELECT ch.change_id, ch.change_type, ch.stamp_id, "
+                + "sc.stamp_time AS created_date, "
+                + "cu.user_login AS created_user_login, " 
+                + "sm.stamp_time AS modified_date, sm.user_id AS modified_user, "
+                + "ch.attr_id, ch.value_old, ch.value_new, ch.from_folder_id, ch.to_folder_id "
+                + "FROM changes AS ch "
+                + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
+                + "JOIN stamps AS sm ON sm.stamp_id = ch.stamp_id "
+                + "JOIN users AS cu ON sc.user_id = cu.user_id " 
+                + "WHERE ch.issue_id = ?"
+                + " ORDER BY created_date DESC";
+
+        statement = con.prepareStatement(sqlQuery);
+        // Set the issueId parameter
+        statement.setInt(1, issueId);
+
+        ResultSet resultSet = statement.executeQuery();
+        Map<String, List<String>> changesByDate = new LinkedHashMap<>();
+        Map<Integer, String> attrIdToNameMap = new HashMap<>();
+
+        try {
+            String sqlQueryAttributes = "SELECT attr_id, attr_name FROM attr_types";
+            PreparedStatement attrStatement = con.prepareStatement(sqlQueryAttributes);
+            ResultSet attrResultSet = attrStatement.executeQuery();
+            while (attrResultSet.next()) {
+                int attrId = attrResultSet.getInt("attr_id");
+                String attrName = attrResultSet.getString("attr_name");
+                attrIdToNameMap.put(attrId, attrName);
+            }
+            attrResultSet.close();
+            attrStatement.close();
+        } catch (SQLException c) {
+            c.printStackTrace();
         }
+
+        while (resultSet.next()) {
+            int attrId = resultSet.getInt("attr_id");
+            String attrName = attrIdToNameMap.get(attrId);
+
+            int changeId = resultSet.getInt("change_id");
+            String changeType = resultSet.getString("change_type");
+            int stampId = resultSet.getInt("stamp_id");
+            long createdDateMillis = resultSet.getLong("created_date") * 1000L;
+            Date createdDate = new Date(createdDateMillis);
+            String createdUserLogin = resultSet.getString("created_user_login"); // Use the new column name
+            long modifiedDateMillis = resultSet.getLong("modified_date") * 1000L;
+            Date modifiedDate = new Date(modifiedDateMillis);
+            String modifiedUser = resultSet.getString("modified_user");
+            String valueOld = resultSet.getString("value_old");
+            String valueNew = resultSet.getString("value_new");
+            int fromFolderId = resultSet.getInt("from_folder_id");
+            int toFolderId = resultSet.getInt("to_folder_id");
+            SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
+            String formattedCreatedDate = sdf.format(createdDate);
+            String formattedModifiedDate = sdf.format(modifiedDate);
+
+            String changeLabelString = formattedCreatedDate + " --- " + createdUserLogin;
+            String attributeString = "";
+
+            if (attrName == null && valueOld == null) {
+                attributeString = "Name -> " + valueNew;
+            } else if (attrName == null) {
+                attributeString = "Name -> " + " -> " + valueOld + " -> " + valueNew;
+            } else {
+                attributeString = attrName + " -> " + valueOld + " -> " + valueNew;
+            }
+
+            List<String> changesList = changesByDate.getOrDefault(changeLabelString, new ArrayList<>());
+            changesList.add(attributeString);
+            changesByDate.put(changeLabelString, changesList);
+        }
+
+        resultSet.close();
+        statement.close();
+        con.close();
+
+        for (Map.Entry<String, List<String>> entry : changesByDate.entrySet()) {
+            String changeLabelString = entry.getKey();
+            List<String> changesList = entry.getValue();
+
+            changeLabel = new JLabel("<html><b>" + changeLabelString + "</b></html>");
+            changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+            jPanel2.add(changeLabel);
+
+            // Update the labelY to avoid overlapping of changeLabel and attribute labels
+            labelY += (hheight + hlabelSpacing);
+
+            StringBuilder bulletList = new StringBuilder("<html><ul>");
+
+            for (String attributeString : changesList) {
+                bulletList.append("<li>").append(attributeString).append("</li>");
+            }
+
+            bulletList.append("</ul></html>");
+
+            attribute = new JLabel(bulletList.toString());
+            attribute.setBounds(hx, labelY, hlabelWidth, hheight * changesList.size());
+            jPanel2.add(attribute);
+
+            // Update the labelY to account for the height of the bullet list
+            labelY += (hheight + hlabelSpacing) * changesList.size();
+
+            // Add some space after displaying all attribute labels
+            labelY += hlabelSpacing + 5;
+        }
+    } catch (Exception v) {
+        v.printStackTrace();
     }
-    
+}
+
     private class ButtonClickListener implements ActionListener {
         private boolean labelsAdded = false;
         private JButton greenButton = null;
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            Connection con = null;
-            PreparedStatement statement = null;
+            
             JButton currentButton = (JButton) e.getSource();
-            JLabel changeLabel = null;
-            JLabel attribute = null;
-            JLabel label = null;
+            
             if (currentButton.getText().equals("All History")) {
-                try {
-                    // Assuming 'con' is a Connection object
-                    con = DbConnection.getConnection();
-                    int hx = 30;
-                    int hy = 160;
-                    int hlabelWidth = 400;
-                    int hheight = 16;
-                    int hlabelSpacing = 5;
-                    int labelY = hy;
-
-                    label = new JLabel("<html><b><font face=\"Arial\">Issue</font> <font face=\"Times New Roman\">History</font></b></html>");
-                    label.setBounds(hx, labelY, hlabelWidth, hheight);
-                    labelY += hheight + hlabelSpacing;
-                    jPanel2.add(label);
-
-                    // Prepare the SQL query
-                    String sqlQuery = "SELECT ch.change_id, ch.change_type, ch.stamp_id, "
-                            + "sc.stamp_time AS created_date, "
-                            + "cu.user_login AS created_user_login, " // Added the new column for created_user_login
-                            + "sm.stamp_time AS modified_date, sm.user_id AS modified_user, "
-                            + "ch.attr_id, ch.value_old, ch.value_new, ch.from_folder_id, ch.to_folder_id "
-                            + "FROM changes AS ch "
-                            + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
-                            + "JOIN stamps AS sm ON sm.stamp_id = ch.stamp_id "
-                            + "JOIN users AS cu ON sc.user_id = cu.user_id " // Join 'stamps' with 'users' to get created_user's login
-                            + "WHERE ch.issue_id = ?";
-
-                    statement = con.prepareStatement(sqlQuery);
-                    // Set the issueId parameter
-                    statement.setInt(1, issueId);
-
-                    ResultSet resultSet = statement.executeQuery();
-
-                    // Create a HashMap to store the mapping between attrId and attrName
-                    Map<Integer, String> attrIdToNameMap = new HashMap<>();
-                    try {
-                        String sqlQueryAttributes = "SELECT attr_id, attr_name FROM attr_types";
-                        PreparedStatement attrStatement = con.prepareStatement(sqlQueryAttributes);
-                        ResultSet attrResultSet = attrStatement.executeQuery();
-                        while (attrResultSet.next()) {
-                            int attrId = attrResultSet.getInt("attr_id");
-                            String attrName = attrResultSet.getString("attr_name");
-                            attrIdToNameMap.put(attrId, attrName);
-                        }
-                        attrResultSet.close();
-                        attrStatement.close();
-                    } catch (SQLException c) {
-                        c.printStackTrace();
-                    }
-
-                    while (resultSet.next()) {
-                        int attrId = resultSet.getInt("attr_id");
-
-                        // Use the HashMap to retrieve the attrName corresponding to the attrId
-                        String attrName = attrIdToNameMap.get(attrId);
-
-                        int changeId = resultSet.getInt("change_id");
-                        String changeType = resultSet.getString("change_type");
-                        int stampId = resultSet.getInt("stamp_id");
-                        long createdDateMillis = resultSet.getLong("created_date") * 1000L;
-                        Date createdDate = new Date(createdDateMillis);
-                        String createdUserLogin = resultSet.getString("created_user_login"); // Use the new column name
-                        long modifiedDateMillis = resultSet.getLong("modified_date") * 1000L;
-                        Date modifiedDate = new Date(modifiedDateMillis);
-                        String modifiedUser = resultSet.getString("modified_user");
-                        String valueOld = resultSet.getString("value_old");
-                        String valueNew = resultSet.getString("value_new");
-                        int fromFolderId = resultSet.getInt("from_folder_id");
-                        int toFolderId = resultSet.getInt("to_folder_id");
-                        SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
-                        String formattedCreatedDate = sdf.format(createdDate);
-                        String formattedModifiedDate = sdf.format(modifiedDate);
-
-                        changeLabel = new JLabel(formattedCreatedDate
-                                + " --- " + createdUserLogin);
-                        if(attrName==null && valueOld==null )
-                        {
-                         attribute = new JLabel("Name -> " + valueNew);
-                        attribute.setBounds(hx, labelY, hlabelWidth, hheight);
-                        changeLabel.setBounds(hx, labelY + hheight + hlabelSpacing, hlabelWidth, hheight);
-                        labelY += (hheight + hlabelSpacing) * 2;
-                            jPanel2.add(attribute);
-                        }
-                        else if(attrName==null)
-                        {
-                         attribute = new JLabel("Name -> " + " -> " + valueOld + " -> " + valueNew);
-                        attribute.setBounds(hx, labelY, hlabelWidth, hheight);
-                        changeLabel.setBounds(hx, labelY + hheight + hlabelSpacing, hlabelWidth, hheight);
-                        labelY += (hheight + hlabelSpacing) * 2;
-                            jPanel2.add(attribute);
-                        }
-                        else {
-                        attribute = new JLabel(attrName + " -> " + valueOld + " -> " + valueNew);
-                        attribute.setBounds(hx, labelY, hlabelWidth, hheight);
-                        changeLabel.setBounds(hx, labelY + hheight + hlabelSpacing, hlabelWidth, hheight);
-                        labelY += (hheight + hlabelSpacing) * 2; // Increase labelY to create space between each change
-                        jPanel2.add(attribute);
-                        }
-                        
-                        jPanel2.add(changeLabel);
-                    }
-                    resultSet.close();
-                    statement.close();
-                    con.close();
-                } catch (Exception v) {
-                    v.printStackTrace();
-                }
             } else if (currentButton.getText().equals("Only Comments")) {
             if (labelsAdded) {
-                jPanel2.remove(attribute);
-                jPanel2.remove(changeLabel);
-                jPanel2.remove(label);
                 jPanel2.revalidate();
                 jPanel2.repaint();
                 labelsAdded = false; // Reset the flag after removing the labels
             }
         }else if (currentButton.getText().equals("Only Attachements")) {
-                // Action for Button 3 click
-                jPanel2.remove(attribute);
-                jPanel2.remove(changeLabel);
-                jPanel2.remove(label);
                 System.out.println("Button 3 is clicked!");
-            } else if (currentButton.getText().equals("Comments & Attachements")) {
-                // Action for Button 4 click
-                jPanel2.remove(attribute);
-                jPanel2.remove(changeLabel);
-                jPanel2.remove(label);
+            } else if (currentButton.getText().equals("Comments & Attachements")) { 
                 System.out.println("Button 4 is clicked!");
             }
-            if (greenButton == currentButton) {
-                // If the current button is already green, reset its color to the default
+            if (greenButton == currentButton) { 
                 currentButton.setBackground(UIManager.getColor("Button.background"));
                 greenButton = null;
             } else {
-                if (greenButton != null) {
-                    // If a button is already green, reset its color to the default
+                if (greenButton != null) { 
                     greenButton.setBackground(UIManager.getColor("Button.background"));
-                }
-
-                // Set the current button as the new green button
+                } 
                 currentButton.setBackground(Color.BLUE);
                 greenButton = currentButton;
             }
