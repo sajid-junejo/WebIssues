@@ -68,7 +68,6 @@ public class HomeFrame extends javax.swing.JFrame {
                 List<Folder> folders = projectsDAO.getFoldersForProject(projectId);
                 for (Folder folder : folders) {
                     String folderName = folder.getFolderName();
-                    // FolderName(folderName);
                     String typeName = folder.getTypeName();
                     String nodeValue = folderName + "      [" + typeName + "]";
                     DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(folderName);
@@ -235,6 +234,11 @@ public class HomeFrame extends javax.swing.JFrame {
 
         jScrollPane2.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
         jScrollPane2.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        jScrollPane2.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
+            public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
+                jScrollPane2MouseWheelMoved(evt);
+            }
+        });
 
         jPanel2.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
         jPanel2.setPreferredSize(new java.awt.Dimension(1031, 583));
@@ -515,7 +519,7 @@ public class HomeFrame extends javax.swing.JFrame {
             }
         }
     }//GEN-LAST:event_jTree1MouseClicked
-    
+
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
         jLabel12.setEnabled(true);
         jLabel12.setText("Add Issue");
@@ -599,374 +603,666 @@ public class HomeFrame extends javax.swing.JFrame {
         }
         issue.setRowData(rowData, getColumnNames(tableModel));
     }//GEN-LAST:event_jTable1MouseClicked
-    public void issueAttributes(){
+    public void issueAttributes() {
         int cx = 30;
-            int cy = 40;
-            int clabelWidth = 400;
-            int cheight = 16;
-            int clabelSpacing = 5;
-            try {
-                Connection connection = DbConnection.getConnection();
-                Statement statement = connection.createStatement();
-                String query = "SELECT type_id FROM issue_types WHERE type_name = '" + typeName + "'";
-                ResultSet getTypeId = statement.executeQuery(query);
-                if (getTypeId.next()) {
-                    typeId = getTypeId.getInt("type_id");
-                }
-                String attrQuery = "SELECT attr_name, attr_value "
-                        + "FROM attr_types AS a "
-                        + "LEFT JOIN attr_values AS v ON v.attr_id = a.attr_id AND v.issue_id = " + issueId
-                        + " WHERE a.type_id = " + typeId;
-                ResultSet attrValues = statement.executeQuery(attrQuery);
-
-                int attributeY = cy;
-                while (attrValues.next()) {
-                    String attrName = attrValues.getString("attr_name");
-                    String attrValue = attrValues.getString("attr_value");
-                    if (attrValue == null) {
-                        attrValue = "";
-                    }
-                    attributeLabel = new JLabel(attrName + "    :    " + attrValue);
-                    attributeLabel.setBounds(cx + clabelWidth, attributeY, clabelWidth, cheight);
-                    attributeLabel.setHorizontalAlignment(SwingConstants.LEFT);
-                    jPanel2.add(attributeLabel);
-                    attributeY += cheight + clabelSpacing;
-                }
-                statement.close();
-                connection.close();
-            } catch (Exception e) {
-
-            }
-    }
-    public void buttonsCreation(){
-        int bx = 440;
-            int by = 150;
-            int blabelWidth = 100;
-            int bheight = 20;
-            int blabelSpacing = 5;
-
-            JButton button1 = new JButton("All History");
-            button1.setBounds(bx, by, blabelWidth, bheight);
-            button1.setHorizontalAlignment(SwingConstants.LEADING);
-            button1.addActionListener(new ButtonClickListener());
-
-            JButton button2 = new JButton("Comments");
-            button2.setBounds(bx + (blabelWidth + blabelSpacing), by, blabelWidth, bheight);
-            button2.setHorizontalAlignment(SwingConstants.LEADING);
-            button2.addActionListener(new ButtonClickListener());
-
-            JButton button3 = new JButton("Attachements");
-            button3.setBounds(bx + 2 * (blabelWidth + blabelSpacing), by, blabelWidth, bheight);
-            button3.setHorizontalAlignment(SwingConstants.LEADING);
-            button3.addActionListener(new ButtonClickListener());
-
-            JButton button4 = new JButton("Comments & Attachements");
-            button4.setBounds(bx + 3 * (blabelWidth + blabelSpacing), by, blabelWidth + 50, bheight);
-            button4.setHorizontalAlignment(SwingConstants.LEADING);
-            button4.addActionListener(new ButtonClickListener());
-            jPanel2.add(button1);
-            jPanel2.add(button2);
-            jPanel2.add(button3);
-            jPanel2.add(button4);
-            button1.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    //button1.setBackground(Color.RED);
-                    jPanel2.removeAll();
-                    issueDetails();
-                    issueAttributes();
-                    history();
-                    buttonsCreation();
-                    button2.setBackground(null);
-                    button3.setBackground(null);
-                    button4.setBackground(null);
-                }
-            });
-            button2.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    button1.setBackground(null);
-                    button4.setBackground(null);
-                    button3.setBackground(null);
-                }
-            });
-            button3.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    button1.setBackground(null);
-                    button2.setBackground(null);
-                    button4.setBackground(null);
-                }
-            });
-            button4.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    button1.setBackground(null);
-                    button2.setBackground(null);
-                    button3.setBackground(null);
-                }
-            });
-            jPanel2.revalidate();
-            jPanel2.repaint();
-            jScrollPane2.revalidate();
-            jScrollPane2.repaint();
-    }
-    public void issueDetails(){
-        int x = 30;
-            int y = 40;
-            int labelWidth = 400;
-            int height = 20;
-            int labelSpacing = 5;
-            DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
-            Object[] rowData = new Object[tableModel.getColumnCount()];
-            
-            String modified_name = "";
-
-            for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
-                String columnName = tableModel.getColumnName(i);
-                Connection connection = null;
-                Statement statement = null;
-                if (columnName.equalsIgnoreCase("ID")) {
-                    JLabel idLabel = new JLabel(columnName + ": " + rowData[i]);
-                    idLabel.setBounds(x, y, labelWidth, height);
-                    idLabel.setHorizontalAlignment(SwingConstants.LEFT);
-                    jPanel2.add(idLabel);
-                    y += height + labelSpacing; 
-                    issueId = (int) rowData[i];
-
-                    try {
-                        connection = DbConnection.getConnection();
-                        statement = connection.createStatement();
-
-                        String query = "SELECT sc.stamp_time AS created_date, uc.user_name AS created_by "
-                                + "FROM issues AS i "
-                                + "JOIN stamps AS sc ON sc.stamp_id = i.issue_id "
-                                + "JOIN users AS uc ON uc.user_id = sc.user_id "
-                                + "JOIN folders AS f ON f.folder_id = i.folder_id "
-                                + "WHERE i.issue_id =" + issueId;
-
-                        ResultSet resultSet = statement.executeQuery(query);
-                        if (!resultSet.next()) {
-                            System.out.println("No rows found for the query: " + query);
-                        }
-
-                        while (resultSet.next()) {
-                            System.out.println("Query: " + query);
-                            String createdDate = resultSet.getString("created_date");
-                            String createdBy = resultSet.getString("created_by");
-                            String createdLabelText = "Created Date: " + createdDate + ", Created By: " + createdBy;
-                            System.out.println(createdLabelText);
-                            JLabel createdLabel = new JLabel(createdDate + " --- " + createdBy);
-                            createdLabel.setBounds(x, y, labelWidth, height);
-                            createdLabel.setHorizontalAlignment(SwingConstants.LEFT);
-                            jPanel2.add(createdLabel);
-                            y += height + labelSpacing; // Update the y coordinate for the next label
-                        }
-
-                        String getTypeQuery = "SELECT it.type_name "
-                                + "FROM issues i "
-                                + "JOIN folders f ON i.folder_id = f.folder_id "
-                                + "JOIN issue_types it ON f.type_id = it.type_id "
-                                + "WHERE i.issue_id = " + rowData[i];
-
-                        ResultSet typeResultSet = statement.executeQuery(getTypeQuery);
-                        if (typeResultSet.next()) {
-                            typeName = typeResultSet.getString("type_name");
-                            JLabel typeLabel = new JLabel("TYPE: " + typeName);
-                            typeLabel.setBounds(x, y, labelWidth, height);
-                            typeLabel.setHorizontalAlignment(SwingConstants.LEFT);
-                            jPanel2.add(typeLabel);
-                            y += height + labelSpacing;
-                        } else {
-                            JLabel nullLabel = new JLabel("TYPE: Null");
-                            nullLabel.setBounds(x, y, labelWidth, height);
-                            nullLabel.setHorizontalAlignment(SwingConstants.LEFT);
-                            jPanel2.add(nullLabel);
-                            y += height + labelSpacing; // Update the y coordinate for the next label
-                        }
-                    } catch (Exception e) {
-                        // Handle exceptions
-                    }
-                    continue;
-                }
-                if (columnName.equalsIgnoreCase("modified by")) {
-                    modified_name = (String) rowData[i];
-                    break;
-                }
-
-                if (columnName.equalsIgnoreCase("issue_name")) {
-                    JLabel issue = new JLabel("<html><b>" + rowData[i] + "</b></html>");
-                    issue.setBounds(x, 10, labelWidth, height);
-                    issue.setHorizontalAlignment(SwingConstants.LEFT);
-                    jPanel2.add(issue);
-                } else {
-                    JLabel rowLabel = new JLabel(columnName + ": " + rowData[i]);
-                    rowLabel.setBounds(x, y, labelWidth, height);
-                    rowLabel.setHorizontalAlignment(SwingConstants.LEFT);
-                    jPanel2.add(rowLabel);
-                    y += height + labelSpacing; // Update the y coordinate for the next label
-                }
-            }
-    }
-    public void history() {
-    Connection con = null;
-    PreparedStatement statement = null;
-    JLabel changeLabel = null;
-    JLabel attribute = null;
-
-    try {
-        con = DbConnection.getConnection();
-        int hx = 30;
-        int hy = 160;
-        int hlabelWidth = 400;
-        int hheight = 16;
-        int hlabelSpacing = 5;
-        int labelY = hy;
-
-        JLabel label = new JLabel("<html><b>Issue History</b></html>");
-        label.setBounds(hx, labelY, hlabelWidth, hheight);
-        labelY += hheight + hlabelSpacing;
-        jPanel2.add(label);
-
-        String sqlQuery = "SELECT ch.change_id, ch.change_type, ch.stamp_id, "
-                + "sc.stamp_time AS created_date, "
-                + "cu.user_login AS created_user_login, " 
-                + "sm.stamp_time AS modified_date, sm.user_id AS modified_user, "
-                + "ch.attr_id, ch.value_old, ch.value_new, ch.from_folder_id, ch.to_folder_id "
-                + "FROM changes AS ch "
-                + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
-                + "JOIN stamps AS sm ON sm.stamp_id = ch.stamp_id "
-                + "JOIN users AS cu ON sc.user_id = cu.user_id " 
-                + "WHERE ch.issue_id = ?"
-                + " ORDER BY created_date DESC";
-
-        statement = con.prepareStatement(sqlQuery);
-        // Set the issueId parameter
-        statement.setInt(1, issueId);
-
-        ResultSet resultSet = statement.executeQuery();
-        Map<String, List<String>> changesByDate = new LinkedHashMap<>();
-        Map<Integer, String> attrIdToNameMap = new HashMap<>();
-
+        int cy = 40;
+        int clabelWidth = 400;
+        int cheight = 16;
+        int clabelSpacing = 5;
         try {
-            String sqlQueryAttributes = "SELECT attr_id, attr_name FROM attr_types";
-            PreparedStatement attrStatement = con.prepareStatement(sqlQueryAttributes);
-            ResultSet attrResultSet = attrStatement.executeQuery();
-            while (attrResultSet.next()) {
-                int attrId = attrResultSet.getInt("attr_id");
-                String attrName = attrResultSet.getString("attr_name");
-                attrIdToNameMap.put(attrId, attrName);
+            Connection connection = DbConnection.getConnection();
+            Statement statement = connection.createStatement();
+            String query = "SELECT type_id FROM issue_types WHERE type_name = '" + typeName + "'";
+            ResultSet getTypeId = statement.executeQuery(query);
+            if (getTypeId.next()) {
+                typeId = getTypeId.getInt("type_id");
             }
-            attrResultSet.close();
-            attrStatement.close();
-        } catch (SQLException c) {
-            c.printStackTrace();
-        }
+            String attrQuery = "SELECT attr_name, attr_value "
+                    + "FROM attr_types AS a "
+                    + "LEFT JOIN attr_values AS v ON v.attr_id = a.attr_id AND v.issue_id = " + issueId
+                    + " WHERE a.type_id = " + typeId;
+            ResultSet attrValues = statement.executeQuery(attrQuery);
 
-        while (resultSet.next()) {
-            int attrId = resultSet.getInt("attr_id");
-            String attrName = attrIdToNameMap.get(attrId);
-
-            int changeId = resultSet.getInt("change_id");
-            String changeType = resultSet.getString("change_type");
-            int stampId = resultSet.getInt("stamp_id");
-            long createdDateMillis = resultSet.getLong("created_date") * 1000L;
-            Date createdDate = new Date(createdDateMillis);
-            String createdUserLogin = resultSet.getString("created_user_login"); // Use the new column name
-            long modifiedDateMillis = resultSet.getLong("modified_date") * 1000L;
-            Date modifiedDate = new Date(modifiedDateMillis);
-            String modifiedUser = resultSet.getString("modified_user");
-            String valueOld = resultSet.getString("value_old");
-            String valueNew = resultSet.getString("value_new");
-            int fromFolderId = resultSet.getInt("from_folder_id");
-            int toFolderId = resultSet.getInt("to_folder_id");
-            SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
-            String formattedCreatedDate = sdf.format(createdDate);
-            String formattedModifiedDate = sdf.format(modifiedDate);
-
-            String changeLabelString = formattedCreatedDate + " --- " + createdUserLogin;
-            String attributeString = "";
-
-            if (attrName == null && valueOld == null) {
-                attributeString = "Name -> " + valueNew;
-            } else if (attrName == null) {
-                attributeString = "Name -> " + " -> " + valueOld + " -> " + valueNew;
-            } else {
-                attributeString = attrName + " -> " + valueOld + " -> " + valueNew;
+            int attributeY = cy;
+            while (attrValues.next()) {
+                String attrName = attrValues.getString("attr_name");
+                String attrValue = attrValues.getString("attr_value");
+                if (attrValue == null) {
+                    attrValue = "";
+                }
+                attributeLabel = new JLabel(attrName + "    :    " + attrValue);
+                attributeLabel.setBounds(cx + clabelWidth, attributeY, clabelWidth, cheight);
+                attributeLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                jPanel2.add(attributeLabel);
+                attributeY += cheight + clabelSpacing;
             }
+            statement.close();
+            connection.close();
+        } catch (Exception e) {
 
-            List<String> changesList = changesByDate.getOrDefault(changeLabelString, new ArrayList<>());
-            changesList.add(attributeString);
-            changesByDate.put(changeLabelString, changesList);
         }
-
-        resultSet.close();
-        statement.close();
-        con.close();
-
-        for (Map.Entry<String, List<String>> entry : changesByDate.entrySet()) {
-            String changeLabelString = entry.getKey();
-            List<String> changesList = entry.getValue();
-
-            changeLabel = new JLabel("<html><b>" + changeLabelString + "</b></html>");
-            changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
-            jPanel2.add(changeLabel);
-
-            // Update the labelY to avoid overlapping of changeLabel and attribute labels
-            labelY += (hheight + hlabelSpacing);
-
-            StringBuilder bulletList = new StringBuilder("<html><ul>");
-
-            for (String attributeString : changesList) {
-                bulletList.append("<li>").append(attributeString).append("</li>");
-            }
-
-            bulletList.append("</ul></html>");
-
-            attribute = new JLabel(bulletList.toString());
-            attribute.setBounds(hx, labelY, hlabelWidth, hheight * changesList.size());
-            jPanel2.add(attribute);
-
-            // Update the labelY to account for the height of the bullet list
-            labelY += (hheight + hlabelSpacing) * changesList.size();
-
-            // Add some space after displaying all attribute labels
-            labelY += hlabelSpacing + 5;
-        }
-    } catch (Exception v) {
-        v.printStackTrace();
     }
+
+    public void buttonsCreation() {
+        int bx = 440;
+        int by = 160;
+        int blabelWidth = 100;
+        int bheight = 20;
+        int blabelSpacing = 5;
+
+        JButton button1 = new JButton("All History");
+        button1.setBounds(bx, by, blabelWidth, bheight);
+        button1.setHorizontalAlignment(SwingConstants.LEADING);
+        button1.addActionListener(new ButtonClickListener());
+
+        JButton button2 = new JButton("Comments");
+        button2.setBounds(bx + (blabelWidth + blabelSpacing), by, blabelWidth, bheight);
+        button2.setHorizontalAlignment(SwingConstants.LEADING);
+        button2.addActionListener(new ButtonClickListener());
+
+        JButton button3 = new JButton("Attachements");
+        button3.setBounds(bx + 2 * (blabelWidth + blabelSpacing), by, blabelWidth, bheight);
+        button3.setHorizontalAlignment(SwingConstants.LEADING);
+        button3.addActionListener(new ButtonClickListener());
+
+        JButton button4 = new JButton("Comments & Attachements");
+        button4.setBounds(bx + 3 * (blabelWidth + blabelSpacing), by, blabelWidth + 50, bheight);
+        button4.setHorizontalAlignment(SwingConstants.LEADING);
+        button4.addActionListener(new ButtonClickListener());
+        jPanel2.add(button1);
+        jPanel2.add(button2);
+        jPanel2.add(button3);
+        jPanel2.add(button4);
+        button1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                button1.setBackground(Color.GREEN);
+                jPanel2.removeAll();
+                issueDetails();
+                buttonsCreation();
+                issueAttributes();
+                history();
+                buttonsCreation();
+                button2.setBackground(null);
+                button3.setBackground(null);
+                button4.setBackground(null);
+            }
+        });
+        button2.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jPanel2.removeAll();
+                issueDetails();
+                issueAttributes();
+                buttonsCreation();
+                getComment();
+                button1.setBackground(null);
+                button4.setBackground(null);
+                button3.setBackground(null);
+            }
+        });
+        button3.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jPanel2.removeAll();
+                issueDetails();
+                issueAttributes();
+                buttonsCreation();
+                getFiles();
+                button1.setBackground(null);
+                button2.setBackground(null);
+                button4.setBackground(null);
+            }
+        });
+        button4.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jPanel2.removeAll();
+                issueDetails();
+                issueAttributes();
+                buttonsCreation();
+                getCommentsAndFiles();
+                button1.setBackground(null);
+                button2.setBackground(null);
+                button3.setBackground(null);
+            }
+        });
+        jPanel2.revalidate();
+        jPanel2.repaint();
+        jScrollPane2.revalidate();
+        jScrollPane2.repaint();
+    }
+
+    public void getCommentsAndFiles() {
+        Connection con = null;
+        PreparedStatement statement = null;
+        JLabel changeLabel = null;
+        JLabel attribute = null;
+        String commentText = null;
+        String fileName = null;
+        String fileDescr = null;
+        try {
+            con = DbConnection.getConnection();
+            int hx = 30;
+            int hy = 160;
+            int hlabelWidth = 400;
+            int hheight = 16;
+            int hlabelSpacing = 5;
+            int labelY = hy;
+            JLabel label = new JLabel("<html><b>Issue History</b></html>");
+            label.setBounds(hx, labelY, hlabelWidth, hheight);
+            labelY += hheight + hlabelSpacing;
+            jPanel2.add(label);
+            int issueID = issueId;
+
+            String sqlQuery = "SELECT fl.file_id, fl.file_name, fl.file_size, fl.file_descr, fl.file_storage, i.issue_id, i.folder_id, sc.user_id, sc.stamp_time, u.user_login "
+                    + "FROM files AS fl "
+                    + "JOIN changes AS ch ON ch.change_id = fl.file_id "
+                    + "JOIN issues AS i ON i.issue_id = ch.issue_id "
+                    + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
+                    + "JOIN folders AS f ON f.folder_id = i.folder_id "
+                    + "JOIN projects AS p ON p.project_id = f.project_id "
+                    + "JOIN users AS u ON u.user_id = sc.user_id "
+                    + "WHERE i.issue_id = ?";
+
+            statement = con.prepareStatement(sqlQuery);
+            statement.setInt(1, issueID);
+
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                //int fileId = resultSet.getInt("file_id");
+                fileName = resultSet.getString("file_name");
+                //long fileSize = resultSet.getLong("file_size");
+                fileDescr = resultSet.getString("file_descr");
+                //String fileStorage = resultSet.getString("file_storage");
+                //int issueIdResult = resultSet.getInt("issue_id");
+                //int folderId = resultSet.getInt("folder_id");
+                //int userId = resultSet.getInt("user_id");
+                long stampTime = resultSet.getLong("stamp_time") * 1000L;
+                Date createdDate = new Date(stampTime);
+                SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
+                String formattedCreatedDate = sdf.format(createdDate);
+                String name = resultSet.getString("user_login");
+            
+                if (fileName == null || fileName.isEmpty()) {
+                changeLabel = new JLabel("There are no files");
+                changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+                jPanel2.add(changeLabel);
+            } else {
+                    changeLabel = new JLabel("<html><b>"+formattedCreatedDate+" --- "+name+"</b></html>");
+                    changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+                    jPanel2.add(changeLabel);
+                    labelY += hheight + hlabelSpacing;
+                attribute = new JLabel("<html><li>"+fileName + "---" + fileDescr+"</li></html>");
+                attribute.setBounds(hx, labelY, hlabelWidth, hheight);
+                jPanel2.add(attribute);
+            }
+                labelY += hheight + hlabelSpacing+5;
+            }
+            sqlQuery = "SELECT c.comment_id, c.comment_text, c.comment_format, i.issue_id, i.folder_id, sc.user_id, sc.stamp_time, u.user_login "
+                + "FROM comments AS c "
+                + "JOIN changes AS ch ON ch.change_id = c.comment_id "
+                + "JOIN issues AS i ON i.issue_id = ch.issue_id "
+                + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
+                + "JOIN folders AS f ON f.folder_id = i.folder_id "
+                + "JOIN projects AS p ON p.project_id = f.project_id "
+                + "JOIN users AS u ON u.user_id = sc.user_id "
+                + "WHERE i.issue_id = ?";
+
+            statement = con.prepareStatement(sqlQuery);
+            statement.setInt(1, issueID);
+
+            resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                //int commentId = resultSet.getInt("comment_id");
+                commentText = resultSet.getString("comment_text");
+                long stampTime = resultSet.getLong("stamp_time") * 1000L;
+                Date createdDate = new Date(stampTime);
+                SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
+                String formattedCreatedDate = sdf.format(createdDate);
+                String name = resultSet.getString("user_login");
+            //String commentFormat = resultSet.getString("comment_format");
+                //int retrievedIssue = resultSet.getInt("issue_id"); // Update issueId with the retrieved value
+                //int folderId = resultSet.getInt("folder_id");
+                //int userId = resultSet.getInt("user_id");
+                if (commentText == null || commentText.isEmpty()) {
+                   
+                    changeLabel = new JLabel("There are no comments");
+                    changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+                    jPanel2.add(changeLabel);
+            } else {
+                    attribute = new JLabel("<html><b>"+formattedCreatedDate+" --- "+name+"</b></html>");
+                    attribute.setBounds(hx, labelY, hlabelWidth, hheight);
+                    jPanel2.add(attribute);
+                    labelY += hheight + hlabelSpacing;
+                    changeLabel = new JLabel("<html><li>"+commentText+"</li></html>");
+                    changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+                    jPanel2.add(changeLabel);
+            }
+
+            labelY += hheight + hlabelSpacing+5;
+            }           
+          
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void getFiles() {
+        Connection con = null;
+        PreparedStatement statement = null;
+        JLabel changeLabel = null;
+        JLabel attribute = null;
+        String fileName = null;
+        String fileDescr = null;
+        try {
+            con = DbConnection.getConnection();
+            int hx = 30;
+            int hy = 160;
+            int hlabelWidth = 400;
+            int hheight = 16;
+            int hlabelSpacing = 5;
+            int labelY = hy;
+            JLabel label = new JLabel("<html><b>Issue History</b></html>");
+            label.setBounds(hx, labelY, hlabelWidth, hheight);
+            labelY += hheight + hlabelSpacing;
+            jPanel2.add(label);
+            int issueID = issueId;
+
+            String sqlQuery = "SELECT fl.file_id, fl.file_name, fl.file_size, fl.file_descr, fl.file_storage, i.issue_id, i.folder_id, sc.user_id, sc.stamp_time, u.user_login "
+                    + "FROM files AS fl "
+                    + "JOIN changes AS ch ON ch.change_id = fl.file_id "
+                    + "JOIN issues AS i ON i.issue_id = ch.issue_id "
+                    + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
+                    + "JOIN folders AS f ON f.folder_id = i.folder_id "
+                    + "JOIN projects AS p ON p.project_id = f.project_id "
+                    + "JOIN users AS u ON u.user_id = sc.user_id "
+                    + "WHERE i.issue_id = ?";
+
+            statement = con.prepareStatement(sqlQuery);
+            statement.setInt(1, issueID);
+
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                //int fileId = resultSet.getInt("file_id");
+                fileName = resultSet.getString("file_name");
+                //long fileSize = resultSet.getLong("file_size");
+                fileDescr = resultSet.getString("file_descr");
+                //String fileStorage = resultSet.getString("file_storage");
+                //int issueIdResult = resultSet.getInt("issue_id");
+                //int folderId = resultSet.getInt("folder_id");
+                //int userId = resultSet.getInt("user_id");
+                long stampTime = resultSet.getLong("stamp_time") * 1000L;
+                Date createdDate = new Date(stampTime);
+                SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
+                String formattedCreatedDate = sdf.format(createdDate);
+                String name = resultSet.getString("user_login");
+            
+                if (fileName == null || fileName.isEmpty()) {
+                changeLabel = new JLabel("There are no files");
+                changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+                jPanel2.add(changeLabel);
+            } else {
+                    changeLabel = new JLabel("<html><b>"+formattedCreatedDate+" --- "+name+"</b></html>");
+                    changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+                    jPanel2.add(changeLabel);
+                    labelY += hheight + hlabelSpacing;
+                attribute = new JLabel("<html><li>"+fileName + "---" + fileDescr+"</li></html>");
+                attribute.setBounds(hx, labelY, hlabelWidth, hheight);
+                jPanel2.add(attribute);
+            }
+                labelY += hheight + hlabelSpacing+5;
+            }
+            
+            resultSet.close();
+            statement.close();
+            con.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void getComment() {
+        Connection con = null;
+        PreparedStatement statement = null;
+        JLabel changeLabel = null;
+        JLabel attribute = null;
+        String commentText = null;
+        try {
+            con = DbConnection.getConnection();
+            int hx = 30;
+            int hy = 160;
+            int hlabelWidth = 400;
+            int hheight = 16;
+            int hlabelSpacing = 5;
+            int labelY = hy;
+            JLabel label = new JLabel("<html><b>Issue History</b></html>");
+            label.setBounds(hx, labelY, hlabelWidth, hheight);
+            labelY += hheight + hlabelSpacing;
+            jPanel2.add(label);
+
+            // Move the declaration and assignment of issueId here
+            int issueID = issueId; // Replace 123 with the actual issueId you want to query
+
+            String sqlQuery = "SELECT c.comment_id, c.comment_text, c.comment_format, i.issue_id, i.folder_id, sc.user_id, sc.stamp_time, u.user_login "
+                + "FROM comments AS c "
+                + "JOIN changes AS ch ON ch.change_id = c.comment_id "
+                + "JOIN issues AS i ON i.issue_id = ch.issue_id "
+                + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
+                + "JOIN folders AS f ON f.folder_id = i.folder_id "
+                + "JOIN projects AS p ON p.project_id = f.project_id "
+                + "JOIN users AS u ON u.user_id = sc.user_id "
+                + "WHERE i.issue_id = ?";
+
+
+            statement = con.prepareStatement(sqlQuery);
+            statement.setInt(1, issueID);
+
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+    // int commentId = resultSet.getInt("comment_id");
+    commentText = resultSet.getString("comment_text");
+    long stampTime = resultSet.getLong("stamp_time") * 1000L;
+    Date createdDate = new Date(stampTime);
+    SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
+    String formattedCreatedDate = sdf.format(createdDate);
+    String name = resultSet.getString("user_login");
+    
+    if (commentText == null || commentText.isEmpty()) {
+        // If commentText is null or empty, display "There are no comments" label
+        changeLabel = new JLabel("There are no comments");
+        changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+        jPanel2.add(changeLabel);
+    } else {
+        // If commentText is not empty, display the comment details
+        attribute = new JLabel("<html><b>"+formattedCreatedDate+" --- "+name+"</b></html>");
+        attribute.setBounds(hx, labelY, hlabelWidth, hheight);
+        jPanel2.add(attribute);
+        labelY += hheight + hlabelSpacing;
+        changeLabel = new JLabel("<html><li>"+commentText+"</li></html>");
+        changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+        jPanel2.add(changeLabel);
+    }
+
+    labelY += hheight + hlabelSpacing + 5;
 }
 
+            resultSet.close();
+            statement.close();
+            con.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void issueDetails() {
+        int x = 30;
+        int y = 40;
+        int labelWidth = 400;
+        int height = 20;
+        int labelSpacing = 5;
+        DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
+        Object[] rowData = new Object[tableModel.getColumnCount()];
+
+        String modified_name = "";
+
+        for (int i = 0; i < tableModel.getColumnCount(); i++) {
+            rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
+            String columnName = tableModel.getColumnName(i);
+            Connection connection = null;
+            Statement statement = null;
+            if (columnName.equalsIgnoreCase("ID")) {
+                JLabel idLabel = new JLabel(columnName + ": " + rowData[i]);
+                idLabel.setBounds(x, y, labelWidth, height);
+                idLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                jPanel2.add(idLabel);
+                y += height + labelSpacing;
+                issueId = (int) rowData[i];
+
+                try {
+                    connection = DbConnection.getConnection();
+                    statement = connection.createStatement();
+
+                    String query = "SELECT sc.stamp_time AS created_date, uc.user_name AS created_by "
+                            + "FROM issues AS i "
+                            + "JOIN stamps AS sc ON sc.stamp_id = i.issue_id "
+                            + "JOIN users AS uc ON uc.user_id = sc.user_id "
+                            + "JOIN folders AS f ON f.folder_id = i.folder_id "
+                            + "WHERE i.issue_id =" + issueId;
+
+                    ResultSet resultSet = statement.executeQuery(query);
+                    if (!resultSet.next()) {
+                        System.out.println("No rows found for the query: " + query);
+                    }
+
+                    while (resultSet.next()) {
+                        System.out.println("Query: " + query);
+                        String createdDate = resultSet.getString("created_date");
+                        String createdBy = resultSet.getString("created_by");
+                        String createdLabelText = "Created Date: " + createdDate + ", Created By: " + createdBy;
+                        System.out.println(createdLabelText);
+                        JLabel createdLabel = new JLabel(createdDate + " --- " + createdBy);
+                        createdLabel.setBounds(x, y, labelWidth, height);
+                        createdLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                        jPanel2.add(createdLabel);
+                        y += height + labelSpacing; 
+                    }
+
+                    String getTypeQuery = "SELECT it.type_name "
+                            + "FROM issues i "
+                            + "JOIN folders f ON i.folder_id = f.folder_id "
+                            + "JOIN issue_types it ON f.type_id = it.type_id "
+                            + "WHERE i.issue_id = " + rowData[i];
+
+                    ResultSet typeResultSet = statement.executeQuery(getTypeQuery);
+                    if (typeResultSet.next()) {
+                        typeName = typeResultSet.getString("type_name");
+                        JLabel typeLabel = new JLabel("TYPE: " + typeName);
+                        typeLabel.setBounds(x, y, labelWidth, height);
+                        typeLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                        jPanel2.add(typeLabel);
+                        y += height + labelSpacing;
+                    } else {
+                        JLabel nullLabel = new JLabel("TYPE: Null");
+                        nullLabel.setBounds(x, y, labelWidth, height);
+                        nullLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                        jPanel2.add(nullLabel);
+                        y += height + labelSpacing; 
+                    }
+                } catch (Exception e) {
+                    // Handle exceptions
+                }
+                continue;
+            }
+            if (columnName.equalsIgnoreCase("modified by")) {
+                modified_name = (String) rowData[i];
+                break;
+            }
+
+            if (columnName.equalsIgnoreCase("issue_name")) {
+                JLabel issue = new JLabel("<html><b>" + rowData[i] + "</b></html>");
+                issue.setBounds(x, 10, labelWidth, height);
+                issue.setHorizontalAlignment(SwingConstants.LEFT);
+                jPanel2.add(issue);
+            } else {
+                JLabel rowLabel = new JLabel(columnName + ": " + rowData[i]);
+                rowLabel.setBounds(x, y, labelWidth, height);
+                rowLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                jPanel2.add(rowLabel);
+                y += height + labelSpacing; 
+            }
+        }
+    }
+
+    public void history() {
+        Connection con = null;
+        PreparedStatement statement = null;
+        JLabel changeLabel = null;
+        JLabel attribute = null;
+
+        try {
+            con = DbConnection.getConnection();
+            int hx = 30;
+            int hy = 160;
+            int hlabelWidth = 400;
+            int hheight = 16;
+            int hlabelSpacing = 5;
+            int labelY = hy;
+
+            JLabel label = new JLabel("<html><b>Issue History</b></html>");
+            label.setBounds(hx, labelY, hlabelWidth, hheight);
+            labelY += hheight + hlabelSpacing;
+            jPanel2.add(label);
+
+            String sqlQuery = "SELECT ch.change_id, ch.change_type, ch.stamp_id, "
+                    + "sc.stamp_time AS created_date, "
+                    + "cu.user_login AS created_user_login, "
+                    + "sm.stamp_time AS modified_date, sm.user_id AS modified_user, "
+                    + "ch.attr_id, ch.value_old, ch.value_new, ch.from_folder_id, ch.to_folder_id "
+                    + "FROM changes AS ch "
+                    + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
+                    + "JOIN stamps AS sm ON sm.stamp_id = ch.stamp_id "
+                    + "JOIN users AS cu ON sc.user_id = cu.user_id "
+                    + "WHERE ch.issue_id = ?"
+                    + " ORDER BY created_date DESC";
+
+            statement = con.prepareStatement(sqlQuery);
+            // Set the issueId parameter
+            statement.setInt(1, issueId);
+
+            ResultSet resultSet = statement.executeQuery();
+            Map<String, List<String>> changesByDate = new LinkedHashMap<>();
+            Map<Integer, String> attrIdToNameMap = new HashMap<>();
+
+            try {
+                String sqlQueryAttributes = "SELECT attr_id, attr_name FROM attr_types";
+                PreparedStatement attrStatement = con.prepareStatement(sqlQueryAttributes);
+                ResultSet attrResultSet = attrStatement.executeQuery();
+                while (attrResultSet.next()) {
+                    int attrId = attrResultSet.getInt("attr_id");
+                    String attrName = attrResultSet.getString("attr_name");
+                    attrIdToNameMap.put(attrId, attrName);
+                }
+                attrResultSet.close();
+                attrStatement.close();
+            } catch (SQLException c) {
+                c.printStackTrace();
+            }
+
+            while (resultSet.next()) {
+                int attrId = resultSet.getInt("attr_id");
+                String attrName = attrIdToNameMap.get(attrId);
+
+                int changeId = resultSet.getInt("change_id");
+                String changeType = resultSet.getString("change_type");
+                int stampId = resultSet.getInt("stamp_id");
+                long createdDateMillis = resultSet.getLong("created_date") * 1000L;
+                Date createdDate = new Date(createdDateMillis);
+                String createdUserLogin = resultSet.getString("created_user_login"); // Use the new column name
+                long modifiedDateMillis = resultSet.getLong("modified_date") * 1000L;
+                Date modifiedDate = new Date(modifiedDateMillis);
+                String modifiedUser = resultSet.getString("modified_user");
+                String valueOld = resultSet.getString("value_old");
+                String valueNew = resultSet.getString("value_new");
+                int fromFolderId = resultSet.getInt("from_folder_id");
+                int toFolderId = resultSet.getInt("to_folder_id");
+                SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
+                String formattedCreatedDate = sdf.format(createdDate);
+                String formattedModifiedDate = sdf.format(modifiedDate);
+
+                String changeLabelString = formattedCreatedDate + " --- " + createdUserLogin;
+                String attributeString = "";
+
+                if (attrName == null && valueOld == null) {
+                    attributeString = "Name -> " + valueNew;
+                } else if (attrName == null) {
+                    attributeString = "Name -> " + " -> " + valueOld + " -> " + valueNew;
+                } else {
+                    if (valueOld == null || valueOld.isEmpty()) {
+                        attributeString = attrName + " -> empty -> " + valueNew;
+                    } else if (valueNew == null || valueNew.isEmpty()) {
+                        attributeString = attrName + " -> " + valueOld + " -> empty";
+                    } else {
+                        attributeString = attrName + " -> " + valueOld + " -> " + valueNew;
+                    }
+                }
+
+                List<String> changesList = changesByDate.getOrDefault(changeLabelString, new ArrayList<>());
+                changesList.add(attributeString);
+                changesByDate.put(changeLabelString, changesList);
+            }
+
+            resultSet.close();
+            statement.close();
+            con.close();
+
+            for (Map.Entry<String, List<String>> entry : changesByDate.entrySet()) {
+                String changeLabelString = entry.getKey();
+                List<String> changesList = entry.getValue();
+
+                changeLabel = new JLabel("<html><b>" + changeLabelString + "</b></html>");
+                changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+                jPanel2.add(changeLabel);
+
+                // Update the labelY to avoid overlapping of changeLabel and attribute labels
+                labelY += (hheight + hlabelSpacing);
+
+                StringBuilder bulletList = new StringBuilder("<html><ul>");
+
+                for (String attributeString : changesList) {
+                    bulletList.append("<li>").append(attributeString).append("</li>");
+                }
+
+                bulletList.append("</ul></html>");
+
+                attribute = new JLabel(bulletList.toString());
+                attribute.setBounds(hx, labelY, hlabelWidth, hheight * changesList.size());
+                jPanel2.add(attribute);
+
+                // Update the labelY to account for the height of the bullet list
+                labelY += (hheight + hlabelSpacing) * changesList.size();
+
+                // Add some space after displaying all attribute labels
+                labelY += hlabelSpacing + 5;
+            }
+        } catch (Exception v) {
+            v.printStackTrace();
+        }
+    }
+
     private class ButtonClickListener implements ActionListener {
+
         private boolean labelsAdded = false;
         private JButton greenButton = null;
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            
+
             JButton currentButton = (JButton) e.getSource();
-            
+
             if (currentButton.getText().equals("All History")) {
             } else if (currentButton.getText().equals("Only Comments")) {
-            if (labelsAdded) {
-                jPanel2.revalidate();
-                jPanel2.repaint();
-                labelsAdded = false; // Reset the flag after removing the labels
-            }
-        }else if (currentButton.getText().equals("Only Attachements")) {
+                if (labelsAdded) {
+                    jPanel2.revalidate();
+                    jPanel2.repaint();
+                    labelsAdded = false; // Reset the flag after removing the labels
+                }
+            } else if (currentButton.getText().equals("Only Attachements")) {
                 System.out.println("Button 3 is clicked!");
-            } else if (currentButton.getText().equals("Comments & Attachements")) { 
+            } else if (currentButton.getText().equals("Comments & Attachements")) {
                 System.out.println("Button 4 is clicked!");
             }
-            if (greenButton == currentButton) { 
+            if (greenButton == currentButton) {
                 currentButton.setBackground(UIManager.getColor("Button.background"));
                 greenButton = null;
             } else {
-                if (greenButton != null) { 
+                if (greenButton != null) {
                     greenButton.setBackground(UIManager.getColor("Button.background"));
-                } 
+                }
                 currentButton.setBackground(Color.BLUE);
                 greenButton = currentButton;
             }
@@ -1002,12 +1298,19 @@ public class HomeFrame extends javax.swing.JFrame {
         jLabel12.setEnabled(true);
         jLabel12.setText("Add Issue");
         if (jLabel12.getText() == "Add Issue") {
-            //System.out.println("add issue clicked");
         } else if (jLabel12.getText() == "Add Folder") {
-            // System.out.println("add folder is clicked");
         }
         //
     }//GEN-LAST:event_jScrollPane3MouseClicked
+
+    private void jScrollPane2MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_jScrollPane2MouseWheelMoved
+        // TODO add your handling code here:
+        int notches = evt.getWheelRotation();
+        evt.consume(); // Consume the original event to prevent default scrolling
+        JScrollBar verticalScrollBar = jScrollPane2.getVerticalScrollBar();
+        int newValue = verticalScrollBar.getValue() + (notches * verticalScrollBar.getUnitIncrement() * 20);
+        verticalScrollBar.setValue(newValue);
+    }//GEN-LAST:event_jScrollPane2MouseWheelMoved
 
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */

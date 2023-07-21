@@ -49,7 +49,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         int componentWidth = 500;
         int height = 28;
         int spacing = 7;
-        attrValues = new HashMap<>();
+       // attrValues = new HashMap<>();
 
         for (int i = 0; i < numFields; i++) {
             if (columnNames[i].equalsIgnoreCase("LOCATION") && rowData[i] != null) {
@@ -81,7 +81,7 @@ public class AddNewIssue extends javax.swing.JFrame {
 
                 if (typeNameResultSet.next()) {
                     String typeName = typeNameResultSet.getString("type_name");
-                    typename.setText(typeName); 
+                    typename.setText(typeName);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -142,7 +142,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                             }
 
                             jPanel5.add(comboBox);
-                            attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
+                            //attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
                         } else if (attrDef.startsWith("NUMERIC")) {
                             double minValue = 0.0;
                             double maxValue = 0.0;
@@ -161,7 +161,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                                 JTextField textField = new JTextField();
                                 textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                                 jPanel5.add(textField);
-                                attrValues.put(attrName, textField.getText());
+                               // attrValues.put(attrName, textField.getText());
                             } else {
                                 DefaultComboBoxModel<Integer> comboBoxModel = new DefaultComboBoxModel<>();
                                 JComboBox<Integer> comboBox = new JComboBox<>(comboBoxModel);
@@ -170,7 +170,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                                     comboBoxModel.addElement(value);
                                 }
                                 jPanel5.add(comboBox);
-                                attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
+                                //attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
                             }
                         } else if (attrDef.startsWith("USER")) {
                             DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
@@ -183,7 +183,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                                 comboBoxModel.addElement(userName);
                             }
                             jPanel5.add(comboBox);
-                            attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
+                            //attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
 
                             attrResultSet.close();
                             attrStatement.close();
@@ -191,13 +191,13 @@ public class AddNewIssue extends javax.swing.JFrame {
                             JTextField textField = new JTextField();
                             textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                             jPanel5.add(textField);
-                            attrValues.put(attrName, textField.getText());
+                          //  attrValues.put(attrName, textField.getText());
                         } else if (attrDef.startsWith("DATETIME")) {
                             JXDatePicker datePicker = new JXDatePicker();
                             datePicker.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                             jPanel5.add(datePicker);
                             if (datePicker.getDate() != null) {
-                                attrValues.put(attrName, datePicker.getDate().toString());
+                               // attrValues.put(attrName, datePicker.getDate().toString());
                             }
                         }
 
@@ -209,6 +209,11 @@ public class AddNewIssue extends javax.swing.JFrame {
         } catch (Exception e) {
             e.printStackTrace();
         }
+//        for (Map.Entry<String, String> entry : attrValues.entrySet()) {
+//            String attributeName = entry.getKey();
+//            String attributeValue = entry.getValue();
+//            System.out.println(attributeName + ": " + attributeValue);
+//        }
         jPanel5.revalidate();
         jPanel5.repaint();
     }
@@ -273,39 +278,40 @@ public class AddNewIssue extends javax.swing.JFrame {
             statement.setString(5, newissue.getText());
             statement.executeUpdate();
 
-//            String attrValuesQuery = "INSERT INTO attr_values (issue_id, attr_id, attr_value) VALUES (?, ?, ?)";
-//            statement = con.prepareStatement(attrValuesQuery);
+            //String attrValuesQuery = "INSERT INTO attr_values (issue_id, attr_id, attr_value) VALUES (?, ?, ?)";
+            //statement = con.prepareStatement(attrValuesQuery);
+
+            for (Map.Entry<String, String> entry : attrValues.entrySet()) {
+    String attrName = entry.getKey();
+    String attrValue = entry.getValue();
+
+    String attrIdQuery = "SELECT attr_id FROM attr_types WHERE attr_name = ?";
+    PreparedStatement attrIdStatement = con.prepareStatement(attrIdQuery);
+    attrIdStatement.setString(1, attrName);
+    ResultSet attrIdResult = attrIdStatement.executeQuery();
+
+    while (attrIdResult.next()) {
+        int attrId = attrIdResult.getInt("attr_id");
+        System.out.println("Attribute: " + attrName + ", attr_id: " + attrId);
+        String attrType = attrIdResult.getString("attr_type");
+
+        statement.setInt(1, issueId);
+        statement.setInt(2, attrId);
+
+//        // Handle different data types for attr_value based on attr_type
+//        if ("INT".equals(attrType)) {
+//            // Convert the attrValue to an integer and set it as an int parameter
+//            int intValue = Integer.parseInt(attrValue);
+//            statement.setInt(3, intValue);
+//        } else {
+//            // Treat the attrValue as a string and set it as a string parameter
+//            statement.setString(3, attrValue);
+//        }
 //
-//            for (Map.Entry<String, String> entry : attrValues.entrySet()) {
-//                String attrName = entry.getKey();
-//                String attrValue = entry.getValue();
-//
-//                // Retrieve the attr_id from attr_types based on attr_name
-//                String attrIdQuery = "SELECT attr_id FROM attr_types WHERE attr_name = ?";
-//                PreparedStatement attrIdStatement = con.prepareStatement(attrIdQuery);
-//                attrIdStatement.setString(1, attrName);
-//                ResultSet attrIdResult = attrIdStatement.executeQuery();
-//
-//                if (attrIdResult.next()) {
-//                    int attrId = attrIdResult.getInt("attr_id");
-//                    String attrType = attrIdResult.getString("attr_type");
-//
-//                    statement.setInt(1, issueId);
-//                    statement.setInt(2, attrId);
-//
-//                    // Handle different data types for attr_value based on attr_type
-//                    if ("INT".equals(attrType)) {
-//                        // Convert the attrValue to an integer and set it as an int parameter
-//                        int intValue = Integer.parseInt(attrValue);
-//                        statement.setInt(3, intValue);
-//                    } else {
-//                        // Treat the attrValue as a string and set it as a string parameter
-//                        statement.setString(3, attrValue);
-//                    }
-//
-//                    statement.executeUpdate();
-//                }
-//            }
+//        statement.executeUpdate();
+    }
+}
+
             String updateQuery = "UPDATE folders SET stamp_id = ? WHERE folder_id = ? AND COALESCE(stamp_id, 0) < ?";
             statement = con.prepareStatement(updateQuery);
             statement.setInt(1, issueId);
@@ -389,7 +395,43 @@ public class AddNewIssue extends javax.swing.JFrame {
             }
         }
     }
-
+    private void handleOK(){
+        attrValues = new HashMap<>();
+        for (Component component : jPanel5.getComponents()) {
+    if (component instanceof JComboBox) {
+        JComboBox<?> comboBox = (JComboBox<?>) component;
+        int labelIndex = jPanel5.getComponentZOrder(component) - 1; // Get the index of the label (one step back)
+        if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
+            JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
+            String attrName = label.getText();
+            attrValues.put(attrName, comboBox.getSelectedItem().toString());
+        }
+    }else if (component instanceof JTextField) {
+        JTextField textField = (JTextField) component;
+        int labelIndex = jPanel5.getComponentZOrder(component) - 1; // Get the index of the label (one step back)
+        if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
+            JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
+            String attrName = label.getText();
+            attrValues.put(attrName, textField.getText());
+        }
+    } else if (component instanceof JXDatePicker) {
+        JXDatePicker datePicker = (JXDatePicker) component;
+        int labelIndex = jPanel5.getComponentZOrder(component) - 1; // Get the index of the label (one step back)
+        if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
+            JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
+            String attrName = label.getText();
+            if (datePicker.getDate() != null) {
+                attrValues.put(attrName, datePicker.getDate().toString());
+            }
+        }
+    }
+}
+//        for (Map.Entry<String, String> entry : attrValues.entrySet()) {
+//        String attrName = entry.getKey();
+//        String attrValue = entry.getValue();
+//        System.out.println(attrName + ": " + attrValue);
+//    }
+    }
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -626,7 +668,9 @@ public class AddNewIssue extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        handleOK();
         handleOkButton();
+        
         dispose();
     }//GEN-LAST:event_jButton1ActionPerformed
 
