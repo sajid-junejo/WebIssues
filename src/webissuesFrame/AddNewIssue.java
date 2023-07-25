@@ -20,6 +20,7 @@ import static javax.swing.GroupLayout.Alignment.values;
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import org.jdesktop.swingx.JXDatePicker;
 
@@ -257,7 +258,11 @@ public class AddNewIssue extends javax.swing.JFrame {
                 folderId = get.getInt("folder_id");
                 System.out.println("Folder ID " + folderId);
             }
-
+            if(newissue.getText()==null || newissue.getText().isEmpty())
+            {
+                JOptionPane.showMessageDialog(null, "Issue name cannot be null or empty", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+            else {
             String query = "INSERT INTO issues (issue_id, folder_id, issue_name, stamp_id) VALUES (?, ?, ?, ?)";
             statement = con.prepareStatement(query);
             statement.setInt(1, issueId);
@@ -267,7 +272,7 @@ public class AddNewIssue extends javax.swing.JFrame {
             statement.executeUpdate();
 
             System.out.println("Inserted into issues table.");
-
+            }
             String changesQuery = "INSERT INTO changes (change_id, issue_id, change_type, stamp_id, value_new) VALUES (?, ?, ?, ?, ?)";
             statement = con.prepareStatement(changesQuery);
             statement.setInt(1, issueId);
@@ -276,6 +281,8 @@ public class AddNewIssue extends javax.swing.JFrame {
             statement.setInt(4, issueId);
             statement.setString(5, newissue.getText());
             statement.executeUpdate();
+            String newChangesQuery = "INSERT INTO changes (change_id, issue_id, change_type, stamp_id, attr_id, value_new) VALUES (?, ?, ?, ?, ?, ?)";
+            PreparedStatement changeStatement = con.prepareStatement(newChangesQuery);
 
             String attrValuesQuery = "INSERT INTO attr_values (issue_id, attr_id, attr_value) VALUES (?, ?, ?)";
             PreparedStatement attrValueStatement = con.prepareStatement(attrValuesQuery);
@@ -294,12 +301,31 @@ public class AddNewIssue extends javax.swing.JFrame {
                     int attrId = attrIdResult.getInt("attr_id");
                     System.out.println("Attribute: " + attrName + ", attr_id: " + attrId);
 
-                    // Set the values for the attr_values table
+                    // Insert into stamps table to get the new stamp_id
+                    String newInsertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
+                    PreparedStatement newInsertStampsStatement = con.prepareStatement(newInsertStampsQuery, Statement.RETURN_GENERATED_KEYS);
+                    newInsertStampsStatement.setInt(1, userId);
+                    newInsertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
+                    newInsertStampsStatement.executeUpdate();
+
+                    ResultSet stampResult = newInsertStampsStatement.getGeneratedKeys();
+                    int stampId = 0;
+                    if (stampResult.next()) {
+                        stampId = stampResult.getInt(1);
+                    }
+                    System.out.println("New Stamp ID: " + stampId);
+                    changeStatement.setInt(1, stampId);
+                    changeStatement.setInt(2, issueId);
+                    changeStatement.setInt(3, 0);
+                    changeStatement.setInt(4, stampId);
+                    changeStatement.setInt(5, attrId);
+                    changeStatement.setString(6, attrValue);
+                    changeStatement.executeUpdate();
+
+                    // Insert into attr_values table
                     attrValueStatement.setInt(1, issueId);
                     attrValueStatement.setInt(2, attrId);
                     attrValueStatement.setString(3, attrValue);
-
-                    // Execute the insert statement for the current attribute and value
                     attrValueStatement.executeUpdate();
                 }
             }
@@ -393,7 +419,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         for (Component component : jPanel5.getComponents()) {
             if (component instanceof JComboBox) {
                 JComboBox<?> comboBox = (JComboBox<?>) component;
-                int labelIndex = jPanel5.getComponentZOrder(component) - 1; // Get the index of the label (one step back)
+                int labelIndex = jPanel5.getComponentZOrder(component) - 1; 
                 if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
                     JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
                     String attrName = label.getText();
@@ -409,12 +435,16 @@ public class AddNewIssue extends javax.swing.JFrame {
                 }
             } else if (component instanceof JXDatePicker) {
                 JXDatePicker datePicker = (JXDatePicker) component;
+                Date date = datePicker.getDate();
                 int labelIndex = jPanel5.getComponentZOrder(component) - 1; // Get the index of the label (one step back)
                 if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
                     JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
                     String attrName = label.getText();
                     if (datePicker.getDate() != null) {
-                        attrValues.put(attrName, datePicker.getDate().toString());
+                        Object getdate = new java.sql.Date(date.getTime());
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); 
+                        String dateString = dateFormat.format(getdate); 
+                        attrValues.put(attrName, dateString);
                     }
                 }
             }

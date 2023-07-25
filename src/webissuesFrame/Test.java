@@ -5,6 +5,11 @@
  */
 package webissuesFrame;
 
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+
 /**
  *
  * @author sajid.ali
@@ -16,6 +21,7 @@ public class Test extends javax.swing.JFrame {
      */
     public Test() {
         initComponents();
+        setupComponentListeners();
     }
 
     /**
@@ -29,41 +35,292 @@ public class Test extends javax.swing.JFrame {
 
         jPanel1 = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jPanel1.setBackground(new java.awt.Color(51, 153, 255));
+        jPanel1.setBackground(new java.awt.Color(51, 51, 0));
+        jPanel1.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                jPanel1MouseDragged(evt);
+            }
+            public void mouseMoved(java.awt.event.MouseEvent evt) {
+                jPanel1MouseMoved(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addGap(0, 287, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
+            .addGap(0, 236, Short.MAX_VALUE)
         );
 
-        getContentPane().add(jPanel1, java.awt.BorderLayout.CENTER);
-
-        jPanel2.setBackground(new java.awt.Color(51, 255, 102));
+        jPanel2.setBackground(new java.awt.Color(0, 255, 51));
+        jPanel2.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                jPanel2MouseDragged(evt);
+            }
+            public void mouseMoved(java.awt.event.MouseEvent evt) {
+                jPanel2MouseMoved(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addGap(0, 296, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 0, Short.MAX_VALUE)
         );
 
-        getContentPane().add(jPanel2, java.awt.BorderLayout.PAGE_START);
+        jPanel3.setBackground(new java.awt.Color(255, 0, 0));
+        jPanel3.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                jPanel3MouseDragged(evt);
+            }
+            public void mouseMoved(java.awt.event.MouseEvent evt) {
+                jPanel3MouseMoved(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 218, Short.MAX_VALUE)
+        );
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+        );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+    
+    
+    private void setupComponentListeners() {
+        jPanel1.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                updatePanelSizes(jPanel1, jPanel2, jPanel3);
+            }
+        });
+
+        jPanel2.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                updatePanelSizes(jPanel2, jPanel1, jPanel3);
+            }
+        });
+
+        jPanel3.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                updatePanelSizes(jPanel3, jPanel1, jPanel2);
+            }
+        });
+    }
+
+    private void updatePanelSizes(javax.swing.JPanel sourcePanel, javax.swing.JPanel panel1, javax.swing.JPanel panel2) {
+        // Get the new size of the source panel
+        int sourcePanelWidth = sourcePanel.getWidth();
+        int sourcePanelHeight = sourcePanel.getHeight();
+
+        // Update the size of the other panels proportionally
+        int panel1NewWidth = sourcePanelWidth;
+        int panel1NewHeight = (int) (sourcePanelHeight * 0.5);
+        int panel2NewWidth = sourcePanelWidth;
+        int panel2NewHeight = (int) (sourcePanelHeight * 0.5);
+
+        // Set the new sizes for the panels
+        panel1.setPreferredSize(new Dimension(panel1NewWidth, panel1NewHeight));
+        panel2.setPreferredSize(new Dimension(panel2NewWidth, panel2NewHeight));
+
+        // Repaint the panels to update the changes
+        panel1.revalidate();
+        panel1.repaint();
+        panel2.revalidate();
+        panel2.repaint();
+    }
+    
+    private void jPanel2MouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel2MouseDragged
+        // Get the current position of the mouse in panel coordinates
+    int mouseX = evt.getX();
+    int mouseY = evt.getY();
+
+    // Get the current size of the panel
+    int panelWidth = jPanel2.getWidth();
+    int panelHeight = jPanel2.getHeight();
+
+    // Define the minimum size (adjust this value according to your preference)
+    int minWidth = 100;
+    int minHeight = 100;
+
+    // Check if the mouse is being dragged on the left or right border
+    if (jPanel2.getCursor().getType() == Cursor.E_RESIZE_CURSOR) {
+        int newWidth = Math.max(minWidth, panelWidth + (mouseX - panelWidth / 2));
+        jPanel2.setPreferredSize(new Dimension(newWidth, panelHeight));
+    }
+
+    // Check if the mouse is being dragged on the top or bottom border
+    if (jPanel2.getCursor().getType() == Cursor.N_RESIZE_CURSOR) {
+        int newHeight = Math.max(minHeight, panelHeight + (mouseY - panelHeight / 2));
+        jPanel2.setPreferredSize(new Dimension(panelWidth, newHeight));
+    }
+
+    // Repaint the panel to update the changes
+    jPanel2.revalidate();
+    jPanel2.repaint();
+    }//GEN-LAST:event_jPanel2MouseDragged
+
+    private void jPanel2MouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel2MouseMoved
+        int mouseX = evt.getX();
+        int mouseY = evt.getY();
+    
+    // Get the current size of the panel
+    int panelWidth = jPanel2.getWidth();
+    int panelHeight = jPanel2.getHeight();
+    int borderWidth = 5;
+    if (mouseX <= borderWidth || mouseX >= panelWidth - borderWidth) {
+        jPanel2.setCursor(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR));
+    } else if (mouseY <= borderWidth || mouseY >= panelHeight - borderWidth) {
+        jPanel2.setCursor(Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR));
+    } else {
+        // If the mouse is not over any border, reset the cursor to default
+        jPanel2.setCursor(Cursor.getDefaultCursor());
+    }
+    }//GEN-LAST:event_jPanel2MouseMoved
+
+    private void jPanel1MouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel1MouseDragged
+        // TODO add your handling code here:
+        // Get the current position of the mouse in panel coordinates
+    int mouseX = evt.getX();
+    int mouseY = evt.getY();
+
+    // Get the current size of the panel
+    int panelWidth = jPanel1.getWidth();
+    int panelHeight = jPanel1.getHeight();
+
+    // Define the minimum size (adjust this value according to your preference)
+    int minWidth = 100;
+    int minHeight = 100;
+
+    // Check if the mouse is being dragged on the left or right border
+    if (jPanel1.getCursor().getType() == Cursor.E_RESIZE_CURSOR) {
+        int newWidth = Math.max(minWidth, panelWidth + (mouseX - panelWidth / 2));
+        jPanel1.setPreferredSize(new Dimension(newWidth, panelHeight));
+    }
+
+    // Check if the mouse is being dragged on the top or bottom border
+    if (jPanel1.getCursor().getType() == Cursor.N_RESIZE_CURSOR) {
+        int newHeight = Math.max(minHeight, panelHeight + (mouseY - panelHeight / 2));
+        jPanel1.setPreferredSize(new Dimension(panelWidth, newHeight));
+    }
+
+    // Repaint the panel to update the changes
+    jPanel1.revalidate();
+    jPanel1.repaint();
+    }//GEN-LAST:event_jPanel1MouseDragged
+
+    private void jPanel1MouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel1MouseMoved
+        // TODO add your handling code here:
+         int mouseX = evt.getX();
+        int mouseY = evt.getY();
+    
+    // Get the current size of the panel
+    int panelWidth = jPanel1.getWidth();
+    int panelHeight = jPanel1.getHeight();
+    int borderWidth = 5;
+    if (mouseX <= borderWidth || mouseX >= panelWidth - borderWidth) {
+        jPanel1.setCursor(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR));
+    } else if (mouseY <= borderWidth || mouseY >= panelHeight - borderWidth) {
+        jPanel1.setCursor(Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR));
+    } else {
+        // If the mouse is not over any border, reset the cursor to default
+        jPanel1.setCursor(Cursor.getDefaultCursor());
+    }
+    }//GEN-LAST:event_jPanel1MouseMoved
+
+    private void jPanel3MouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel3MouseMoved
+        // TODO add your handling code here:
+         int mouseX = evt.getX();
+        int mouseY = evt.getY();
+    
+    // Get the current size of the panel
+    int panelWidth = jPanel3.getWidth();
+    int panelHeight = jPanel3.getHeight();
+    int borderWidth = 5;
+    if (mouseX <= borderWidth || mouseX >= panelWidth - borderWidth) {
+        jPanel3.setCursor(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR));
+    } else if (mouseY <= borderWidth || mouseY >= panelHeight - borderWidth) {
+        jPanel3.setCursor(Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR));
+    } else {
+        // If the mouse is not over any border, reset the cursor to default
+        jPanel3.setCursor(Cursor.getDefaultCursor());
+    }
+    }//GEN-LAST:event_jPanel3MouseMoved
+
+    private void jPanel3MouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel3MouseDragged
+        // TODO add your handling code here:
+        int mouseX = evt.getX();
+    int mouseY = evt.getY();
+
+    // Get the current size of the panel
+    int panelWidth = jPanel3.getWidth();
+    int panelHeight = jPanel3.getHeight();
+
+    // Define the minimum size (adjust this value according to your preference)
+    int minWidth = 100;
+    int minHeight = 100;
+
+    // Check if the mouse is being dragged on the left or right border
+    if (jPanel3.getCursor().getType() == Cursor.E_RESIZE_CURSOR) {
+        int newWidth = Math.max(minWidth, panelWidth + (mouseX - panelWidth / 2));
+        jPanel3.setPreferredSize(new Dimension(newWidth, panelHeight));
+    }
+
+    // Check if the mouse is being dragged on the top or bottom border
+    if (jPanel3.getCursor().getType() == Cursor.N_RESIZE_CURSOR) {
+        int newHeight = Math.max(minHeight, panelHeight + (mouseY - panelHeight / 2));
+        jPanel3.setPreferredSize(new Dimension(panelWidth, newHeight));
+    }
+
+    // Repaint the panel to update the changes
+    jPanel3.revalidate();
+    jPanel3.repaint();
+    }//GEN-LAST:event_jPanel3MouseDragged
 
     /**
      * @param args the command line arguments
@@ -103,5 +360,6 @@ public class Test extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
     // End of variables declaration//GEN-END:variables
 }

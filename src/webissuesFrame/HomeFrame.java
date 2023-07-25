@@ -196,6 +196,14 @@ public class HomeFrame extends javax.swing.JFrame {
         jScrollPane3.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
         jScrollPane3.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPane3.setFont(new java.awt.Font("Times New Roman", 1, 12)); // NOI18N
+        jScrollPane3.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                jScrollPane3MouseDragged(evt);
+            }
+            public void mouseMoved(java.awt.event.MouseEvent evt) {
+                jScrollPane3MouseMoved(evt);
+            }
+        });
         jScrollPane3.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jScrollPane3MouseClicked(evt);
@@ -241,7 +249,16 @@ public class HomeFrame extends javax.swing.JFrame {
         });
 
         jPanel2.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
-        jPanel2.setPreferredSize(new java.awt.Dimension(1031, 583));
+        jPanel2.setAutoscrolls(true);
+        jPanel2.setPreferredSize(new java.awt.Dimension(1031, 615));
+        jPanel2.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                jPanel2MouseDragged(evt);
+            }
+            public void mouseMoved(java.awt.event.MouseEvent evt) {
+                jPanel2MouseMoved(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -251,7 +268,7 @@ public class HomeFrame extends javax.swing.JFrame {
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 581, Short.MAX_VALUE)
+            .addGap(0, 613, Short.MAX_VALUE)
         );
 
         jScrollPane2.setViewportView(jPanel2);
@@ -396,7 +413,7 @@ public class HomeFrame extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 371, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 212, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 212, Short.MAX_VALUE))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 615, Short.MAX_VALUE))
                 .addGap(40, 40, 40))
         );
@@ -1108,7 +1125,7 @@ public class HomeFrame extends javax.swing.JFrame {
             con = DbConnection.getConnection();
             int hx = 30;
             int hy = 160;
-            int hlabelWidth = 400;
+            int hlabelWidth = 500;
             int hheight = 16;
             int hlabelSpacing = 5;
             int labelY = hy;
@@ -1311,6 +1328,38 @@ public class HomeFrame extends javax.swing.JFrame {
         int newValue = verticalScrollBar.getValue() + (notches * verticalScrollBar.getUnitIncrement() * 20);
         verticalScrollBar.setValue(newValue);
     }//GEN-LAST:event_jScrollPane2MouseWheelMoved
+    private int jScrollPane2InitialHeight;
+    private int jScrollPane3InitialHeight;
+    private void jScrollPane3MouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jScrollPane3MouseDragged
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jScrollPane3MouseDragged
+
+    private void jScrollPane3MouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jScrollPane3MouseMoved
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jScrollPane3MouseMoved
+
+    private void jPanel2MouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel2MouseDragged
+       // Calculate the change in mouseY (vertical movement) during dragging
+    int mouseYChange = evt.getY() - evt.getPoint().y;
+    
+    // Calculate the new heights for jScrollPane2 and jScrollPane3
+    int newScrollPane2Height = jScrollPane2InitialHeight + mouseYChange;
+    int newScrollPane3Height = jScrollPane3InitialHeight - mouseYChange;
+    
+    // Update the heights of the scroll panes
+    jScrollPane2.setPreferredSize(new Dimension(jScrollPane2.getWidth(), newScrollPane2Height));
+    jScrollPane3.setPreferredSize(new Dimension(jScrollPane3.getWidth(), newScrollPane3Height));
+    
+    // Repaint to update the changes
+    jScrollPane2.revalidate();
+    jScrollPane3.revalidate();
+    }//GEN-LAST:event_jPanel2MouseDragged
+
+    private void jPanel2MouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel2MouseMoved
+        // Save the initial heights of jScrollPane2 and jScrollPane3
+    jScrollPane2InitialHeight = jScrollPane2.getHeight();
+    jScrollPane3InitialHeight = jScrollPane3.getHeight();
+    }//GEN-LAST:event_jPanel2MouseMoved
 
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
