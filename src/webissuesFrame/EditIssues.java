@@ -773,7 +773,7 @@ public class EditIssues extends javax.swing.JFrame {
                     changeStatement.setInt(4, stampId);
                     changeStatement.setInt(5, attributeId);
                     if (selectedItem instanceof Date) {
-                        System.out.println(((Date) selectedItem).getTime()+" date values  "+((Date) oldValue).getTime());
+                       // System.out.println(((Date) selectedItem).getTime()+" date values  "+((Date) oldValue).getTime());
                         java.sql.Date selectedDate = (java.sql.Date) selectedItem;
                         String formattedDate = new SimpleDateFormat("yyyy-MM-dd").format(selectedDate);
                         changeStatement.setString(6, (String) oldValue);

@@ -4,55 +4,76 @@
  * and open the template in the editor.
  */
 package DAOImpl;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+// Java Program to create nested JSplitPane,
+// one of them is one Touch Expandable
+import javax.swing.event.*;
+import java.awt.*;
+import javax.swing.*;
+class solve extends JFrame {
 
-public class CustomLinkButtonExample {
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("Button Color Change Example");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(300, 200);
+	// frame
+	static JFrame f;
 
-        JPanel panel = new JPanel();
+	// text areas
+	static JTextArea t1, t2, t3, t4;
 
-        JButton button1 = createButton("Button 1", panel);
-        JButton button2 = createButton("Button 2", panel);
-        JButton button3 = createButton("Button 3", panel);
-        JButton button4 = createButton("Button 4", panel);
-        JButton button5 = createButton("Button 5", panel);
+	// main class
+	public static void main(String[] args)
+	{
+		// create a new frame
+		f = new JFrame("frame");
 
-        frame.add(panel);
-        frame.setVisible(true);
-    }
+		// create a object
+		solve s = new solve();
 
-    private static JButton createButton(String buttonText, JPanel panel) {
-        JButton button = new JButton(buttonText);
-        panel.add(button);
+		// create a panel
+		JPanel p1 = new JPanel();
+		JPanel p = new JPanel();
+		JPanel p2 = new JPanel();
+		JPanel p3 = new JPanel();
 
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                JButton clickedButton = (JButton) e.getSource();
-                String buttonName = clickedButton.getText();
-                System.out.println("Clicked button: " + buttonName);
-                clickedButton.setBackground(Color.RED);
+		// create text areas
+		t1 = new JTextArea(10, 10);
+		t2 = new JTextArea(10, 10);
+		t3 = new JTextArea(10, 10);
+		t4 = new JTextArea(10, 10);
 
-                // Reset background color of other buttons
-                for (Component component : panel.getComponents()) {
-                    if (component instanceof JButton && component != clickedButton) {
-                        JButton otherButton = (JButton) component;
-                        otherButton.setBackground(null);
-                    }
-                }
-            }
-        });
+		// set texts
+		t1.setText("this is first text area");
+		t2.setText("this is second text area");
+		t3.setText("this is third text area");
+		t4.setText("this is fourth text area");
 
-        return button;
-    }
+		// add text area to panel
+		p1.add(t1);
+		p.add(t2);
+		p2.add(t3);
+		p3.add(t4);
+
+		// create a splitpane
+		JSplitPane sl = new JSplitPane(SwingConstants.VERTICAL, p1, p);
+		JSplitPane s2 = new JSplitPane(SwingConstants.VERTICAL, p2, p3);
+
+		// set Orientation for slider
+		sl.setOrientation(SwingConstants.VERTICAL);
+		s2.setOrientation(SwingConstants.VERTICAL);
+
+		s2.setOneTouchExpandable(true);
+
+		// set divider location
+		sl.setDividerLocation(70);
+
+		// set Layout for frame
+		f.setLayout(new FlowLayout());
+
+		// add panel
+		f.add(sl);
+		f.add(s2);
+
+		// set the size of frame
+		f.setSize(600, 300);
+
+		f.show();
+	}
 }
 
