@@ -482,22 +482,25 @@ public class EditIssues extends javax.swing.JFrame {
                 JOptionPane.showMessageDialog(null, "Issue name cannot be null or empty", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             } else {
+                if (valueNew == null) {
+                    valueNew = ""; // Treat null valueNew as an empty string
+                }
                 if (!valueNew.equals(nameTextValue)) {
                     String insertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
-            PreparedStatement insertStampsStatement = connection.prepareStatement(insertStampsQuery, Statement.RETURN_GENERATED_KEYS);
-            insertStampsStatement.setInt(1, userId);
-            insertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
-            insertStampsStatement.executeUpdate();
-            resultSet = insertStampsStatement.getGeneratedKeys();
-            if (resultSet.next()) {
-                StampsIssueId = resultSet.getInt(1);
-                System.out.println("Issue ID " + StampsIssueId);
-            }
-            System.out.println("Inserted into stamps table. issueId: " + StampsIssueId);
+                    PreparedStatement insertStampsStatement = connection.prepareStatement(insertStampsQuery, Statement.RETURN_GENERATED_KEYS);
+                    insertStampsStatement.setInt(1, userId);
+                    insertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
+                    insertStampsStatement.executeUpdate();
+                    resultSet = insertStampsStatement.getGeneratedKeys();
+                    if (resultSet.next()) {
+                        StampsIssueId = resultSet.getInt(1);
+                        System.out.println("Issue ID " + StampsIssueId);
+                    }
+                    System.out.println("Inserted into stamps table. issueId: " + StampsIssueId);
 
-            String changeIssueName = "UPDATE issues SET issue_name = ?, stamp_id = ? WHERE issue_id = ?";
-            preparedStatement = connection.prepareStatement(changeIssueName);
-                    System.out.println("value new -> "+valueNew + "value input "+nameTextValue);
+                    String changeIssueName = "UPDATE issues SET issue_name = ?, stamp_id = ? WHERE issue_id = ?";
+                    preparedStatement = connection.prepareStatement(changeIssueName);
+                    System.out.println("value new -> " + valueNew + "value input " + nameTextValue);
                     preparedStatement.setString(1, nameTextValue);
                     preparedStatement.setInt(2, StampsIssueId);
                     preparedStatement.setInt(3, issueId);
@@ -773,7 +776,7 @@ public class EditIssues extends javax.swing.JFrame {
                     changeStatement.setInt(4, stampId);
                     changeStatement.setInt(5, attributeId);
                     if (selectedItem instanceof Date) {
-                       // System.out.println(((Date) selectedItem).getTime()+" date values  "+((Date) oldValue).getTime());
+                        // System.out.println(((Date) selectedItem).getTime()+" date values  "+((Date) oldValue).getTime());
                         java.sql.Date selectedDate = (java.sql.Date) selectedItem;
                         String formattedDate = new SimpleDateFormat("yyyy-MM-dd").format(selectedDate);
                         changeStatement.setString(6, (String) oldValue);
