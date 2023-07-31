@@ -554,7 +554,6 @@ public class HomeFrame extends javax.swing.JFrame {
                 jPanel2.add(attributeLabel);
                 attributeY += cheight + clabelSpacing;
             }
-            System.out.println("attributes Y label "+attributeY);
             statement.close();
             connection.close();
         } catch (Exception e) {
@@ -568,7 +567,6 @@ public class HomeFrame extends javax.swing.JFrame {
         int blabelWidth = 100;
         int bheight = 20;
         int blabelSpacing = 5;
-        System.out.println("button creation y"+by);
         JButton button1 = new JButton("All History");
         button1.setBounds(bx, by, blabelWidth, bheight);
         button1.setHorizontalAlignment(SwingConstants.LEADING);
@@ -673,7 +671,7 @@ public class HomeFrame extends javax.swing.JFrame {
             labelY += hheight + hlabelSpacing;
             jPanel2.add(label);
             int issueID = issueId;
-
+//hktyirtju frtu
             String sqlQuery = "SELECT fl.file_id, fl.file_name, fl.file_size, fl.file_descr, fl.file_storage, i.issue_id, i.folder_id, sc.user_id, sc.stamp_time, u.user_login "
                     + "FROM files AS fl "
                     + "JOIN changes AS ch ON ch.change_id = fl.file_id "
@@ -1092,7 +1090,6 @@ public class HomeFrame extends javax.swing.JFrame {
                     + " ORDER BY created_date DESC";
 
             statement = con.prepareStatement(sqlQuery);
-            // Set the issueId parameter
             statement.setInt(1, issueId);
 
             ResultSet resultSet = statement.executeQuery();
@@ -1183,11 +1180,9 @@ public class HomeFrame extends javax.swing.JFrame {
                 attribute = new JLabel(bulletList.toString());
                 attribute.setBounds(hx, labelY, hlabelWidth, hheight * changesList.size());
                 jPanel2.add(attribute);
-
-                // Update the labelY to account for the height of the bullet list
+ 
                 labelY += (hheight + hlabelSpacing) * changesList.size();
-
-                // Add some space after displaying all attribute labels
+ 
                 labelY += hlabelSpacing + 5;
             }
             if(labelY>215)
@@ -1195,7 +1190,6 @@ public class HomeFrame extends javax.swing.JFrame {
                 jPanel2.setPreferredSize(new Dimension(jPanel2.getWidth(), labelY));
 
             }
-            System.out.println("Label Y heighy in history "+labelY);
         } catch (Exception v) {
             v.printStackTrace();
         }

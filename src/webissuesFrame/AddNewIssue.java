@@ -4,6 +4,7 @@ import DAO.ProjectsDAO;
 import DAOImpl.ProjectsDAOImpl;
 import dbConnection.DbConnection;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Image;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -159,7 +160,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                                 }
                             }
 
-                            if (maxValue > 3.0) {
+                            if (maxValue > 3.0 || maxValue == 0.0) {
                                 JTextField textField = new JTextField();
                                 textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                                 jPanel5.add(textField);
@@ -184,6 +185,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                                 String userName = attrResultSet.getString("user_name");
                                 comboBoxModel.addElement(userName);
                             }
+                            comboBox.setSelectedItem(null);
                             jPanel5.add(comboBox);
                             //attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
 
@@ -204,6 +206,9 @@ public class AddNewIssue extends javax.swing.JFrame {
                         }
 
                         y += height + spacing;
+                        if (y > 255) {
+                            jPanel5.setPreferredSize(new Dimension(jPanel5.getWidth(), y));
+                        }
                     }
                 }
             }
@@ -258,20 +263,18 @@ public class AddNewIssue extends javax.swing.JFrame {
                 folderId = get.getInt("folder_id");
                 System.out.println("Folder ID " + folderId);
             }
-            if(newissue.getText()==null || newissue.getText().isEmpty())
-            {
+            if (newissue.getText() == null || newissue.getText().isEmpty()) {
                 JOptionPane.showMessageDialog(null, "Issue name cannot be null or empty", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-            else {
-            String query = "INSERT INTO issues (issue_id, folder_id, issue_name, stamp_id) VALUES (?, ?, ?, ?)";
-            statement = con.prepareStatement(query);
-            statement.setInt(1, issueId);
-            statement.setInt(2, folderId);
-            statement.setString(3, newissue.getText());
-            statement.setInt(4, issueId);
-            statement.executeUpdate();
+            } else {
+                String query = "INSERT INTO issues (issue_id, folder_id, issue_name, stamp_id) VALUES (?, ?, ?, ?)";
+                statement = con.prepareStatement(query);
+                statement.setInt(1, issueId);
+                statement.setInt(2, folderId);
+                statement.setString(3, newissue.getText());
+                statement.setInt(4, issueId);
+                statement.executeUpdate();
 
-            System.out.println("Inserted into issues table.");
+                System.out.println("Inserted into issues table.");
             }
             String changesQuery = "INSERT INTO changes (change_id, issue_id, change_type, stamp_id, value_new) VALUES (?, ?, ?, ?, ?)";
             statement = con.prepareStatement(changesQuery);
@@ -419,7 +422,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         for (Component component : jPanel5.getComponents()) {
             if (component instanceof JComboBox) {
                 JComboBox<?> comboBox = (JComboBox<?>) component;
-                int labelIndex = jPanel5.getComponentZOrder(component) - 1; 
+                int labelIndex = jPanel5.getComponentZOrder(component) - 1;
                 if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
                     JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
                     String attrName = label.getText();
@@ -442,8 +445,8 @@ public class AddNewIssue extends javax.swing.JFrame {
                     String attrName = label.getText();
                     if (datePicker.getDate() != null) {
                         Object getdate = new java.sql.Date(date.getTime());
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); 
-                        String dateString = dateFormat.format(getdate); 
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                        String dateString = dateFormat.format(getdate);
                         attrValues.put(attrName, dateString);
                     }
                 }
@@ -502,8 +505,10 @@ public class AddNewIssue extends javax.swing.JFrame {
         jLabel1.setText("Create a new Issue in folder:");
 
         jPanel2.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel2.setPreferredSize(new java.awt.Dimension(716, 335));
 
         jPanel5.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel5.setPreferredSize(new java.awt.Dimension(654, 255));
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
@@ -513,7 +518,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 238, Short.MAX_VALUE)
+            .addGap(0, 255, Short.MAX_VALUE)
         );
 
         clmname.setText("Name");
@@ -543,7 +548,7 @@ public class AddNewIssue extends javax.swing.JFrame {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(clmname, javax.swing.GroupLayout.DEFAULT_SIZE, 23, Short.MAX_VALUE)
+                    .addComponent(clmname, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(value11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -683,9 +688,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
         pack();
