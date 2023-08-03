@@ -14,6 +14,8 @@ import DAOImpl.ProjectsDAOImpl;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -26,6 +28,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Whitelist;
 import pojos.Folder;
 import pojos.Project;
 
@@ -43,9 +47,22 @@ public class HomeFrame extends javax.swing.JFrame {
     String typeName = null;
     int typeId = 0;
     int attributeY = 0;
+    String issueName = "";
+    int userId = 0;
+    String folderName = null;
+
     public HomeFrame() {
         initComponents();
-        this.setExtendedState(HomeFrame.MAXIMIZED_BOTH);
+        // Get the default screen device
+        GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+
+        // Get the screen width and height
+        int screenWidth = gd.getDisplayMode().getWidth();
+        int screenHeight = gd.getDisplayMode().getHeight();
+        System.out.println("width "+screenWidth + "Height" +  screenHeight);
+        // Set the JFrame size to match screen width and height
+        this.setPreferredSize(new Dimension(screenWidth, screenHeight));
+        //this.setExtendedState(HomeFrame.MAXIMIZED_BOTH);
         Load();
         //getUser();
         jLabel12.setEnabled(false);
@@ -133,6 +150,11 @@ public class HomeFrame extends javax.swing.JFrame {
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
         jPanel1.setPreferredSize(new java.awt.Dimension(1368, 680));
+        jPanel1.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jPanel1MouseClicked(evt);
+            }
+        });
 
         jLabel1.setText("View:");
 
@@ -301,9 +323,8 @@ public class HomeFrame extends javax.swing.JFrame {
             }
         ));
         jTable1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
-        jTable1.setDragEnabled(true);
         jTable1.setGridColor(new java.awt.Color(255, 255, 255));
-        jTable1.setSelectionBackground(new java.awt.Color(0, 153, 204));
+        jTable1.setSelectionBackground(new java.awt.Color(0, 0, 0));
         jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jTable1MouseClicked(evt);
@@ -320,6 +341,7 @@ public class HomeFrame extends javax.swing.JFrame {
 
         jScrollPane2.setBackground(new java.awt.Color(255, 255, 255));
         jScrollPane2.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        jScrollPane2.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         jScrollPane2.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
                 jScrollPane2MouseWheelMoved(evt);
@@ -363,12 +385,12 @@ public class HomeFrame extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGap(28, 28, 28)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(28, 28, 28)
                                 .addComponent(jLabel12)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jSeparator5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jSeparator5, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -377,13 +399,13 @@ public class HomeFrame extends javax.swing.JFrame {
                                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                         .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 54, javax.swing.GroupLayout.PREFERRED_SIZE)))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 109, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -395,7 +417,6 @@ public class HomeFrame extends javax.swing.JFrame {
                                 .addGap(54, 54, 54)
                                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(340, 340, 340)
                                 .addComponent(jLabel1)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 124, javax.swing.GroupLayout.PREFERRED_SIZE)))
@@ -413,37 +434,44 @@ public class HomeFrame extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(jLabel9, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(11, 11, 11)
+                                .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 13, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 15, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addGap(1, 1, 1))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(3, 3, 3)
+                                .addComponent(jLabel7))
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                                 .addComponent(jLabel4, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addComponent(jLabel3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jSeparator4, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addContainerGap()
                                 .addComponent(jLabel12))
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                .addGroup(jPanel1Layout.createSequentialGroup()
-                                    .addComponent(jLabel7)
-                                    .addGap(32, 32, 32))
-                                .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                .addComponent(jLabel2)
-                                .addComponent(jSeparator5, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 14, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(17, 17, 17))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jLabel9, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(11, 11, 11)
-                        .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 13, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 15, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(1, 1, 1)))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(83, 83, 83)
+                                .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 14, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(83, 83, 83)
+                                .addComponent(jLabel2)))
+                        .addGap(35, 35, 35))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jSeparator5, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jSeparator4, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(35, 35, 35)))
                 .addComponent(jSplitPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 542, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel5)
@@ -458,9 +486,7 @@ public class HomeFrame extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 689, Short.MAX_VALUE)
-                .addContainerGap())
+            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 700, Short.MAX_VALUE)
         );
 
         pack();
@@ -806,14 +832,8 @@ public class HomeFrame extends javax.swing.JFrame {
             ResultSet resultSet = statement.executeQuery();
 
             while (resultSet.next()) {
-                //int fileId = resultSet.getInt("file_id");
                 fileName = resultSet.getString("file_name");
-                //long fileSize = resultSet.getLong("file_size");
                 fileDescr = resultSet.getString("file_descr");
-                //String fileStorage = resultSet.getString("file_storage");
-                //int issueIdResult = resultSet.getInt("issue_id");
-                //int folderId = resultSet.getInt("folder_id");
-                //int userId = resultSet.getInt("user_id");
                 long stampTime = resultSet.getLong("stamp_time") * 1000L;
                 Date createdDate = new Date(stampTime);
                 SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
@@ -862,9 +882,7 @@ public class HomeFrame extends javax.swing.JFrame {
             label.setBounds(hx, labelY, hlabelWidth, hheight);
             labelY += hheight + hlabelSpacing;
             jPanel2.add(label);
-
-            // Move the declaration and assignment of issueId here
-            int issueID = issueId; // Replace 123 with the actual issueId you want to query
+            int issueID = issueId;
 
             String sqlQuery = "SELECT c.comment_id, c.comment_text, c.comment_format, i.issue_id, i.folder_id, sc.user_id, sc.stamp_time, u.user_login "
                     + "FROM comments AS c "
@@ -987,6 +1005,7 @@ public class HomeFrame extends javax.swing.JFrame {
             }
 
             if (columnName.equalsIgnoreCase("issue_name")) {
+                issueName = rowData[i].toString();
                 JLabel issue = new JLabel("<html><b>" + rowData[i] + "</b></html>");
                 issue.setBounds(x, 10, labelWidth, height);
                 issue.setHorizontalAlignment(SwingConstants.LEFT);
@@ -1021,7 +1040,6 @@ public class HomeFrame extends javax.swing.JFrame {
 
             ResultSet resultSet = statement.executeQuery(query);
             if (!resultSet.next()) {
-                System.out.println("No rows found for the query: " + query);
             } else {
                 do {
                     long modifiedDateMillis = resultSet.getLong("modified_date") * 1000L;
@@ -1105,8 +1123,6 @@ public class HomeFrame extends javax.swing.JFrame {
                     String attrName = attrResultSet.getString("attr_name");
                     attrIdToNameMap.put(attrId, attrName);
                 }
-                attrResultSet.close();
-                attrStatement.close();
             } catch (SQLException c) {
                 c.printStackTrace();
             }
@@ -1115,9 +1131,6 @@ public class HomeFrame extends javax.swing.JFrame {
                 int attrId = resultSet.getInt("attr_id");
                 String attrName = attrIdToNameMap.get(attrId);
 
-                //int changeId = resultSet.getInt("change_id");
-                //String changeType = resultSet.getString("change_type");
-                //int stampId = resultSet.getInt("stamp_id");
                 long createdDateMillis = resultSet.getLong("created_date") * 1000L;
                 Date createdDate = new Date(createdDateMillis);
                 String createdUserLogin = resultSet.getString("created_user_login"); // Use the new column name
@@ -1180,13 +1193,12 @@ public class HomeFrame extends javax.swing.JFrame {
                 attribute = new JLabel(bulletList.toString());
                 attribute.setBounds(hx, labelY, hlabelWidth, hheight * changesList.size());
                 jPanel2.add(attribute);
- 
+
                 labelY += (hheight + hlabelSpacing) * changesList.size();
- 
+
                 labelY += hlabelSpacing + 5;
             }
-            if(labelY>215)
-            {
+            if (labelY > 215) {
                 jPanel2.setPreferredSize(new Dimension(jPanel2.getWidth(), labelY));
 
             }
@@ -1230,6 +1242,114 @@ public class HomeFrame extends javax.swing.JFrame {
         }
     }
 
+    public void deleteIssue() {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        System.out.println("this is issue id in the delete method " + issueId);
+        try {
+            connection = DbConnection.getConnection();
+            connection.setAutoCommit(false);
+
+            String getSessionQuery = "SELECT user_id FROM sessions";
+            statement = connection.prepareStatement(getSessionQuery);
+            resultSet = statement.executeQuery();
+            int userId = 0; // Initialize userId
+            if (resultSet.next()) {
+                userId = resultSet.getInt("user_id");
+            }
+
+            String getFolderId = "SELECT folder_id from issues where issue_id = ?";
+            statement = connection.prepareStatement(getFolderId);
+            statement.setInt(1, issueId);
+            resultSet = statement.executeQuery();
+            int folderId = 0;
+            if (resultSet.next()) {
+                folderId = resultSet.getInt("folder_id");
+            }
+
+            String insertQuery = "INSERT INTO stamps ( user_id, stamp_time ) VALUES ( ?, ? )";
+            statement = connection.prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS);
+            statement.setInt(1, userId);
+            statement.setInt(2, (int) (System.currentTimeMillis() / 1000));
+            statement.executeUpdate();
+            resultSet = statement.getGeneratedKeys();
+            int generatedId = 0;
+            if (resultSet.next()) {
+                generatedId = resultSet.getInt(1);
+            }
+
+            String issueStubsQuery = "INSERT INTO issue_stubs ( stub_id, prev_id, issue_id, folder_id ) VALUES ( ?, ?, ?, ? )";
+            statement = connection.prepareStatement(issueStubsQuery);
+            statement.setInt(1, generatedId);
+            statement.setInt(2, issueId); // Make sure issueId is initialized
+            statement.setInt(3, issueId); // Make sure issueId is initialized
+            statement.setInt(4, folderId); // Make sure folderId is initialized
+            statement.executeUpdate();
+
+            String deleteQuery = "DELETE FROM issues WHERE issue_id = ?";
+            statement = connection.prepareStatement(deleteQuery);
+            statement.setInt(1, issueId);
+
+            statement.executeUpdate();
+
+            String updateFoldersQuery = "UPDATE folders SET stamp_id = ? WHERE folder_id = ? AND COALESCE( stamp_id, 0 ) < ?";
+            statement = connection.prepareStatement(updateFoldersQuery);
+            statement.setInt(1, generatedId);
+            statement.setInt(2, folderId); // Make sure folderId is initialized
+            statement.setInt(3, generatedId);
+            statement.executeUpdate();
+
+            connection.commit();
+            JOptionPane.showMessageDialog(null, "Issue successfully deleted!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            throw new RuntimeException("Error deleting issue: " + ex.getMessage(), ex);
+        } finally {
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public void refreshJTable() {
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0);
+
+        try {
+            DefaultTableModel tableModel = issuesDAO.getIssuesByTypeId(typeId, folderName);
+            jTable1.setModel(tableModel);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        jTable1.revalidate();
+        jTable1.repaint();
+    }
     private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
 //        AddViewFrame view = new AddViewFrame();
 //        view.setVisible(true);
@@ -1254,6 +1374,8 @@ public class HomeFrame extends javax.swing.JFrame {
         //getUser();
         if (evt.getClickCount() != -1) {
             jPanel2.removeAll();
+            jPanel2.repaint();
+            jPanel2.revalidate();
             int x = evt.getX();
             int y = evt.getY();
             TreePath path = jTree1.getPathForLocation(x, y);
@@ -1270,7 +1392,7 @@ public class HomeFrame extends javax.swing.JFrame {
                 int typeId = getTypeIdFromNode(node);
 
                 if (typeId != -1) {
-                    String folderName = null;
+
                     Object userObject = node.getUserObject();
                     if (userObject instanceof String) {
                         String nodeValue = (String) userObject;
@@ -1344,6 +1466,21 @@ public class HomeFrame extends javax.swing.JFrame {
             deleteItem.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
+                    int option = JOptionPane.showConfirmDialog(
+                            null,
+                            "Are you sure you want to delete " + issueName,
+                            "Confirmation",
+                            JOptionPane.YES_NO_OPTION);
+
+                    if (option == JOptionPane.YES_OPTION) {
+                        deleteIssue();
+                        refreshJTable();
+                        jPanel2.removeAll();
+                        jPanel2.repaint();
+                        jPanel2.revalidate();
+                    } else if (option == JOptionPane.NO_OPTION) {
+                        System.out.println("User clicked NO.");
+                    }
                     System.out.println("Delete option selected");
                 }
             });
@@ -1365,6 +1502,12 @@ public class HomeFrame extends javax.swing.JFrame {
         } else if (SwingUtilities.isLeftMouseButton(evt)) {
             jPanel2.removeAll();
             selectedRowIndex = jTable1.getSelectedRow();
+            int rowCount = jTable1.getRowCount();
+            //System.out.println("total rows in this table "+rowCount);
+            JLabel totalRows = new JLabel(rowCount + " issues");
+            totalRows.setBounds(1130, 687, 30, 8);
+            totalRows.setHorizontalAlignment(SwingConstants.LEFT);
+            jPanel1.add(totalRows);
             history();
             issueDetails();
             issueAttributes();
@@ -1399,7 +1542,7 @@ public class HomeFrame extends javax.swing.JFrame {
         if (jLabel12.getText() == "Add Issue") {
         } else if (jLabel12.getText() == "Add Folder") {
         }
-        //
+
     }//GEN-LAST:event_jScrollPane3MouseClicked
 
     private void jScrollPane3KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jScrollPane3KeyPressed
@@ -1441,6 +1584,15 @@ public class HomeFrame extends javax.swing.JFrame {
     private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jComboBox1ActionPerformed
+
+    private void jPanel1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel1MouseClicked
+
+        int x = evt.getX();
+        int y = evt.getY();
+        System.out.println(" this is x " + x);
+        System.out.println(" this is y " + y);
+
+    }//GEN-LAST:event_jPanel1MouseClicked
     private int jScrollPane2InitialHeight;
     private int jScrollPane3InitialHeight;
 

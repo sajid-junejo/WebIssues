@@ -26,7 +26,7 @@ import javax.swing.JTextField;
 import org.jdesktop.swingx.JXDatePicker;
 
 public class AddNewIssue extends javax.swing.JFrame {
-
+             
     public AddNewIssue() {
         initComponents();
         Image icon = new ImageIcon(this.getClass().getResource("/webissueslogo.png")).getImage();
@@ -40,6 +40,8 @@ public class AddNewIssue extends javax.swing.JFrame {
     int issueId = 0;
     int folderId = 0;
     int typeId = 0;
+    int attrId = 0;
+    String attrDef = null;
     private Map<String, String> attrValues = new HashMap<>();
 
     public void setRowData(Object[] rowData, String[] columnNames) {
@@ -126,7 +128,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                     resultSet = statement.executeQuery("SELECT attr_name, attr_def FROM attr_types WHERE type_id = " + typeId);
                     while (resultSet.next()) {
                         String attrName = resultSet.getString("attr_name");
-                        String attrDef = resultSet.getString("attr_def");
+                        attrDef = resultSet.getString("attr_def");
 
                         JLabel label = new JLabel(attrName);
                         label.setBounds(x, y, labelWidth, height);
@@ -138,7 +140,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                             DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
                             JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
                             comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-
+                            System.out.println(attrName+" in the Enum");
                             for (String value : values) {
                                 String trimmedValue = value.trim().replaceAll("\"", "");
                                 comboBoxModel.addElement(trimmedValue);
@@ -147,6 +149,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                             jPanel5.add(comboBox);
                             //attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
                         } else if (attrDef.startsWith("NUMERIC")) {
+                            System.out.println(attrName+" in the NUMERIC");
                             double minValue = 0.0;
                             double maxValue = 0.0;
                             String[] parts = attrDef.split(" ");
@@ -176,6 +179,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                                 //attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
                             }
                         } else if (attrDef.startsWith("USER")) {
+                            System.out.println(attrName+" in the USER");
                             DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
                             JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
                             comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
@@ -192,11 +196,13 @@ public class AddNewIssue extends javax.swing.JFrame {
                             attrResultSet.close();
                             attrStatement.close();
                         } else if (attrDef.startsWith("TEXT")) {
+                            System.out.println(attrName+" in the TEXT");
                             JTextField textField = new JTextField();
                             textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                             jPanel5.add(textField);
                             //  attrValues.put(attrName, textField.getText());
                         } else if (attrDef.startsWith("DATETIME")) {
+                            System.out.println(attrName+" in the DATETIME");
                             JXDatePicker datePicker = new JXDatePicker();
                             datePicker.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                             jPanel5.add(datePicker);
@@ -216,29 +222,23 @@ public class AddNewIssue extends javax.swing.JFrame {
         } catch (Exception e) {
             e.printStackTrace();
         }
-//        for (Map.Entry<String, String> entry : attrValues.entrySet()) {
-//            String attributeName = entry.getKey();
-//            String attributeValue = entry.getValue();
-//            System.out.println(attributeName + ": " + attributeValue);
-//        }
         jPanel5.revalidate();
         jPanel5.repaint();
     }
 
     private void handleOkButton() {
+        HomeFrame home = new HomeFrame();
         Connection con = null;
         PreparedStatement statement = null;
         try {
             con = DbConnection.getConnection();
-            con.setAutoCommit(false);
-            System.out.println("issue name on line number 192 " + newissue.getText());
+            con.setAutoCommit(false); 
             String getSessionQuery = "SELECT user_id FROM sessions";
             PreparedStatement getSessionStatement = con.prepareStatement(getSessionQuery);
             ResultSet sessionResultSet = getSessionStatement.executeQuery();
             int userId = 0;
             if (sessionResultSet.next()) {
-                userId = sessionResultSet.getInt("user_id");
-                System.out.println("user session id " + userId);
+                userId = sessionResultSet.getInt("user_id"); 
             }
             String insertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
             PreparedStatement insertStampsStatement = con.prepareStatement(insertStampsQuery, Statement.RETURN_GENERATED_KEYS);
@@ -248,20 +248,16 @@ public class AddNewIssue extends javax.swing.JFrame {
             ResultSet resultSet = insertStampsStatement.getGeneratedKeys();
             int issueId = 0;
             if (resultSet.next()) {
-                issueId = resultSet.getInt(1);
-                System.out.println("Issue ID " + issueId);
-            }
-            System.out.println("Inserted into stamps table. issueId: " + issueId);
+                issueId = resultSet.getInt(1); 
+            } 
 
             String getFolderId = "SELECT folder_id from folders where folder_name = '" + locationValue + "'";
-            System.out.println("query " + getFolderId);
+            ///System.out.println("query " + getFolderId);
             PreparedStatement folderid = con.prepareStatement(getFolderId);
             System.out.println("query on line 205 " + getFolderId);
             ResultSet get = folderid.executeQuery();
-            if (get.next()) {
-                System.out.println("inside if ");
-                folderId = get.getInt("folder_id");
-                System.out.println("Folder ID " + folderId);
+            if (get.next()) { 
+                folderId = get.getInt("folder_id"); 
             }
             if (newissue.getText() == null || newissue.getText().isEmpty()) {
                 JOptionPane.showMessageDialog(null, "Issue name cannot be null or empty", "Error", JOptionPane.ERROR_MESSAGE);
@@ -301,7 +297,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                 ResultSet attrIdResult = attrIdStatement.executeQuery();
 
                 while (attrIdResult.next()) {
-                    int attrId = attrIdResult.getInt("attr_id");
+                    attrId = attrIdResult.getInt("attr_id");
                     System.out.println("Attribute: " + attrName + ", attr_id: " + attrId);
 
                     // Insert into stamps table to get the new stamp_id
@@ -381,16 +377,16 @@ public class AddNewIssue extends javax.swing.JFrame {
                 updateFoldersStatement.setInt(3, stampId);
                 updateFoldersStatement.executeUpdate();
 
-                con.commit(); // Commit the transaction
+                con.commit();               
             }
 
-            con.commit(); // Commit the transaction
-
+            con.commit(); 
+            home.refreshJTable();
             System.out.println("Transaction committed successfully.");
         } catch (SQLException ex) {
             if (con != null) {
                 try {
-                    con.rollback(); // Rollback the transaction
+                    con.rollback();
                     System.out.println("Transaction rolled back.");
                 } catch (SQLException e) {
                     e.printStackTrace();
@@ -426,11 +422,15 @@ public class AddNewIssue extends javax.swing.JFrame {
                 if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
                     JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
                     String attrName = label.getText();
+                    if(comboBox.getSelectedItem()!=null){
                     attrValues.put(attrName, comboBox.getSelectedItem().toString());
+                    }
+                    
                 }
             } else if (component instanceof JTextField) {
                 JTextField textField = (JTextField) component;
-                int labelIndex = jPanel5.getComponentZOrder(component) - 1; // Get the index of the label (one step back)
+                int labelIndex = jPanel5.getComponentZOrder(component) - 1; 
+                System.out.println("atr id in the instance "+attrDef);
                 if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
                     JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
                     String attrName = label.getText();
@@ -439,7 +439,7 @@ public class AddNewIssue extends javax.swing.JFrame {
             } else if (component instanceof JXDatePicker) {
                 JXDatePicker datePicker = (JXDatePicker) component;
                 Date date = datePicker.getDate();
-                int labelIndex = jPanel5.getComponentZOrder(component) - 1; // Get the index of the label (one step back)
+                int labelIndex = jPanel5.getComponentZOrder(component) - 1; 
                 if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
                     JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
                     String attrName = label.getText();
@@ -697,7 +697,6 @@ public class AddNewIssue extends javax.swing.JFrame {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         handleOK();
         handleOkButton();
-
         dispose();
     }//GEN-LAST:event_jButton1ActionPerformed
 

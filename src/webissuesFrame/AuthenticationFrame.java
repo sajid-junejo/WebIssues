@@ -178,7 +178,7 @@ public class AuthenticationFrame extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         String user = email.getText();
-    String pass = password.getText();
+        String pass = password.getText();
     try {
         UserDAO userDAO = new UserDAOImpl();
         User retrievedUser = userDAO.getUserByLoginAndPassword(user, pass);
