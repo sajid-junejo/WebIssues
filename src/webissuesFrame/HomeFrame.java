@@ -32,6 +32,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.safety.Whitelist;
 import pojos.Folder;
 import pojos.Project;
+import pojos.SessionManager;
 
 public class HomeFrame extends javax.swing.JFrame {
 
@@ -39,6 +40,7 @@ public class HomeFrame extends javax.swing.JFrame {
     DefaultTreeModel model;
     private IssuesDAOImpl issuesDAO = new IssuesDAOImpl();
     private ProjectsDAOImpl projectsDAO = new ProjectsDAOImpl();
+    //SessionManager 
     AddViewFrame view;
     private JLabel[] labels;
     int issueId = 0;
@@ -48,7 +50,8 @@ public class HomeFrame extends javax.swing.JFrame {
     int typeId = 0;
     int attributeY = 0;
     String issueName = "";
-    int userId = 0;
+    int userID = SessionManager.getInstance().getUserId();
+    int userAccess = SessionManager.getInstance().getUserAccess();
     String folderName = null;
 
     public HomeFrame() {
@@ -56,18 +59,17 @@ public class HomeFrame extends javax.swing.JFrame {
         // Get the default screen device
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 
-        // Get the screen width and height
         int screenWidth = gd.getDisplayMode().getWidth();
         int screenHeight = gd.getDisplayMode().getHeight();
         System.out.println("width "+screenWidth + "Height" +  screenHeight);
         // Set the JFrame size to match screen width and height
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
-        //this.setExtendedState(HomeFrame.MAXIMIZED_BOTH);
+        this.setExtendedState(HomeFrame.MAXIMIZED_BOTH);
         Load();
         //getUser();
         jLabel12.setEnabled(false);
         labels = new JLabel[0];
-        Image icon = new ImageIcon(this.getClass().getResource("/webissueslogo.png")).getImage();
+        Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Genetech WI - WebIssues Desktop Client");
         jPanel3.setVisible(false);
@@ -169,25 +171,25 @@ public class HomeFrame extends javax.swing.JFrame {
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel2.setText("Projects");
 
-        jLabel3.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Documents\\NetBeansProjects\\Webissues\\src\\update.png")); // NOI18N
+        jLabel3.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\update.png")); // NOI18N
         jLabel3.setText("Update");
         jLabel3.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jLabel3.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
 
-        jLabel4.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Documents\\NetBeansProjects\\Webissues\\src\\alerts-icon.jpg")); // NOI18N
+        jLabel4.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\alerts-icon.jpg")); // NOI18N
         jLabel4.setText("Alerts");
         jLabel4.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jLabel4.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
 
         jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel7.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Documents\\NetBeansProjects\\Webissues\\src\\goto.png")); // NOI18N
+        jLabel7.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\goto.png")); // NOI18N
         jLabel7.setText("Go To Items");
         jLabel7.setVerticalAlignment(javax.swing.SwingConstants.BOTTOM);
         jLabel7.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jLabel7.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
 
         jLabel8.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabel8.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Documents\\NetBeansProjects\\Webissues\\src\\keys.png")); // NOI18N
+        jLabel8.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\keys.png")); // NOI18N
         jLabel8.setText("Password");
         jLabel8.setIconTextGap(-12);
         jLabel8.setPreferredSize(new java.awt.Dimension(107, 20));
@@ -196,7 +198,7 @@ public class HomeFrame extends javax.swing.JFrame {
         jSeparator2.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
         jLabel9.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabel9.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Documents\\NetBeansProjects\\Webissues\\src\\info.png")); // NOI18N
+        jLabel9.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\info.png")); // NOI18N
         jLabel9.setText("Preferences");
         jLabel9.setIconTextGap(8);
 
@@ -248,7 +250,7 @@ public class HomeFrame extends javax.swing.JFrame {
         jSeparator4.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
         jLabel12.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel12.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\addissue.jpg")); // NOI18N
+        jLabel12.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\addissue.jpg")); // NOI18N
         jLabel12.setText("Add Issue");
         jLabel12.setVerticalAlignment(javax.swing.SwingConstants.TOP);
         jLabel12.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
@@ -262,7 +264,7 @@ public class HomeFrame extends javax.swing.JFrame {
         jSeparator5.setForeground(new java.awt.Color(153, 153, 153));
         jSeparator5.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
-        jLabel5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/information.png"))); // NOI18N
+        jLabel5.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\information.png")); // NOI18N
         jLabel5.setText("View was updated Succesfully");
 
         jSplitPane2.setBackground(new java.awt.Color(255, 255, 255));
@@ -365,7 +367,7 @@ public class HomeFrame extends javax.swing.JFrame {
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1046, Short.MAX_VALUE)
+            .addGap(0, 1176, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -420,7 +422,7 @@ public class HomeFrame extends javax.swing.JFrame {
                                 .addComponent(jLabel1)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 124, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(0, 334, Short.MAX_VALUE))
+                        .addGap(0, 0, Short.MAX_VALUE))
                     .addComponent(jSplitPane2))
                 .addContainerGap())
             .addGroup(jPanel1Layout.createSequentialGroup()
@@ -482,7 +484,7 @@ public class HomeFrame extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 1390, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 1520, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -491,6 +493,7 @@ public class HomeFrame extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+    
     public static int getTypeIdFromNode(DefaultMutableTreeNode node) {
         Object userObject = node.getUserObject();
         if (userObject instanceof String) {
@@ -1242,100 +1245,6 @@ public class HomeFrame extends javax.swing.JFrame {
         }
     }
 
-    public void deleteIssue() {
-        Connection connection = null;
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-        System.out.println("this is issue id in the delete method " + issueId);
-        try {
-            connection = DbConnection.getConnection();
-            connection.setAutoCommit(false);
-
-            String getSessionQuery = "SELECT user_id FROM sessions";
-            statement = connection.prepareStatement(getSessionQuery);
-            resultSet = statement.executeQuery();
-            int userId = 0; // Initialize userId
-            if (resultSet.next()) {
-                userId = resultSet.getInt("user_id");
-            }
-
-            String getFolderId = "SELECT folder_id from issues where issue_id = ?";
-            statement = connection.prepareStatement(getFolderId);
-            statement.setInt(1, issueId);
-            resultSet = statement.executeQuery();
-            int folderId = 0;
-            if (resultSet.next()) {
-                folderId = resultSet.getInt("folder_id");
-            }
-
-            String insertQuery = "INSERT INTO stamps ( user_id, stamp_time ) VALUES ( ?, ? )";
-            statement = connection.prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS);
-            statement.setInt(1, userId);
-            statement.setInt(2, (int) (System.currentTimeMillis() / 1000));
-            statement.executeUpdate();
-            resultSet = statement.getGeneratedKeys();
-            int generatedId = 0;
-            if (resultSet.next()) {
-                generatedId = resultSet.getInt(1);
-            }
-
-            String issueStubsQuery = "INSERT INTO issue_stubs ( stub_id, prev_id, issue_id, folder_id ) VALUES ( ?, ?, ?, ? )";
-            statement = connection.prepareStatement(issueStubsQuery);
-            statement.setInt(1, generatedId);
-            statement.setInt(2, issueId); // Make sure issueId is initialized
-            statement.setInt(3, issueId); // Make sure issueId is initialized
-            statement.setInt(4, folderId); // Make sure folderId is initialized
-            statement.executeUpdate();
-
-            String deleteQuery = "DELETE FROM issues WHERE issue_id = ?";
-            statement = connection.prepareStatement(deleteQuery);
-            statement.setInt(1, issueId);
-
-            statement.executeUpdate();
-
-            String updateFoldersQuery = "UPDATE folders SET stamp_id = ? WHERE folder_id = ? AND COALESCE( stamp_id, 0 ) < ?";
-            statement = connection.prepareStatement(updateFoldersQuery);
-            statement.setInt(1, generatedId);
-            statement.setInt(2, folderId); // Make sure folderId is initialized
-            statement.setInt(3, generatedId);
-            statement.executeUpdate();
-
-            connection.commit();
-            JOptionPane.showMessageDialog(null, "Issue successfully deleted!", "Success", JOptionPane.INFORMATION_MESSAGE);
-        } catch (Exception ex) {
-            if (connection != null) {
-                try {
-                    connection.rollback();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            throw new RuntimeException("Error deleting issue: " + ex.getMessage(), ex);
-        } finally {
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
     public void refreshJTable() {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         model.setRowCount(0);
@@ -1429,14 +1338,11 @@ public class HomeFrame extends javax.swing.JFrame {
 
             JMenuItem updateItem = new JMenuItem("Edit Attributes");
             JMenuItem insertItem = new JMenuItem("Add Issue");
-            JMenuItem deleteItem = new JMenuItem("Delete Issue");
             JMenuItem editItem = new JMenuItem("Edit");
-            ImageIcon insertIcon = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\edit.png");
-            ImageIcon addIssue = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\addissue.jpg");
-            ImageIcon deleteIssue = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\delete.jpg");
+            ImageIcon insertIcon = new ImageIcon("/img/edit.png");
+            ImageIcon addIssue = new ImageIcon("/img/addissue.jpg");
             updateItem.setIcon(insertIcon);
             insertItem.setIcon(addIssue);
-            deleteItem.setIcon(deleteIssue);
             updateItem.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -1463,28 +1369,6 @@ public class HomeFrame extends javax.swing.JFrame {
                 }
             });
 
-            deleteItem.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    int option = JOptionPane.showConfirmDialog(
-                            null,
-                            "Are you sure you want to delete " + issueName,
-                            "Confirmation",
-                            JOptionPane.YES_NO_OPTION);
-
-                    if (option == JOptionPane.YES_OPTION) {
-                        deleteIssue();
-                        refreshJTable();
-                        jPanel2.removeAll();
-                        jPanel2.repaint();
-                        jPanel2.revalidate();
-                    } else if (option == JOptionPane.NO_OPTION) {
-                        System.out.println("User clicked NO.");
-                    }
-                    System.out.println("Delete option selected");
-                }
-            });
-
             editItem.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -1492,10 +1376,36 @@ public class HomeFrame extends javax.swing.JFrame {
                     System.out.println("Edit option selected");
                 }
             });
-
-            popupMenu.add(updateItem);
             popupMenu.add(insertItem);
-            popupMenu.add(deleteItem);
+            popupMenu.add(updateItem);
+            if (userAccess == 2) {
+                JMenuItem deleteItem = new JMenuItem("Delete Issue");
+                ImageIcon deletedIssue = new ImageIcon("/img/delete.jpg");
+                deleteItem.setIcon(deletedIssue);
+                deleteItem.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        int option = JOptionPane.showConfirmDialog(
+                                null,
+                                "Are you sure you want to delete " + issueName,
+                                "Confirmation",
+                                JOptionPane.YES_NO_OPTION);
+
+                        if (option == JOptionPane.YES_OPTION) {
+                            issuesDAO.deleteIssue(issueId); 
+                            refreshJTable();
+                            jPanel2.removeAll();
+                            jPanel2.repaint();
+                            jPanel2.revalidate();
+                        } else if (option == JOptionPane.NO_OPTION) {
+                            System.out.println("User clicked NO.");
+                        }
+                        System.out.println("Delete option selected");
+                    }
+                });
+                popupMenu.add(deleteItem);
+            }
+      
             popupMenu.add(editItem);
 
             popupMenu.show(jTable1, evt.getX(), evt.getY());
@@ -1551,25 +1461,12 @@ public class HomeFrame extends javax.swing.JFrame {
 
     private void jPanel2MouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel2MouseDragged
         // Calculate the change in mouseY (vertical movement) during dragging
-        int mouseYChange = evt.getY() - evt.getPoint().y;
-
-        // Calculate the new heights for jScrollPane2 and jScrollPane3
-        int newScrollPane2Height = jScrollPane2InitialHeight + mouseYChange;
-        int newScrollPane3Height = jScrollPane3InitialHeight - mouseYChange;
-
-        // Update the heights of the scroll panes
-        jScrollPane2.setPreferredSize(new Dimension(jScrollPane2.getWidth(), newScrollPane2Height));
-        jScrollPane3.setPreferredSize(new Dimension(jScrollPane3.getWidth(), newScrollPane3Height));
-
-        // Repaint to update the changes
-        jScrollPane2.revalidate();
-        jScrollPane3.revalidate();
+  
     }//GEN-LAST:event_jPanel2MouseDragged
 
     private void jPanel2MouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel2MouseMoved
         // Save the initial heights of jScrollPane2 and jScrollPane3
-        jScrollPane2InitialHeight = jScrollPane2.getHeight();
-        jScrollPane3InitialHeight = jScrollPane3.getHeight();
+        
     }//GEN-LAST:event_jPanel2MouseMoved
 
     private void jScrollPane2MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_jScrollPane2MouseWheelMoved
@@ -1593,9 +1490,7 @@ public class HomeFrame extends javax.swing.JFrame {
         System.out.println(" this is y " + y);
 
     }//GEN-LAST:event_jPanel1MouseClicked
-    private int jScrollPane2InitialHeight;
-    private int jScrollPane3InitialHeight;
-
+    
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">

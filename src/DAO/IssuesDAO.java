@@ -14,4 +14,5 @@ public interface IssuesDAO {
      DefaultTableModel createTableModel(String[] columnNames, List<Object[]> data);
      //DefaultTableModel getIssuesByTypeId3(String folderName,List<String> selectedColumns);
      List<String> getColumnNames();
+     void deleteIssue(int issueId);
 }

@@ -11,7 +11,7 @@ public class LoginFrame extends javax.swing.JFrame {
     public LoginFrame() {
         initComponents();
         setExtendedState(JFrame.MAXIMIZED_BOTH);
-        Image icon = new ImageIcon(this.getClass().getResource("/webissueslogo.png")).getImage();
+        Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Webissues 2.0.2");
     }
@@ -79,7 +79,7 @@ public class LoginFrame extends javax.swing.JFrame {
         jLabel2.setText(" Recent Connections");
 
         jLabel3.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
-        jLabel3.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Documents\\NetBeansProjects\\Webissues\\src\\play.png")); // NOI18N
+        jLabel3.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\play.png")); // NOI18N
         jLabel3.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabel3MouseClicked(evt);
@@ -163,7 +163,6 @@ public class LoginFrame extends javax.swing.JFrame {
 
     private void jLabel3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseClicked
         
-        System.out.println(address.getText());
         if (address.getText().equals("https://192.168.85.130/webissues/")) {
             AuthenticationFrame auth = new AuthenticationFrame();
             auth.setLocationRelativeTo(null); // Center the window

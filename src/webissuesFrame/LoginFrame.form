@@ -187,7 +187,7 @@
               <Font name="Tahoma" size="18" style="1"/>
             </Property>
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Documents\NetBeansProjects\Webissues\src\play.png"/>
+              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\play.png"/>
             </Property>
           </Properties>
           <Events>

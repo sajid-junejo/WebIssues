@@ -1,19 +1,33 @@
 package webissuesFrame;
+
 import DAO.UserDAO;
 import DAOImpl.UserDAOImpl;
 import java.awt.Image;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.JSONObject;
+import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
+import pojos.Sessions;
 import pojos.User;
+import pojos.SessionManager; // Replace with the actual package name
 
 public class AuthenticationFrame extends javax.swing.JFrame {
+
+    // Create a Sessions object and set its properties
+    Sessions session = new Sessions();
+
     public AuthenticationFrame() {
         initComponents();
-        Image icon = new ImageIcon(this.getClass().getResource("/webissueslogo.png")).getImage();
+        Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Login");
     }
@@ -179,26 +193,72 @@ public class AuthenticationFrame extends javax.swing.JFrame {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         String user = email.getText();
         String pass = password.getText();
-    try {
-        UserDAO userDAO = new UserDAOImpl();
-        User retrievedUser = userDAO.getUserByLoginAndPassword(user, pass);
-        
-        if (user.equals("") || password.equals("")) {
-            JOptionPane.showMessageDialog(this, "Fields are missing");
-        } else if (retrievedUser != null) {
-            LoginFrame login = new LoginFrame();
-            login.dispose();
-            dispose();
-            HomeFrame home = new HomeFrame();
-            home.setTitle("Welcome");
-            home.setVisible(true);
-            JOptionPane.showMessageDialog(this, "Successfully Logged in");
-        } else {
-            JOptionPane.showMessageDialog(this, "Error, Username or Password Wrong!", "Sajid", JOptionPane.ERROR_MESSAGE);
+
+        try {
+            String apiUrl = "http://192.168.85.130/webissues/server/api/login.php";
+            URL url = new URL(apiUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+
+            // Set headers
+            connection.setRequestProperty("Content-Type", "application/json");
+
+            // Create JSON request body
+            String jsonInputString = "{\"login\":\"" + user + "\",\"password\":\"" + pass + "\"}";
+
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+
+            int responseCode = connection.getResponseCode();
+            System.out.println("Response Code: " + responseCode);
+            // Read the response from the API
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                String inputLine;
+                StringBuilder response = new StringBuilder();
+
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+
+                System.out.println("Response Body: " + response.toString());
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    // Parse JSON response
+                    JSONObject jsonResponse = new JSONObject(response.toString());
+                    JSONObject result = jsonResponse.getJSONObject("result");
+                    
+                    SessionManager.getInstance().setUserId(result.getInt("userId"));
+                    SessionManager.getInstance().setCsrfToken(result.getString("csrfToken"));
+                    SessionManager.getInstance().setUserName(result.getString("userName"));
+                    SessionManager.getInstance().setUserAccess(result.getInt("userAccess"));
+                    // Retrieve data from SessionManager
+                    int userId = SessionManager.getInstance().getUserId();
+                    String csrfToken = SessionManager.getInstance().getCsrfToken();
+
+                    System.out.println("User ID: " + userId);
+                    System.out.println("CSRF Token: " + csrfToken);
+
+                    LoginFrame login = new LoginFrame();
+                    login.dispose();
+                    dispose();
+                    HomeFrame home = new HomeFrame();
+                    home.setTitle("Welcome");
+                    home.setVisible(true);
+                    JOptionPane.showMessageDialog(this, "Successfully Logged in");
+                    // Create and show HomeFrame here
+                } else {
+                    JOptionPane.showMessageDialog(this, "Error, Username or Password Wrong!", "Sajid", JOptionPane.ERROR_MESSAGE);
+                }
+
+            }
+
+            connection.disconnect();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, e.getMessage());
         }
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, e.getMessage());
-    }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
@@ -209,26 +269,26 @@ public class AuthenticationFrame extends javax.swing.JFrame {
     /**
      * @param args the command line arguments
      */
-   public static void main(String args[]) {
-    /* Set the Nimbus look and feel */
-    try {
-        for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-            if ("Nimbus".equals(info.getName())) {
-                javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                break;
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
             }
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(AuthenticationFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-    } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-        java.util.logging.Logger.getLogger(AuthenticationFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-    }
 
-    /* Create and display the form */
-    java.awt.EventQueue.invokeLater(() -> {
-        AuthenticationFrame frame = new AuthenticationFrame();
-        frame.setLocationRelativeTo(null); // Set the frame to appear in the center
-        frame.setVisible(true);
-    });
-}
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(() -> {
+            AuthenticationFrame frame = new AuthenticationFrame();
+            frame.setLocationRelativeTo(null); // Set the frame to appear in the center
+            frame.setVisible(true);
+        });
+    }
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

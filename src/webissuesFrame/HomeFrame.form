@@ -23,7 +23,7 @@
   <Layout>
     <DimensionLayout dim="0">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Component id="jPanel1" alignment="0" pref="1390" max="32767" attributes="0"/>
+          <Component id="jPanel1" alignment="0" pref="1520" max="32767" attributes="0"/>
       </Group>
     </DimensionLayout>
     <DimensionLayout dim="1">
@@ -95,7 +95,7 @@
                                   <Component id="jComboBox1" min="-2" pref="124" max="-2" attributes="0"/>
                               </Group>
                           </Group>
-                          <EmptySpace min="0" pref="334" max="32767" attributes="0"/>
+                          <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                       </Group>
                       <Component id="jSplitPane2" alignment="0" max="32767" attributes="0"/>
                   </Group>
@@ -204,7 +204,7 @@
         <Component class="javax.swing.JLabel" name="jLabel3">
           <Properties>
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Documents\NetBeansProjects\Webissues\src\update.png"/>
+              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\update.png"/>
             </Property>
             <Property name="text" type="java.lang.String" value="Update"/>
             <Property name="horizontalTextPosition" type="int" value="0"/>
@@ -214,7 +214,7 @@
         <Component class="javax.swing.JLabel" name="jLabel4">
           <Properties>
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Documents\NetBeansProjects\Webissues\src\alerts-icon.jpg"/>
+              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\alerts-icon.jpg"/>
             </Property>
             <Property name="text" type="java.lang.String" value="Alerts"/>
             <Property name="horizontalTextPosition" type="int" value="0"/>
@@ -225,7 +225,7 @@
           <Properties>
             <Property name="horizontalAlignment" type="int" value="0"/>
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Documents\NetBeansProjects\Webissues\src\goto.png"/>
+              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\goto.png"/>
             </Property>
             <Property name="text" type="java.lang.String" value="Go To Items"/>
             <Property name="verticalAlignment" type="int" value="3"/>
@@ -237,7 +237,7 @@
           <Properties>
             <Property name="horizontalAlignment" type="int" value="2"/>
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Documents\NetBeansProjects\Webissues\src\keys.png"/>
+              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\keys.png"/>
             </Property>
             <Property name="text" type="java.lang.String" value="Password"/>
             <Property name="iconTextGap" type="int" value="-12"/>
@@ -258,7 +258,7 @@
           <Properties>
             <Property name="horizontalAlignment" type="int" value="2"/>
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Documents\NetBeansProjects\Webissues\src\info.png"/>
+              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\info.png"/>
             </Property>
             <Property name="text" type="java.lang.String" value="Preferences"/>
             <Property name="iconTextGap" type="int" value="8"/>
@@ -356,7 +356,7 @@
           <Properties>
             <Property name="horizontalAlignment" type="int" value="0"/>
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\addissue.jpg"/>
+              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\addissue.jpg"/>
             </Property>
             <Property name="text" type="java.lang.String" value="Add Issue"/>
             <Property name="verticalAlignment" type="int" value="1"/>
@@ -378,7 +378,7 @@
         <Component class="javax.swing.JLabel" name="jLabel5">
           <Properties>
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="3" name="/information.png"/>
+              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\information.png"/>
             </Property>
             <Property name="text" type="java.lang.String" value="View was updated Succesfully"/>
           </Properties>
@@ -553,7 +553,7 @@
                       <Layout>
                         <DimensionLayout dim="0">
                           <Group type="103" groupAlignment="0" attributes="0">
-                              <EmptySpace min="0" pref="1046" max="32767" attributes="0"/>
+                              <EmptySpace min="0" pref="1176" max="32767" attributes="0"/>
                           </Group>
                         </DimensionLayout>
                         <DimensionLayout dim="1">

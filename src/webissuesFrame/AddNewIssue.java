@@ -24,12 +24,12 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import org.jdesktop.swingx.JXDatePicker;
-
+import pojos.SessionManager;
 public class AddNewIssue extends javax.swing.JFrame {
              
     public AddNewIssue() {
         initComponents();
-        Image icon = new ImageIcon(this.getClass().getResource("/webissueslogo.png")).getImage();
+        Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Add Issue");
         this.setLocationRelativeTo(null);
@@ -42,6 +42,8 @@ public class AddNewIssue extends javax.swing.JFrame {
     int typeId = 0;
     int attrId = 0;
     String attrDef = null;
+    int userID = SessionManager.getInstance().getUserId();
+    int userAccess = SessionManager.getInstance().getUserAccess();
     private Map<String, String> attrValues = new HashMap<>();
 
     public void setRowData(Object[] rowData, String[] columnNames) {
@@ -233,16 +235,9 @@ public class AddNewIssue extends javax.swing.JFrame {
         try {
             con = DbConnection.getConnection();
             con.setAutoCommit(false); 
-            String getSessionQuery = "SELECT user_id FROM sessions";
-            PreparedStatement getSessionStatement = con.prepareStatement(getSessionQuery);
-            ResultSet sessionResultSet = getSessionStatement.executeQuery();
-            int userId = 0;
-            if (sessionResultSet.next()) {
-                userId = sessionResultSet.getInt("user_id"); 
-            }
             String insertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
             PreparedStatement insertStampsStatement = con.prepareStatement(insertStampsQuery, Statement.RETURN_GENERATED_KEYS);
-            insertStampsStatement.setInt(1, userId);
+            insertStampsStatement.setInt(1, userID);
             insertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
             insertStampsStatement.executeUpdate();
             ResultSet resultSet = insertStampsStatement.getGeneratedKeys();
@@ -303,7 +298,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                     // Insert into stamps table to get the new stamp_id
                     String newInsertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
                     PreparedStatement newInsertStampsStatement = con.prepareStatement(newInsertStampsQuery, Statement.RETURN_GENERATED_KEYS);
-                    newInsertStampsStatement.setInt(1, userId);
+                    newInsertStampsStatement.setInt(1, userID);
                     newInsertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
                     newInsertStampsStatement.executeUpdate();
 
@@ -339,7 +334,7 @@ public class AddNewIssue extends javax.swing.JFrame {
             if (description.getText() != null && !description.getText().isEmpty()) {
                 String stampQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
                 PreparedStatement stampStatement = con.prepareStatement(stampQuery, Statement.RETURN_GENERATED_KEYS);
-                stampStatement.setInt(1, userId);
+                stampStatement.setInt(1, userID);
                 stampStatement.setLong(2, System.currentTimeMillis() / 1000);
                 stampStatement.executeUpdate();
 

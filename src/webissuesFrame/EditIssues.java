@@ -26,9 +26,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import static javax.xml.bind.DatatypeConverter.parseDate;
 import org.jdesktop.swingx.JXDatePicker;
+import pojos.SessionManager;
 
 public class EditIssues extends javax.swing.JFrame {
-
+    
     private String[] columnNames;
     private Object[] rowData;
     private JLabel[] labels;
@@ -52,7 +53,8 @@ public class EditIssues extends javax.swing.JFrame {
     Map<Integer, Object> attrIdToSelectedItemMap = new HashMap<>();
     Map<String, String> attrValues = new HashMap<>();
     Map<Integer, Object> attrIdToOldValueMap = new HashMap<>();
-
+    String csrfToken = SessionManager.getInstance().getCsrfToken();
+    int userID = SessionManager.getInstance().getUserId();
     public void setRowData(Object[] rowData, String[] columnNames) {
         int numFields = columnNames.length;
         Connection con = null;
@@ -504,13 +506,6 @@ public class EditIssues extends javax.swing.JFrame {
                 valueNew = null;
                 valueOld = null;
             }
-            String getSessionQuery = "SELECT user_id FROM sessions";
-            PreparedStatement getSessionStatement = connection.prepareStatement(getSessionQuery);
-            ResultSet sessionResultSet = getSessionStatement.executeQuery();
-            int userId = 0;
-            if (sessionResultSet.next()) {
-                userId = sessionResultSet.getInt("user_id");
-            }
             int StampsIssueId = 0;
 
             String nameTextValue = nametext.getText();
@@ -524,7 +519,7 @@ public class EditIssues extends javax.swing.JFrame {
                 if (!valueNew.equals(nameTextValue)) {
                     String insertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
                     PreparedStatement insertStampsStatement = connection.prepareStatement(insertStampsQuery, Statement.RETURN_GENERATED_KEYS);
-                    insertStampsStatement.setInt(1, userId);
+                    insertStampsStatement.setInt(1, userID);
                     insertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
                     insertStampsStatement.executeUpdate();
                     resultSet = insertStampsStatement.getGeneratedKeys();
@@ -790,20 +785,19 @@ public class EditIssues extends javax.swing.JFrame {
                     try {
                         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
                         Date oldDate = dateFormat.parse((String) oldValue);
-                        oldValue = oldDate; 
+                        oldValue = oldDate;
                     } catch (ParseException e) {
-                        e.printStackTrace(); 
+                        e.printStackTrace();
                     }
                 }
 
                 if (!Objects.equals(selectedItem, oldValue)) {
-                    if(oldValue instanceof Date)
-                    {
-                        System.out.println("it's date "+oldValue);
+                    if (oldValue instanceof Date) {
+                        System.out.println("it's date " + oldValue);
                     }
                     String newInsertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
                     PreparedStatement newInsertStampsStatement = connection.prepareStatement(newInsertStampsQuery, Statement.RETURN_GENERATED_KEYS);
-                    newInsertStampsStatement.setInt(1, userId);
+                    newInsertStampsStatement.setInt(1, userID);
                     newInsertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
                     newInsertStampsStatement.executeUpdate();
 
@@ -824,7 +818,7 @@ public class EditIssues extends javax.swing.JFrame {
                     changeStatement.setInt(4, stampId);
                     changeStatement.setInt(5, attributeId);
                     if (selectedItem instanceof Date) {
-                        Date selectedDate =  (Date) selectedItem;
+                        Date selectedDate = (Date) selectedItem;
                         Date oldSelected = (Date) oldValue;
                         String formattedDate = new SimpleDateFormat("yyyy-MM-dd").format(selectedDate);
                         String oldFormattedDate = new SimpleDateFormat("yyyy-MM-dd").format(oldSelected);
