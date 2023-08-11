@@ -1,13 +1,15 @@
 package webissuesFrame;
+import com.mysql.cj.conf.PropertyKey;
 import java.awt.Frame;
 import java.awt.Image;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.plaf.basic.BasicArrowButton;
 import javax.swing.table.DefaultTableModel;
+import pojos.Path;
   
 public class LoginFrame extends javax.swing.JFrame {
- 
+   // Path path = new Path();
     public LoginFrame() {
         initComponents();
         setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -62,7 +64,8 @@ public class LoginFrame extends javax.swing.JFrame {
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {" Genetech WI", "https://192.168.85.130/webissues/"}
+                {" Genetech WI", "https://192.168.85.130/webissues/"},
+                {" Genetech WI", "https://webissues-new.genetechz.com/"}
             },
             new String [] {
                 "Name", "Addres"
@@ -79,7 +82,7 @@ public class LoginFrame extends javax.swing.JFrame {
         jLabel2.setText(" Recent Connections");
 
         jLabel3.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
-        jLabel3.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\play.png")); // NOI18N
+        jLabel3.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\play-button-arrowhead.png")); // NOI18N
         jLabel3.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabel3MouseClicked(evt);
@@ -113,7 +116,8 @@ public class LoginFrame extends javax.swing.JFrame {
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(address, javax.swing.GroupLayout.DEFAULT_SIZE, 950, Short.MAX_VALUE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                .addComponent(jLabel3)
+                                .addGap(20, 20, 20)))
                         .addGap(169, 169, 169))))
         );
         jPanel1Layout.setVerticalGroup(
@@ -153,17 +157,18 @@ public class LoginFrame extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+   
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
        
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         int selectedRow = jTable1.getSelectedRow();
         address.setText(model.getValueAt(selectedRow, 1).toString());
     }//GEN-LAST:event_jTable1MouseClicked
-
+    
     private void jLabel3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseClicked
-        
-        if (address.getText().equals("https://192.168.85.130/webissues/")) {
+          Path.getInstance().setAddress(address.getText());
+          System.out.println(Path.getInstance().getAddress());
+        if (address.getText().equals("https://192.168.85.130/webissues/") || address.getText().equals("https://webissues-new.genetechz.com/")) {
             AuthenticationFrame auth = new AuthenticationFrame();
             auth.setLocationRelativeTo(null); // Center the window
         auth.setVisible(true);
@@ -217,4 +222,5 @@ public class LoginFrame extends javax.swing.JFrame {
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JTable jTable1;
     // End of variables declaration//GEN-END:variables
+
 }

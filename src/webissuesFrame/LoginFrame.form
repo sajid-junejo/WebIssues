@@ -103,8 +103,9 @@
                               <Component id="jScrollPane1" max="32767" attributes="0"/>
                               <Group type="102" attributes="0">
                                   <Component id="address" pref="950" max="32767" attributes="0"/>
-                                  <EmptySpace min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabel3" max="32767" attributes="0"/>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Component id="jLabel3" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="20" max="-2" attributes="0"/>
                               </Group>
                           </Group>
                           <EmptySpace min="-2" pref="169" max="-2" attributes="0"/>
@@ -157,12 +158,14 @@
             <Component class="javax.swing.JTable" name="jTable1">
               <Properties>
                 <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.editors2.TableModelEditor">
-                  <Table columnCount="2" rowCount="1">
+                  <Table columnCount="2" rowCount="2">
                     <Column editable="true" title="Name" type="java.lang.Object">
+                      <Data value=" Genetech WI"/>
                       <Data value=" Genetech WI"/>
                     </Column>
                     <Column editable="true" title="Addres" type="java.lang.Object">
                       <Data value="https://192.168.85.130/webissues/"/>
+                      <Data value="https://webissues-new.genetechz.com/"/>
                     </Column>
                   </Table>
                 </Property>
@@ -187,7 +190,7 @@
               <Font name="Tahoma" size="18" style="1"/>
             </Property>
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\play.png"/>
+              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\play-button-arrowhead.png"/>
             </Property>
           </Properties>
           <Events>

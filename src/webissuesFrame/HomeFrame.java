@@ -6,30 +6,22 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
-import java.lang.String;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import DAOImpl.IssuesDAOImpl;
 import DAOImpl.ProjectsDAOImpl;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
-import org.jsoup.Jsoup;
-import org.jsoup.safety.Whitelist;
 import pojos.Folder;
 import pojos.Project;
 import pojos.SessionManager;
@@ -62,11 +54,9 @@ public class HomeFrame extends javax.swing.JFrame {
         int screenWidth = gd.getDisplayMode().getWidth();
         int screenHeight = gd.getDisplayMode().getHeight();
         System.out.println("width "+screenWidth + "Height" +  screenHeight);
-        // Set the JFrame size to match screen width and height
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
         this.setExtendedState(HomeFrame.MAXIMIZED_BOTH);
         Load();
-        //getUser();
         jLabel12.setEnabled(false);
         labels = new JLabel[0];
         Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
@@ -1157,7 +1147,7 @@ public class HomeFrame extends javax.swing.JFrame {
                     attributeString = "Name -> " + " -> " + valueOld + " -> " + valueNew;
                 } else {
                     if (valueOld == null || valueOld.isEmpty()) {
-                        attributeString = attrName + " -> empty -> " + valueNew;
+                        attributeString = attrName + " -> " + valueNew;
                     } else if (valueNew == null || valueNew.isEmpty()) {
                         attributeString = attrName + " -> " + valueOld + " -> empty";
                     } else {
@@ -1248,7 +1238,7 @@ public class HomeFrame extends javax.swing.JFrame {
     public void refreshJTable() {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         model.setRowCount(0);
-
+        System.out.println("Refresh table is called in the edit issues class");
         try {
             DefaultTableModel tableModel = issuesDAO.getIssuesByTypeId(typeId, folderName);
             jTable1.setModel(tableModel);
@@ -1297,6 +1287,7 @@ public class HomeFrame extends javax.swing.JFrame {
                 }
             }
             if (path != null) {
+                System.out.println("Path name "+path);
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                 int typeId = getTypeIdFromNode(node);
 
@@ -1313,7 +1304,7 @@ public class HomeFrame extends javax.swing.JFrame {
                             folderName = nodeValue.trim();
                             projectsDAO.setFolderName(folderName);
                         }
-
+                        
                         try {
                             DefaultTableModel tableModel = null;
                             tableModel = issuesDAO.getIssuesByTypeId(typeId, folderName);
@@ -1338,9 +1329,9 @@ public class HomeFrame extends javax.swing.JFrame {
 
             JMenuItem updateItem = new JMenuItem("Edit Attributes");
             JMenuItem insertItem = new JMenuItem("Add Issue");
-            JMenuItem editItem = new JMenuItem("Edit");
-            ImageIcon insertIcon = new ImageIcon("/img/edit.png");
-            ImageIcon addIssue = new ImageIcon("/img/addissue.jpg");
+            //JMenuItem editItem = new JMenuItem("Edit");
+            ImageIcon insertIcon = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\edit.png");
+            ImageIcon addIssue = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\mail.png");
             updateItem.setIcon(insertIcon);
             insertItem.setIcon(addIssue);
             updateItem.addActionListener(new ActionListener() {
@@ -1369,18 +1360,18 @@ public class HomeFrame extends javax.swing.JFrame {
                 }
             });
 
-            editItem.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-
-                    System.out.println("Edit option selected");
-                }
-            });
+//            editItem.addActionListener(new ActionListener() {
+//                @Override
+//                public void actionPerformed(ActionEvent e) {
+//
+//                    System.out.println("Edit option selected");
+//                }
+//            });
             popupMenu.add(insertItem);
             popupMenu.add(updateItem);
             if (userAccess == 2) {
                 JMenuItem deleteItem = new JMenuItem("Delete Issue");
-                ImageIcon deletedIssue = new ImageIcon("/img/delete.jpg");
+                ImageIcon deletedIssue = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\delete.png");
                 deleteItem.setIcon(deletedIssue);
                 deleteItem.addActionListener(new ActionListener() {
                     @Override
@@ -1406,14 +1397,13 @@ public class HomeFrame extends javax.swing.JFrame {
                 popupMenu.add(deleteItem);
             }
       
-            popupMenu.add(editItem);
+           // popupMenu.add(editItem);
 
             popupMenu.show(jTable1, evt.getX(), evt.getY());
         } else if (SwingUtilities.isLeftMouseButton(evt)) {
             jPanel2.removeAll();
             selectedRowIndex = jTable1.getSelectedRow();
             int rowCount = jTable1.getRowCount();
-            //System.out.println("total rows in this table "+rowCount);
             JLabel totalRows = new JLabel(rowCount + " issues");
             totalRows.setBounds(1130, 687, 30, 8);
             totalRows.setHorizontalAlignment(SwingConstants.LEFT);

@@ -24,12 +24,14 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import static javax.xml.bind.DatatypeConverter.parseDate;
 import org.jdesktop.swingx.JXDatePicker;
 import pojos.SessionManager;
 
 public class EditIssues extends javax.swing.JFrame {
-    
+
+    HomeFrame home = new HomeFrame();
     private String[] columnNames;
     private Object[] rowData;
     private JLabel[] labels;
@@ -39,7 +41,7 @@ public class EditIssues extends javax.swing.JFrame {
     public EditIssues() {
         initComponents();
         this.setLocationRelativeTo(null);
-        Image icon = new ImageIcon(this.getClass().getResource("/webissueslogo.png")).getImage();
+        Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Edit Attributes");
         labels = new JLabel[0];
@@ -50,11 +52,13 @@ public class EditIssues extends javax.swing.JFrame {
     }
     String locationValue = "";
     int issueId = 0;
+    int attrId = 0;
     Map<Integer, Object> attrIdToSelectedItemMap = new HashMap<>();
     Map<String, String> attrValues = new HashMap<>();
     Map<Integer, Object> attrIdToOldValueMap = new HashMap<>();
     String csrfToken = SessionManager.getInstance().getCsrfToken();
     int userID = SessionManager.getInstance().getUserId();
+
     public void setRowData(Object[] rowData, String[] columnNames) {
         int numFields = columnNames.length;
         Connection con = null;
@@ -104,8 +108,8 @@ public class EditIssues extends javax.swing.JFrame {
                     while (resultSet.next()) {
                         String attrName = resultSet.getString("attr_name");
                         String attrDef = resultSet.getString("attr_def");
-                        int attrId = resultSet.getInt("attr_id");
-
+                        attrId = resultSet.getInt("attr_id");
+                        System.out.println("attribute id ------------------------------------------------------------>>>>>>>>>>>>>>"+attrId);
                         int i;
                         boolean matchFound = false;
                         for (i = 0; i < numFields; i++) {
@@ -176,7 +180,6 @@ public class EditIssues extends javax.swing.JFrame {
                                     }
                                     System.out.println(attrId + " line number 175");
                                     comboBoxModel.addElement(null);
-                                    //System.out.println("row data " + rowData[i]);
                                     if (rowData[i] != null) {
                                         String selectedValue = rowData[i] != null ? rowData[i].toString() : null;
                                         if (selectedValue != null) {
@@ -507,7 +510,6 @@ public class EditIssues extends javax.swing.JFrame {
                 valueOld = null;
             }
             int StampsIssueId = 0;
-
             String nameTextValue = nametext.getText();
             if (nameTextValue == null || nameTextValue.isEmpty()) {
                 JOptionPane.showMessageDialog(null, "Issue name cannot be null or empty", "Error", JOptionPane.ERROR_MESSAGE);
@@ -548,7 +550,7 @@ public class EditIssues extends javax.swing.JFrame {
                     updateIssueStatement.executeUpdate();
                 }
             }
-            int attrId = 0;
+            //int attrId = 0;
             String getAttrIdQuery = "SELECT attr_id FROM attr_types WHERE type_id = " + typeId + " LIMIT 1";
             ResultSet attrIdResultSet = statement.executeQuery(getAttrIdQuery);
             if (attrIdResultSet.next()) {
@@ -561,60 +563,65 @@ public class EditIssues extends javax.swing.JFrame {
                     String query = "SELECT attr_id FROM attr_types WHERE attr_name = '" + labelName + "' AND type_id = " + typeId;
                     resultSet = statement.executeQuery(query);
                     if (resultSet.next()) {
-                        attrId = resultSet.getInt("attr_id") + 1;
+                        attrId = resultSet.getInt("attr_id");
+                        System.out.println("attribute id  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% >>>>>>>>>>>>>> "+attrId);
                     }
                 } else if (component instanceof JTextField) {
                     JTextField textField = (JTextField) component;
                     String textFieldValue = textField.getText();
+                    System.out.println("textfield value " + textFieldValue);
                     String attrDefQuery = "SELECT attr_def FROM attr_types WHERE attr_id = ?";
                     PreparedStatement attrDefStatement = connection.prepareStatement(attrDefQuery);
+                    System.out.println("attr id 572 " + attrId);
                     attrDefStatement.setInt(1, attrId);
                     ResultSet attrDefResult = attrDefStatement.executeQuery();
-                    attrDefResult.next();
-                    String attrDef = attrDefResult.getString("attr_def");
-                    if (attrDef.startsWith("NUMERIC")) {
-                        double minValue = Double.NEGATIVE_INFINITY;
-                        double maxValue = Double.POSITIVE_INFINITY;
-                        boolean isRequired = false;
-                        int decimalPlaces = 0;
-                        String[] attrDefParts = attrDef.split(" ");
-                        for (String attrDefPart : attrDefParts) {
-                            if (attrDefPart.contains("required")) {
-                                isRequired = true;
-                            } else if (attrDefPart.startsWith("min-value")) {
-                                String minValueString = attrDefPart.split("=")[1].replace("\"", "");
-                                minValue = Double.parseDouble(minValueString);
-                            } else if (attrDefPart.startsWith("max-value")) {
-                                String maxValueString = attrDefPart.split("=")[1].replace("\"", "");
-                                maxValue = Double.parseDouble(maxValueString);
-                            } else if (attrDefPart.startsWith("decimal")) {
-                                String decimalString = attrDefPart.split("=")[1].replace("\"", "");
-                                decimalPlaces = Integer.parseInt(decimalString);
+                    if (attrDefResult.next()) {
+                        String attrDef = attrDefResult.getString("attr_def");
+                        System.out.println("attr def in 577 " + attrDef);
+                        if (attrDef.startsWith("NUMERIC")) {
+                            double minValue = Double.NEGATIVE_INFINITY;
+                            double maxValue = Double.POSITIVE_INFINITY;
+                            boolean isRequired = false;
+                            int decimalPlaces = 0;
+                            String[] attrDefParts = attrDef.split(" ");
+                            for (String attrDefPart : attrDefParts) {
+                                if (attrDefPart.contains("required")) {
+                                    isRequired = true;
+                                } else if (attrDefPart.startsWith("min-value")) {
+                                    String minValueString = attrDefPart.split("=")[1].replace("\"", "");
+                                    minValue = Double.parseDouble(minValueString);
+                                } else if (attrDefPart.startsWith("max-value")) {
+                                    String maxValueString = attrDefPart.split("=")[1].replace("\"", "");
+                                    maxValue = Double.parseDouble(maxValueString);
+                                } else if (attrDefPart.startsWith("decimal")) {
+                                    String decimalString = attrDefPart.split("=")[1].replace("\"", "");
+                                    decimalPlaces = Integer.parseInt(decimalString);
+                                }
                             }
-                        }
 
-                        if (isRequired && textFieldValue.isEmpty()) {
-                            JOptionPane.showMessageDialog(null, "Invalid input! Numeric value is required.", "Error", JOptionPane.ERROR_MESSAGE);
-                        }
+                            if (isRequired && textFieldValue.isEmpty()) {
+                                JOptionPane.showMessageDialog(null, "Invalid input! Numeric value is required.", "Error", JOptionPane.ERROR_MESSAGE);
+                            }
 
-                        if (textFieldValue != null && !textFieldValue.isEmpty() && !textFieldValue.matches("-?\\d+(\\.\\d+)?")) {
-                            JOptionPane.showMessageDialog(null, "Invalid input! Numeric value expected.", "Error", JOptionPane.ERROR_MESSAGE);
-                        }
-                        if (textFieldValue != null && !textFieldValue.isEmpty()) {
-                            double numericValue = Double.parseDouble(textFieldValue);
-                            if (numericValue < minValue || numericValue > maxValue) {
-                                JOptionPane.showMessageDialog(null, "Invalid input! Numeric value should be between " + minValue + " and " + maxValue + ".", "Error", JOptionPane.ERROR_MESSAGE);
+                            if (textFieldValue != null && !textFieldValue.isEmpty() && !textFieldValue.matches("-?\\d+(\\.\\d+)?")) {
+                                JOptionPane.showMessageDialog(null, "Invalid input! Numeric value expected.", "Error", JOptionPane.ERROR_MESSAGE);
                             }
-                        }
-                        if (decimalPlaces > 0) {
-                            String[] valueParts = textFieldValue.split("\\.");
-                            if (valueParts.length > 1 && valueParts[1].length() > decimalPlaces) {
-                                JOptionPane.showMessageDialog(null, "Invalid input! Numeric value should have a maximum of " + decimalPlaces + " decimal places.", "Error", JOptionPane.ERROR_MESSAGE);
+                            if (textFieldValue != null && !textFieldValue.isEmpty()) {
+                                double numericValue = Double.parseDouble(textFieldValue);
+                                if (numericValue < minValue || numericValue > maxValue) {
+                                    JOptionPane.showMessageDialog(null, "Invalid input! Numeric value should be between " + minValue + " and " + maxValue + ".", "Error", JOptionPane.ERROR_MESSAGE);
+                                }
                             }
-                        }
-                    } else if (attrDef.startsWith("TEXT")) {
-                        if (textFieldValue != null && !textFieldValue.isEmpty() && !textFieldValue.matches("[A-Za-z ]+")) {
-                            JOptionPane.showMessageDialog(null, "Invalid input! Text value expected.", "Error", JOptionPane.ERROR_MESSAGE);
+                            if (decimalPlaces > 0) {
+                                String[] valueParts = textFieldValue.split("\\.");
+                                if (valueParts.length > 1 && valueParts[1].length() > decimalPlaces) {
+                                    JOptionPane.showMessageDialog(null, "Invalid input! Numeric value should have a maximum of " + decimalPlaces + " decimal places.", "Error", JOptionPane.ERROR_MESSAGE);
+                                }
+                            }
+                        } else if (attrDef.startsWith("TEXT")) {
+                            if (textFieldValue != null && !textFieldValue.isEmpty() && !textFieldValue.matches("[A-Za-z ]+")) {
+                                JOptionPane.showMessageDialog(null, "Invalid input! Text value expected.", "Error", JOptionPane.ERROR_MESSAGE);
+                            }
                         }
                     }
                     String checkQuery = "SELECT COUNT(*) AS count FROM attr_values WHERE attr_id = ? AND issue_id = ?";
@@ -647,16 +654,16 @@ public class EditIssues extends javax.swing.JFrame {
                             JOptionPane.showMessageDialog(null, "Invalid input! 'Name' value is required.", "Error", JOptionPane.ERROR_MESSAGE);
                         } else {
                             if (textFieldValue != null) {
-
+                                System.out.println(attrId+" textfield inside if stat "+textFieldValue);
                                 String insertQuery = "INSERT INTO attr_values (attr_id, issue_id, attr_value) VALUES (?, ?, ?)";
                                 PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
                                 insertStatement.setInt(1, attrId);
                                 insertStatement.setInt(2, issueId);
                                 insertStatement.setString(3, textFieldValue);
                                 insertStatement.executeUpdate();
+                                System.out.println("textfield inside if stat "+textFieldValue);
                                 Object selectedItem = textFieldValue;
                                 attrIdToSelectedItemMap.put(attrId, selectedItem);
-
                             } else {
 
                             }
@@ -839,6 +846,7 @@ public class EditIssues extends javax.swing.JFrame {
                     changeStatement.executeUpdate();
                 }
                 System.out.println("updated stamps id" + stampId);
+                home.refreshJTable();
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -1043,9 +1051,16 @@ public class EditIssues extends javax.swing.JFrame {
     }//GEN-LAST:event_nametextActionPerformed
 
     private void okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okActionPerformed
-        //handleOK();
-        handleOkButtonClick();
-        dispose();
+
+        SwingUtilities.invokeLater(() -> {
+            System.out.println("Before refreshJTable() call");
+            home.refreshJTable();
+            System.out.println("After refreshJTable() call");
+
+            handleOkButtonClick();
+            dispose();
+        });
+
     }//GEN-LAST:event_okActionPerformed
 
     private void cancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelActionPerformed

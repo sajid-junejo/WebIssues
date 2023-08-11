@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import pojos.Folder;
 import pojos.Project;
+import pojos.SessionManager;
 
 public class ProjectsDAOImpl implements ProjectsDAO{
      private String folderName;
@@ -26,26 +27,36 @@ public class ProjectsDAOImpl implements ProjectsDAO{
     public void setFolderName(String folderName) {
         this.folderName = folderName;
     }
+    
     @Override
     public List<Project> getProjects() {
-        List<Project> projects = new ArrayList<>();
-        Connection con = null;
-        Statement statement = null;
-        ResultSet projectResultSet = null;
-        try {
-              con = DbConnection.getConnection();
-              statement = con.createStatement();
+    List<Project> projects = new ArrayList<>();
+    Connection con = null;
+    Statement statement = null;
+    ResultSet projectResultSet = null;
+    try {
+        con = DbConnection.getConnection();
+        statement = con.createStatement();
 
-            String projectQuery = "SELECT project_id, project_name FROM projects";
-              projectResultSet = statement.executeQuery(projectQuery);
-            while (projectResultSet.next()) {
-                int projectId = projectResultSet.getInt("project_id");
-                String projectName = projectResultSet.getString("project_name");
-                Project project = new Project(projectId, projectName);
-                projects.add(project);
-            }
+        int userId = SessionManager.getInstance().getUserId();
+        int userAccess = SessionManager.getInstance().getUserAccess();
 
-            } catch (Exception e) {
+        String projectQuery = "SELECT p.project_id, p.project_name "
+            + "FROM projects p "
+            + "LEFT JOIN rights r ON p.project_id = r.project_id AND r.user_id = " + userId + " "
+            + "WHERE (r.project_access IS NOT NULL OR p.is_public = 1) "
+            + "AND p.is_archived = 0 "
+            + "ORDER BY p.project_name COLLATE utf8_bin";
+
+        projectResultSet = statement.executeQuery(projectQuery);
+        while (projectResultSet.next()) {
+            int projectId = projectResultSet.getInt("project_id");
+            String projectName = projectResultSet.getString("project_name");
+            Project project = new Project(projectId, projectName);
+            projects.add(project);
+        }
+
+    } catch (Exception e) {
         e.printStackTrace();
     } finally {
         try {
@@ -62,8 +73,9 @@ public class ProjectsDAOImpl implements ProjectsDAO{
             e.printStackTrace();
         }
     }
-        return projects;
-    }
+    return projects;
+}
+
 
     @Override
     public List<Folder> getFoldersForProject(int projectId) {

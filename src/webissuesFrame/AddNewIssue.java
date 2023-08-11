@@ -142,7 +142,6 @@ public class AddNewIssue extends javax.swing.JFrame {
                             DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
                             JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
                             comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                            System.out.println(attrName+" in the Enum");
                             for (String value : values) {
                                 String trimmedValue = value.trim().replaceAll("\"", "");
                                 comboBoxModel.addElement(trimmedValue);
@@ -151,7 +150,6 @@ public class AddNewIssue extends javax.swing.JFrame {
                             jPanel5.add(comboBox);
                             //attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
                         } else if (attrDef.startsWith("NUMERIC")) {
-                            System.out.println(attrName+" in the NUMERIC");
                             double minValue = 0.0;
                             double maxValue = 0.0;
                             String[] parts = attrDef.split(" ");
@@ -181,7 +179,6 @@ public class AddNewIssue extends javax.swing.JFrame {
                                 //attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
                             }
                         } else if (attrDef.startsWith("USER")) {
-                            System.out.println(attrName+" in the USER");
                             DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
                             JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
                             comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
@@ -198,13 +195,11 @@ public class AddNewIssue extends javax.swing.JFrame {
                             attrResultSet.close();
                             attrStatement.close();
                         } else if (attrDef.startsWith("TEXT")) {
-                            System.out.println(attrName+" in the TEXT");
                             JTextField textField = new JTextField();
                             textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                             jPanel5.add(textField);
                             //  attrValues.put(attrName, textField.getText());
                         } else if (attrDef.startsWith("DATETIME")) {
-                            System.out.println(attrName+" in the DATETIME");
                             JXDatePicker datePicker = new JXDatePicker();
                             datePicker.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                             jPanel5.add(datePicker);
@@ -284,7 +279,7 @@ public class AddNewIssue extends javax.swing.JFrame {
             for (Map.Entry<String, String> entry : attrValues.entrySet()) {
                 String attrName = entry.getKey();
                 String attrValue = entry.getValue();
-
+                System.out.println("Name : "+attrName +" value "+attrValue);
                 String attrIdQuery = "SELECT attr_id FROM attr_types WHERE attr_name = ? AND type_id = ?";
                 PreparedStatement attrIdStatement = con.prepareStatement(attrIdQuery);
                 attrIdStatement.setString(1, attrName);
@@ -292,6 +287,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                 ResultSet attrIdResult = attrIdStatement.executeQuery();
 
                 while (attrIdResult.next()) {
+                    if(attrValue!= null && !attrValue.trim().isEmpty()){
                     attrId = attrIdResult.getInt("attr_id");
                     System.out.println("Attribute: " + attrName + ", attr_id: " + attrId);
 
@@ -321,6 +317,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                     attrValueStatement.setInt(2, attrId);
                     attrValueStatement.setString(3, attrValue);
                     attrValueStatement.executeUpdate();
+                    }
                 }
             }
 
@@ -429,7 +426,9 @@ public class AddNewIssue extends javax.swing.JFrame {
                 if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
                     JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
                     String attrName = label.getText();
+                    if(textField.getText()!=null || !textField.getText().isEmpty()){
                     attrValues.put(attrName, textField.getText());
+                    }
                 }
             } else if (component instanceof JXDatePicker) {
                 JXDatePicker datePicker = (JXDatePicker) component;

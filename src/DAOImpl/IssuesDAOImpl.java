@@ -13,6 +13,7 @@ import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import pojos.SessionManager;
+
 public class IssuesDAOImpl implements IssuesDAO {
 
     private List<String> columnNames;
@@ -69,7 +70,8 @@ public class IssuesDAOImpl implements IssuesDAO {
                         + "AND type_id = it.type_id "
                         + ") "
                         + "WHERE f.folder_name = '" + folderName + "'"
-                        + " AND it.type_id = " + typeId;
+                        + " AND it.type_id = " + typeId
+                        + " ORDER BY s_created.stamp_time DESC";  // Add this ORDER BY clause
 
                 resultSet = statement.executeQuery(issueQuery);
                 ResultSetMetaData metaData = resultSet.getMetaData();
@@ -156,7 +158,8 @@ public class IssuesDAOImpl implements IssuesDAO {
                         + "AND type_id = it.type_id "
                         + ") "
                         + "WHERE f.folder_name = '" + folderName + "'"
-                        + " AND it.type_id = " + typeId;
+                        + " AND it.type_id = " + typeId
+                        + " ORDER BY s_created.stamp_time DESC";;
 
                 resultSet = statement.executeQuery(issueQuery);
                 ResultSetMetaData metaData = resultSet.getMetaData();
@@ -219,7 +222,8 @@ public class IssuesDAOImpl implements IssuesDAO {
                         + "JOIN issues i ON f.folder_id = i.folder_id "
                         + "JOIN stamps s ON i.stamp_id = s.stamp_id "
                         + "JOIN users u ON s.user_id = u.user_id "
-                        + "WHERE f.type_id = " + typeId + " AND f.folder_name = '" + folderName + "'";
+                        + "WHERE f.type_id = " + typeId + " AND f.folder_name = '" + folderName + "'"
+                        + " ORDER BY s.stamp_time DESC";;
 
                 resultSet = statement.executeQuery(issueQuery);
                 ResultSetMetaData metaData = resultSet.getMetaData();
@@ -280,13 +284,13 @@ public class IssuesDAOImpl implements IssuesDAO {
         return tableModel;
     }
 
-@Override
-public void deleteIssue(int issueId) {
+    @Override
+    public void deleteIssue(int issueId) {
         int userID = SessionManager.getInstance().getUserId();
         Connection connection = null;
         PreparedStatement statement = null;
         ResultSet resultSet = null;
-        
+
         try {
             connection = DbConnection.getConnection();
             connection.setAutoCommit(false);
@@ -365,5 +369,5 @@ public void deleteIssue(int issueId) {
                 }
             }
         }
-}
+    }
 }
