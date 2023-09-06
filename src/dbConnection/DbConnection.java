@@ -22,17 +22,16 @@ public class DbConnection {
        String pass = "";
        if(addres.equals("https://webissues-new.genetechz.com/"))
        {
-           jdbcUrl = "jdbc:mysql://192.168.14.2/test-webissues";
+            jdbcUrl = "jdbc:mysql://192.168.14.2/test-webissues";
             user = "root";
             pass = "MMp9ug6e";
        }
        else if(addres.equals("https://192.168.85.130/webissues/"))
        {
-           jdbcUrl = "jdbc:mysql://192.168.85.130/webissues";
+                jdbcUrl = "jdbc:mysql://192.168.85.130/webissues";
                 user = "sajid";
                 pass = "1234";
        }
-       
        
        try {
             Class.forName("com.mysql.cj.jdbc.Driver");

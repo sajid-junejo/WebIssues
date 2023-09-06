@@ -2,11 +2,13 @@ package webissuesFrame;
 
 import DAO.UserDAO;
 import DAOImpl.UserDAOImpl;
+import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Image;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import org.json.JSONObject;
 import java.net.URLEncoder;
@@ -14,6 +16,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.net.ssl.HttpsURLConnection;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import pojos.Path;
@@ -26,18 +29,21 @@ public class AuthenticationFrame extends javax.swing.JFrame {
 
     Sessions session = new Sessions();
     Path path = Path.getInstance();
-        String address = path.getAddress();            
-    public AuthenticationFrame() {
+    
+        String address = LoginFrame.apiUrl;           
+    public AuthenticationFrame() {       
         initComponents();
-        if(address.equals("https://webissues-new.genetechz.com/")){
-            hostname.setText("Address : https://webissues-new.genetechz.com/");
-        }
-        else if(address.equals("https://192.168.85.130/webissues/")){
-            hostname.setText("Addresse : https://192.168.85.130/webissues/");
-        }
+        hostname.setText("Hostname: "+LoginFrame.hostname);
         Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Login");
+        this.setLocationRelativeTo(null);
+        this.setResizable(false);
+         ImageIcon icon1 = new ImageIcon(this.getClass().getResource("/img/keys.png"));
+        jLabel5.setIcon(icon1);
+        
+         ImageIcon icon2 = new ImageIcon(this.getClass().getResource("/img/logo.png"));
+        jLabel6.setIcon(icon2);
     }
 
     @SuppressWarnings("unchecked")
@@ -56,8 +62,8 @@ public class AuthenticationFrame extends javax.swing.JFrame {
         jLabel5 = new javax.swing.JLabel();
         jCheckBox1 = new javax.swing.JCheckBox();
         jLabel6 = new javax.swing.JLabel();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
+        ok = new javax.swing.JButton();
+        cancel = new javax.swing.JButton();
         password = new javax.swing.JPasswordField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -74,7 +80,6 @@ public class AuthenticationFrame extends javax.swing.JFrame {
 
         jLabel4.setText("Password");
 
-        jLabel5.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Documents\\NetBeansProjects\\Webissues\\src\\keys.png")); // NOI18N
         jLabel5.setText("Enter credentials for Webissues Server:");
 
         jCheckBox1.setText("Remember Password");
@@ -84,20 +89,19 @@ public class AuthenticationFrame extends javax.swing.JFrame {
             }
         });
 
-        jLabel6.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Documents\\NetBeansProjects\\Webissues\\src\\logo.png")); // NOI18N
         jLabel6.setText("Enter login and password");
 
-        jButton1.setText("OK");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        ok.setText("OK");
+        ok.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                okActionPerformed(evt);
             }
         });
 
-        jButton2.setText("Cancel");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        cancel.setText("Cancel");
+        cancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                cancelActionPerformed(evt);
             }
         });
 
@@ -106,9 +110,6 @@ public class AuthenticationFrame extends javax.swing.JFrame {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jSeparator1)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 277, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
@@ -141,10 +142,14 @@ public class AuthenticationFrame extends javax.swing.JFrame {
                                 .addGap(0, 0, Short.MAX_VALUE))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                                 .addGap(0, 0, Short.MAX_VALUE)
-                                .addComponent(jButton1)
+                                .addComponent(ok)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jButton2)))))
+                                .addComponent(cancel)))))
                 .addContainerGap())
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 277, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -162,7 +167,7 @@ public class AuthenticationFrame extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(email))
+                    .addComponent(email, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -175,8 +180,8 @@ public class AuthenticationFrame extends javax.swing.JFrame {
                 .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton1)
-                    .addComponent(jButton2))
+                    .addComponent(ok)
+                    .addComponent(cancel))
                 .addContainerGap())
         );
 
@@ -188,7 +193,7 @@ public class AuthenticationFrame extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 314, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 316, Short.MAX_VALUE)
         );
 
         pack();
@@ -198,24 +203,23 @@ public class AuthenticationFrame extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jCheckBox1ActionPerformed
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okActionPerformed
         String user = email.getText();
         String pass = password.getText();
-        try {
-            
-            String apiUrl = "";
-            if(address.equals("https://webissues-new.genetechz.com/"))
-            {
-                apiUrl = "https://webissues-new.genetechz.com/server/api/login.php";              
-            }
-            else if(address.equals("https://192.168.85.130/webissues/")){
-                apiUrl = "http://192.168.85.130/webissues/server/api/login.php";
-            }
+        try {     
+            System.out.println("address before using "+address);
+            String apiUrl = address ;
+            System.out.println("API URL "+apiUrl);
             URL url = new URL(apiUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setDoOutput(true);
-
+            if (connection instanceof HttpsURLConnection) {
+            HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
+            
+            // Disable hostname verification
+            httpsConnection.setHostnameVerifier((hostname, session) -> true);
+        }            
             // Set headers
             connection.setRequestProperty("Content-Type", "application/json");
 
@@ -228,7 +232,7 @@ public class AuthenticationFrame extends javax.swing.JFrame {
             }
 
             int responseCode = connection.getResponseCode();
-            System.out.println("Response Code: " + responseCode);
+            //System.out.println("Response Code: " + responseCode);
             // Read the response from the API
             try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                 String inputLine;
@@ -250,9 +254,9 @@ public class AuthenticationFrame extends javax.swing.JFrame {
                     int userId = SessionManager.getInstance().getUserId();
                     String csrfToken = SessionManager.getInstance().getCsrfToken();
                     String userName = SessionManager.getInstance().getUserName();
-                    System.out.println("User ID: " + userId);
-                    System.out.println("CSRF Token: " + csrfToken);
-
+//                    System.out.println("User ID: " + userId);
+//                    System.out.println("CSRF Token: " + csrfToken);
+                    
                     LoginFrame login = new LoginFrame();
                     login.dispose();
                     dispose();
@@ -264,7 +268,7 @@ public class AuthenticationFrame extends javax.swing.JFrame {
                     JOptionPane.showMessageDialog(this, "Error, Username or Password Wrong!", "Sajid", JOptionPane.ERROR_MESSAGE);
                 }
                 initializePrincipal();
-                System.out.println(Principal.getCurrent());
+                //System.out.println(Principal.getCurrent());
             }
 
             connection.disconnect();
@@ -272,31 +276,18 @@ public class AuthenticationFrame extends javax.swing.JFrame {
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, e.getMessage());
         }
-    }//GEN-LAST:event_jButton1ActionPerformed
+    }//GEN-LAST:event_okActionPerformed
     public void initializePrincipal() {
         Principal principal = new Principal(SessionManager.getInstance().getUserId());
         Principal.setCurrent(principal);
     }
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void cancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelActionPerformed
         // TODO add your handling code here:
         dispose();
-    }//GEN-LAST:event_jButton2ActionPerformed
+    }//GEN-LAST:event_cancelActionPerformed
 
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-
-                }
-            }
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(AuthenticationFrame.class
-                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-
+       FlatLightLaf.setup();
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> {
             AuthenticationFrame frame = new AuthenticationFrame();
@@ -307,10 +298,9 @@ public class AuthenticationFrame extends javax.swing.JFrame {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton cancel;
     private javax.swing.JTextField email;
     private javax.swing.JLabel hostname;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
     private javax.swing.JCheckBox jCheckBox1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -321,6 +311,7 @@ public class AuthenticationFrame extends javax.swing.JFrame {
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
+    private javax.swing.JButton ok;
     private javax.swing.JPasswordField password;
     // End of variables declaration//GEN-END:variables
 }

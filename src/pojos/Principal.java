@@ -21,9 +21,9 @@ public class Principal {
             this.userName = sessionManager.getUserName();
             this.userAccess = sessionManager.getUserAccess();
         }
-         System.out.println("User ID: " + this.userId);
-         System.out.println("User Name: " + this.userName);
-         System.out.println("User Access: " + this.userAccess);
+//         System.out.println("User ID: " + this.userId);
+//         System.out.println("User Name: " + this.userName);
+//         System.out.println("User Access: " + this.userAccess);
     }
 
     public static Principal getCurrent() {

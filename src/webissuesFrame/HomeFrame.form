@@ -8,6 +8,10 @@
     <SyntheticProperty name="formSizePolicy" type="int" value="1"/>
     <SyntheticProperty name="generateCenter" type="boolean" value="false"/>
   </SyntheticProperties>
+  <Events>
+    <EventHandler event="windowClosed" listener="java.awt.event.WindowListener" parameters="java.awt.event.WindowEvent" handler="formWindowClosed"/>
+    <EventHandler event="windowClosing" listener="java.awt.event.WindowListener" parameters="java.awt.event.WindowEvent" handler="formWindowClosing"/>
+  </Events>
   <AuxValues>
     <AuxValue name="FormSettings_autoResourcing" type="java.lang.Integer" value="0"/>
     <AuxValue name="FormSettings_autoSetComponentName" type="java.lang.Boolean" value="false"/>
@@ -166,10 +170,10 @@
                           <EmptySpace min="-2" pref="35" max="-2" attributes="0"/>
                       </Group>
                   </Group>
-                  <Component id="jSplitPane2" min="-2" pref="542" max="-2" attributes="0"/>
-                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jSplitPane2" pref="534" max="32767" attributes="0"/>
+                  <EmptySpace min="-2" max="-2" attributes="0"/>
                   <Component id="jLabel5" min="-2" max="-2" attributes="0"/>
-                  <EmptySpace max="32767" attributes="0"/>
+                  <EmptySpace min="-2" max="-2" attributes="0"/>
               </Group>
           </Group>
         </DimensionLayout>
@@ -203,9 +207,6 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel3">
           <Properties>
-            <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\update.png"/>
-            </Property>
             <Property name="text" type="java.lang.String" value="Update"/>
             <Property name="horizontalTextPosition" type="int" value="0"/>
             <Property name="verticalTextPosition" type="int" value="3"/>
@@ -213,9 +214,6 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel4">
           <Properties>
-            <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\alerts-icon.jpg"/>
-            </Property>
             <Property name="text" type="java.lang.String" value="Alerts"/>
             <Property name="horizontalTextPosition" type="int" value="0"/>
             <Property name="verticalTextPosition" type="int" value="3"/>
@@ -224,9 +222,6 @@
         <Component class="javax.swing.JLabel" name="jLabel7">
           <Properties>
             <Property name="horizontalAlignment" type="int" value="0"/>
-            <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\goto.png"/>
-            </Property>
             <Property name="text" type="java.lang.String" value="Go To Items"/>
             <Property name="verticalAlignment" type="int" value="3"/>
             <Property name="horizontalTextPosition" type="int" value="0"/>
@@ -236,11 +231,8 @@
         <Component class="javax.swing.JLabel" name="jLabel8">
           <Properties>
             <Property name="horizontalAlignment" type="int" value="2"/>
-            <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\keys.png"/>
-            </Property>
             <Property name="text" type="java.lang.String" value="Password"/>
-            <Property name="iconTextGap" type="int" value="-12"/>
+            <Property name="iconTextGap" type="int" value="5"/>
             <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
               <Dimension value="[107, 20]"/>
             </Property>
@@ -257,9 +249,6 @@
         <Component class="javax.swing.JLabel" name="jLabel9">
           <Properties>
             <Property name="horizontalAlignment" type="int" value="2"/>
-            <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\info.png"/>
-            </Property>
             <Property name="text" type="java.lang.String" value="Preferences"/>
             <Property name="iconTextGap" type="int" value="8"/>
           </Properties>
@@ -355,9 +344,6 @@
         <Component class="javax.swing.JLabel" name="jLabel12">
           <Properties>
             <Property name="horizontalAlignment" type="int" value="0"/>
-            <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\addissue.jpg"/>
-            </Property>
             <Property name="text" type="java.lang.String" value="Add Issue"/>
             <Property name="verticalAlignment" type="int" value="1"/>
             <Property name="horizontalTextPosition" type="int" value="0"/>
@@ -377,9 +363,6 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel5">
           <Properties>
-            <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-              <Image iconType="2" name="C:\Users\sajid.ali\Desktop\Webissues\src\img\information.png"/>
-            </Property>
             <Property name="text" type="java.lang.String" value="View was updated Succesfully"/>
           </Properties>
         </Component>
@@ -490,14 +473,12 @@
                         <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.editors2.TableModelEditor">
                           <Table columnCount="0" rowCount="0"/>
                         </Property>
+                        <Property name="autoResizeMode" type="int" value="4"/>
                         <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
                           <Color id="Default Cursor"/>
                         </Property>
                         <Property name="gridColor" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                           <Color blue="ff" green="ff" red="ff" type="rgb"/>
-                        </Property>
-                        <Property name="selectionBackground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                          <Color blue="0" green="0" red="0" type="rgb"/>
                         </Property>
                       </Properties>
                       <Events>
@@ -558,7 +539,7 @@
                         </DimensionLayout>
                         <DimensionLayout dim="1">
                           <Group type="103" groupAlignment="0" attributes="0">
-                              <EmptySpace min="0" pref="227" max="32767" attributes="0"/>
+                              <EmptySpace min="0" pref="219" max="32767" attributes="0"/>
                           </Group>
                         </DimensionLayout>
                       </Layout>

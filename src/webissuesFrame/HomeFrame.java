@@ -10,16 +10,23 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import DAOImpl.IssuesDAOImpl;
 import DAOImpl.ProjectsDAOImpl;
+import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.swing.border.Border;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableColumn;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import pojos.Folder;
@@ -45,12 +52,13 @@ public class HomeFrame extends javax.swing.JFrame {
     int userID = SessionManager.getInstance().getUserId();
     int userAccess = SessionManager.getInstance().getUserAccess();
     String folderName = null;
-
+    static String projectName = "";
+    static int projectId = 0;
     public HomeFrame() {
         initComponents();
         // Get the default screen device
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-
+        LoadImages();
         int screenWidth = gd.getDisplayMode().getWidth();
         int screenHeight = gd.getDisplayMode().getHeight();
         System.out.println("width "+screenWidth + "Height" +  screenHeight);
@@ -65,23 +73,45 @@ public class HomeFrame extends javax.swing.JFrame {
         jPanel3.setVisible(false);
     }
 
-    DefaultMutableTreeNode courses = new DefaultMutableTreeNode("Projects");
-
+    DefaultMutableTreeNode courses = new DefaultMutableTreeNode("<html><b>Projects</b></html>");
+    public void LoadImages(){
+         ImageIcon addissue = new ImageIcon(this.getClass().getResource("/img/addissue.jpg"));
+        jLabel12.setIcon(addissue);
+        
+         ImageIcon update = new ImageIcon(this.getClass().getResource("/img/update.png"));
+        jLabel3.setIcon(update);
+        
+         ImageIcon icon1 = new ImageIcon(this.getClass().getResource("/img/alerts-icon.jpg"));
+        jLabel4.setIcon(icon1);
+        
+         ImageIcon icon2 = new ImageIcon(this.getClass().getResource("/img/goto.png"));
+        jLabel7.setIcon(icon2);
+        
+         ImageIcon icon3 = new ImageIcon(this.getClass().getResource("/img/keys.png"));
+        jLabel8.setIcon(icon3);
+        
+         ImageIcon icon4 = new ImageIcon(this.getClass().getResource("/img/info.png"));
+        jLabel9.setIcon(icon4);
+        
+         ImageIcon icon5 = new ImageIcon(this.getClass().getResource("/img/information.png"));
+        jLabel5.setIcon(icon5);
+        
+    }
     public void Load() {
         //getUser();
         try {
             List<Project> projects = projectsDAO.getProjects();
             for (Project project : projects) {
-                String projectName = project.getProjectName();
-                DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(projectName);
+                projectName = project.getProjectName();
+                DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("<html><b>"+projectName+"</b></html>");
                 courses.add(rootNode);
-
-                int projectId = project.getProjectId();
-                List<Folder> folders = projectsDAO.getFoldersForProject(projectId);
+                int ProjectId = project.getProjectId();
+                List<Folder> folders = projectsDAO.getFoldersForProject(ProjectId);
                 for (Folder folder : folders) {
                     String folderName = folder.getFolderName();
                     String typeName = folder.getTypeName();
                     String nodeValue = folderName + "      [" + typeName + "]";
+                    System.out.println("Node value "+nodeValue);
                     DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(folderName);
                     childNode.setUserObject(nodeValue);
                     rootNode.add(childNode);
@@ -139,6 +169,14 @@ public class HomeFrame extends javax.swing.JFrame {
         jPanel2 = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosed(java.awt.event.WindowEvent evt) {
+                formWindowClosed(evt);
+            }
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
         jPanel1.setPreferredSize(new java.awt.Dimension(1368, 680));
@@ -161,34 +199,29 @@ public class HomeFrame extends javax.swing.JFrame {
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel2.setText("Projects");
 
-        jLabel3.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\update.png")); // NOI18N
         jLabel3.setText("Update");
         jLabel3.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jLabel3.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
 
-        jLabel4.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\alerts-icon.jpg")); // NOI18N
         jLabel4.setText("Alerts");
         jLabel4.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jLabel4.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
 
         jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel7.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\goto.png")); // NOI18N
         jLabel7.setText("Go To Items");
         jLabel7.setVerticalAlignment(javax.swing.SwingConstants.BOTTOM);
         jLabel7.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jLabel7.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
 
         jLabel8.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabel8.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\keys.png")); // NOI18N
         jLabel8.setText("Password");
-        jLabel8.setIconTextGap(-12);
+        jLabel8.setIconTextGap(5);
         jLabel8.setPreferredSize(new java.awt.Dimension(107, 20));
 
         jSeparator2.setForeground(new java.awt.Color(153, 153, 153));
         jSeparator2.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
         jLabel9.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabel9.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\info.png")); // NOI18N
         jLabel9.setText("Preferences");
         jLabel9.setIconTextGap(8);
 
@@ -240,7 +273,6 @@ public class HomeFrame extends javax.swing.JFrame {
         jSeparator4.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
         jLabel12.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel12.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\addissue.jpg")); // NOI18N
         jLabel12.setText("Add Issue");
         jLabel12.setVerticalAlignment(javax.swing.SwingConstants.TOP);
         jLabel12.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
@@ -254,7 +286,6 @@ public class HomeFrame extends javax.swing.JFrame {
         jSeparator5.setForeground(new java.awt.Color(153, 153, 153));
         jSeparator5.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
-        jLabel5.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\information.png")); // NOI18N
         jLabel5.setText("View was updated Succesfully");
 
         jSplitPane2.setBackground(new java.awt.Color(255, 255, 255));
@@ -314,9 +345,9 @@ public class HomeFrame extends javax.swing.JFrame {
 
             }
         ));
+        jTable1.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_ALL_COLUMNS);
         jTable1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         jTable1.setGridColor(new java.awt.Color(255, 255, 255));
-        jTable1.setSelectionBackground(new java.awt.Color(0, 0, 0));
         jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jTable1MouseClicked(evt);
@@ -361,7 +392,7 @@ public class HomeFrame extends javax.swing.JFrame {
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 227, Short.MAX_VALUE)
+            .addGap(0, 219, Short.MAX_VALUE)
         );
 
         jScrollPane2.setViewportView(jPanel2);
@@ -464,10 +495,10 @@ public class HomeFrame extends javax.swing.JFrame {
                             .addComponent(jSeparator5, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jSeparator4, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(35, 35, 35)))
-                .addComponent(jSplitPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 542, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jSplitPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 534, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel5)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -478,7 +509,7 @@ public class HomeFrame extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 700, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 700, Short.MAX_VALUE)
         );
 
         pack();
@@ -582,7 +613,7 @@ public class HomeFrame extends javax.swing.JFrame {
 
     public void buttonsCreation() {
         int bx = 440;
-        int by = attributeY + 5;
+        int by = attributeY + 13;
         int blabelWidth = 100;
         int bheight = 20;
         int blabelSpacing = 5;
@@ -680,7 +711,7 @@ public class HomeFrame extends javax.swing.JFrame {
         try {
             con = DbConnection.getConnection();
             int hx = 30;
-            int hy = 160;
+            int hy = 183;
             int hlabelWidth = 400;
             int hheight = 16;
             int hlabelSpacing = 5;
@@ -797,7 +828,7 @@ public class HomeFrame extends javax.swing.JFrame {
         try {
             con = DbConnection.getConnection();
             int hx = 30;
-            int hy = 160;
+            int hy = 183;
             int hlabelWidth = 400;
             int hheight = 16;
             int hlabelSpacing = 5;
@@ -866,7 +897,7 @@ public class HomeFrame extends javax.swing.JFrame {
         try {
             con = DbConnection.getConnection();
             int hx = 30;
-            int hy = 160;
+            int hy = 183;
             int hlabelWidth = 400;
             int hheight = 16;
             int hlabelSpacing = 5;
@@ -931,9 +962,9 @@ public class HomeFrame extends javax.swing.JFrame {
     public void issueDetails() {
         int x = 30;
         int y = 35;
-        int labelWidth = 400;
+        int labelWidth = 900;
         int height = 20;
-        int labelSpacing = 1;
+        int labelSpacing = 5;
         DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
         Object[] rowData = new Object[tableModel.getColumnCount()];
         String description = "";
@@ -964,7 +995,7 @@ public class HomeFrame extends javax.swing.JFrame {
                         description = getDesc.getString("descr_text");
                         flag = true;
                     } else {
-                        System.out.println("descriptions not found");
+                        //System.out.println("descriptions not found");
                     }
                     String getTypeQuery = "SELECT it.type_name "
                             + "FROM issues i "
@@ -1060,14 +1091,17 @@ public class HomeFrame extends javax.swing.JFrame {
         } catch (Exception e) {
         }
         if (flag == true) {
-            descrLabel = new JLabel("Description " + description);
+            descrLabel = new JLabel("Description : " + description);
             descrLabel.setBounds(x, y, labelWidth, height);
             descrLabel.setHorizontalAlignment(SwingConstants.LEFT);
             jPanel2.add(descrLabel);
             y += height + labelSpacing;
         }
     }
-
+    private Border createLabelBorder() {
+    int borderThickness = 1;
+    return BorderFactory.createLineBorder(Color.BLACK, borderThickness);
+}
     public void history() {
         Connection con = null;
         PreparedStatement statement = null;
@@ -1077,7 +1111,7 @@ public class HomeFrame extends javax.swing.JFrame {
         try {
             con = DbConnection.getConnection();
             int hx = 30;
-            int hy = 175;
+            int hy = 183;
             int hlabelWidth = 500;
             int hheight = 16;
             int hlabelSpacing = 5;
@@ -1123,10 +1157,9 @@ public class HomeFrame extends javax.swing.JFrame {
             while (resultSet.next()) {
                 int attrId = resultSet.getInt("attr_id");
                 String attrName = attrIdToNameMap.get(attrId);
-
                 long createdDateMillis = resultSet.getLong("created_date") * 1000L;
                 Date createdDate = new Date(createdDateMillis);
-                String createdUserLogin = resultSet.getString("created_user_login"); // Use the new column name
+                String createdUserLogin = resultSet.getString("created_user_login");
                 long modifiedDateMillis = resultSet.getLong("modified_date") * 1000L;
                 Date modifiedDate = new Date(modifiedDateMillis);
                 //String modifiedUser = resultSet.getString("modified_user");
@@ -1172,7 +1205,6 @@ public class HomeFrame extends javax.swing.JFrame {
                 changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
                 jPanel2.add(changeLabel);
 
-                // Update the labelY to avoid overlapping of changeLabel and attribute labels
                 labelY += (hheight + hlabelSpacing);
 
                 StringBuilder bulletList = new StringBuilder("<html><ul>");
@@ -1193,7 +1225,6 @@ public class HomeFrame extends javax.swing.JFrame {
             }
             if (labelY > 215) {
                 jPanel2.setPreferredSize(new Dimension(jPanel2.getWidth(), labelY));
-
             }
         } catch (Exception v) {
             v.printStackTrace();
@@ -1238,7 +1269,6 @@ public class HomeFrame extends javax.swing.JFrame {
     public void refreshJTable() {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         model.setRowCount(0);
-        System.out.println("Refresh table is called in the edit issues class");
         try {
             DefaultTableModel tableModel = issuesDAO.getIssuesByTypeId(typeId, folderName);
             jTable1.setModel(tableModel);
@@ -1271,6 +1301,10 @@ public class HomeFrame extends javax.swing.JFrame {
         jPanel3.setVisible(false);
         jPanel2.setEnabled(false);
         //getUser();
+       
+        DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer();
+            headerRenderer.setHorizontalAlignment(JLabel.LEFT);
+            jTable1.getTableHeader().setDefaultRenderer(headerRenderer);
         if (evt.getClickCount() != -1) {
             jPanel2.removeAll();
             jPanel2.repaint();
@@ -1278,19 +1312,20 @@ public class HomeFrame extends javax.swing.JFrame {
             int x = evt.getX();
             int y = evt.getY();
             TreePath path = jTree1.getPathForLocation(x, y);
+            //System.out.println("Path "+path);
             if (path != null) {
                 String pathString = path.toString();
                 int firstCommaIndex = pathString.indexOf(",");
                 int lastCommaIndex = pathString.lastIndexOf(",");
                 if (firstCommaIndex != -1 && lastCommaIndex != -1 && lastCommaIndex > firstCommaIndex) {
                     String valueBetweenCommas = pathString.substring(firstCommaIndex + 1, lastCommaIndex).trim();
+                  //  System.out.println("value between : "+valueBetweenCommas);
                 }
             }
             if (path != null) {
-                System.out.println("Path name "+path);
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                 int typeId = getTypeIdFromNode(node);
-
+                //System.out.println("Node : "+node);
                 if (typeId != -1) {
 
                     Object userObject = node.getUserObject();
@@ -1300,11 +1335,11 @@ public class HomeFrame extends javax.swing.JFrame {
                         int closingBracketIndex = nodeValue.lastIndexOf(']');
                         if (openingBracketIndex != -1 && closingBracketIndex != -1) {
                             folderName = nodeValue.substring(0, openingBracketIndex).trim();
+                            //System.out.println("Folder Name "+folderName);
                         } else {
                             folderName = nodeValue.trim();
                             projectsDAO.setFolderName(folderName);
                         }
-                        
                         try {
                             DefaultTableModel tableModel = null;
                             tableModel = issuesDAO.getIssuesByTypeId(typeId, folderName);
@@ -1312,6 +1347,28 @@ public class HomeFrame extends javax.swing.JFrame {
                         } catch (Exception e) {
                         }
                     }
+                    
+//                    URL iconUrl = getClass().getResource("/img/information.png");
+//                    Icon nodeIcon = new ImageIcon(iconUrl);
+//
+//                    DefaultTreeCellRenderer customRenderer = new DefaultTreeCellRenderer() {
+//                        @Override
+//                        public Component getTreeCellRendererComponent(JTree tree, Object value,
+//                                                                      boolean selected, boolean expanded,
+//                                                                      boolean leaf, int row, boolean hasFocus) {
+//                            super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
+//
+//                            if (value instanceof DefaultMutableTreeNode && node.equals(value)) {
+//                                setIcon(nodeIcon);
+//                            } else {
+//                                setIcon(null);
+//                            }
+//
+//                            return this;
+//                        }
+//                    };
+//
+//                    jTree1.setCellRenderer(customRenderer);
                 }
             }
         }
@@ -1319,12 +1376,28 @@ public class HomeFrame extends javax.swing.JFrame {
 
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
         jLabel12.setEnabled(true);
-        jLabel12.setText("Add Issue");
-        //getUser();
+        jLabel12.setText("Add Issue"); 
+        Connection con = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        try {
+            con = DbConnection.getConnection();
+            String query = "SELECT project_id FROM folders WHERE folder_name = ?";
+            statement = con.prepareStatement(query);
+            statement.setString(1, folderName);
+
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+               projectId = resultSet.getInt("project_id");
+                //System.out.println("project id i n the home "+projectId);
+            }
+        } catch (Exception e) {
+        }
+        //System.out.println("folder name in the table mouse clicked "+folderName);
         if (SwingUtilities.isRightMouseButton(evt)) {
             selectedRowIndex = jTable1.getSelectedRow();
-            jTable1.setSelectionBackground(Color.YELLOW);
-            jTable1.setSelectionForeground(Color.BLACK);
+            //jTable1.setSelectionBackground(Color.YELLOW);
+            //jTable1.setSelectionForeground(Color.BLACK);
             JPopupMenu popupMenu = new JPopupMenu();
 
             JMenuItem updateItem = new JMenuItem("Edit Attributes");
@@ -1359,14 +1432,6 @@ public class HomeFrame extends javax.swing.JFrame {
                     issue.setDefaultCloseOperation(issue.DISPOSE_ON_CLOSE);
                 }
             });
-
-//            editItem.addActionListener(new ActionListener() {
-//                @Override
-//                public void actionPerformed(ActionEvent e) {
-//
-//                    System.out.println("Edit option selected");
-//                }
-//            });
             popupMenu.add(insertItem);
             popupMenu.add(updateItem);
             if (userAccess == 2) {
@@ -1407,9 +1472,9 @@ public class HomeFrame extends javax.swing.JFrame {
             JLabel totalRows = new JLabel(rowCount + " issues");
             totalRows.setBounds(1130, 687, 30, 8);
             totalRows.setHorizontalAlignment(SwingConstants.LEFT);
-            jPanel1.add(totalRows);
-            history();
+            //jPanel1.add(totalRows);
             issueDetails();
+            history();
             issueAttributes();
             buttonsCreation();
         }
@@ -1480,32 +1545,62 @@ public class HomeFrame extends javax.swing.JFrame {
         System.out.println(" this is y " + y);
 
     }//GEN-LAST:event_jPanel1MouseClicked
+
+    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
+        // TODO add your handling code here:
+         Connection con = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        try {
+            con = DbConnection.getConnection();
+            String deleteQuery = "DELETE FROM sessions WHERE session_data LIKE ?";
+            statement = con.prepareStatement(deleteQuery);
+
+            // Get the CSRF token from the SessionManager
+            String csrfToken = SessionManager.getInstance().getCsrfToken();
+
+            // Use the CSRF token in the deletion query
+            statement.setString(1, "%" + csrfToken + "%");
+
+            int rowsDeleted = statement.executeUpdate();
+            if (rowsDeleted > 0) {
+                //System.out.println(rowsDeleted + " CSRF token(s) deleted successfully");
+            } else {
+                //System.out.println("No CSRF tokens deleted");
+            }
+        } catch (Exception e) {
+        }
+    }//GEN-LAST:event_formWindowClosed
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+       Connection con = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        try {
+            con = DbConnection.getConnection();
+            // Replace 'your_table_name' with the actual table name
+            String deleteQuery = "DELETE FROM sessions WHERE session_data LIKE ?";
+            statement = con.prepareStatement(deleteQuery);
+
+            // Get the CSRF token from the SessionManager
+            String csrfToken = SessionManager.getInstance().getCsrfToken();
+
+            // Use the CSRF token in the deletion query
+            statement.setString(1, "%" + csrfToken + "%");
+
+            int rowsDeleted = statement.executeUpdate();
+            if (rowsDeleted > 0) {
+                System.out.println(rowsDeleted + " CSRF token(s) deleted successfully");
+            } else {
+                System.out.println("No CSRF tokens deleted");
+            }
+        } catch (Exception e) {
+        }
+    }//GEN-LAST:event_formWindowClosing
     
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(HomeFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(HomeFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(HomeFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(HomeFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
+        FlatLightLaf.registerCustomDefaultsSource("style");
+        FlatLightLaf.setup();
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 new HomeFrame().setVisible(true);

@@ -1,22 +1,43 @@
 package webissuesFrame;
-import com.mysql.cj.conf.PropertyKey;
-import java.awt.Frame;
+
+import com.formdev.flatlaf.FlatLightLaf;
+import java.awt.Color;
 import java.awt.Image;
+import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.UnknownHostException;
+import javax.net.ssl.HttpsURLConnection;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
-import javax.swing.plaf.basic.BasicArrowButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import pojos.Path;
-  
+
 public class LoginFrame extends javax.swing.JFrame {
-   // Path path = new Path();
+
+    // Path path = new Path();
+    public static String apiUrl;
+    public static String hostname;
     public LoginFrame() {
         initComponents();
+        DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer();
+        headerRenderer.setHorizontalAlignment(JLabel.LEFT);
+        jTable1.getTableHeader().setDefaultRenderer(headerRenderer);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
+        ImageIcon icon1 = new ImageIcon(this.getClass().getResource("/img/play.png"));
+        submit.setIcon(icon1);
         this.setIconImage(icon);
         this.setTitle("Webissues 2.0.2");
     }
+
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -29,7 +50,7 @@ public class LoginFrame extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         jLabel2 = new javax.swing.JLabel();
-        jLabel3 = new javax.swing.JLabel();
+        submit = new javax.swing.JLabel();
         jSeparator1 = new javax.swing.JSeparator();
         jLabel4 = new javax.swing.JLabel();
 
@@ -62,6 +83,12 @@ public class LoginFrame extends javax.swing.JFrame {
 
         jLabel1.setText(" Enter Address of the Webissues Server");
 
+        address.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                addressKeyPressed(evt);
+            }
+        });
+
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {" Genetech WI", "https://192.168.85.130/webissues/"},
@@ -81,11 +108,10 @@ public class LoginFrame extends javax.swing.JFrame {
 
         jLabel2.setText(" Recent Connections");
 
-        jLabel3.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
-        jLabel3.setIcon(new javax.swing.ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\play-button-arrowhead.png")); // NOI18N
-        jLabel3.addMouseListener(new java.awt.event.MouseAdapter() {
+        submit.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
+        submit.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jLabel3MouseClicked(evt);
+                submitMouseClicked(evt);
             }
         });
 
@@ -99,7 +125,7 @@ public class LoginFrame extends javax.swing.JFrame {
             .addComponent(jSeparator1)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, 390, Short.MAX_VALUE)
+                .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, 398, Short.MAX_VALUE)
                 .addGap(927, 927, 927))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                 .addGap(168, 168, 168)
@@ -110,35 +136,32 @@ public class LoginFrame extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, 352, Short.MAX_VALUE)
                         .addGap(807, 807, 807))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jScrollPane1)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(address, javax.swing.GroupLayout.DEFAULT_SIZE, 950, Short.MAX_VALUE)
+                                .addComponent(address)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jLabel3)
-                                .addGap(20, 20, 20)))
-                        .addGap(169, 169, 169))))
+                                .addComponent(submit, javax.swing.GroupLayout.PREFERRED_SIZE, 15, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(175, 175, 175))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, 52, Short.MAX_VALUE)
+                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jSeparator1)
-                .addGap(136, 136, 136)
-                .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(156, 156, 156)
+                .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(address)
-                        .addGap(2, 2, 2))
-                    .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(submit, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(address, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jLabel2)
                 .addGap(1, 1, 1)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 270, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 261, Short.MAX_VALUE)
                 .addGap(171, 171, 171))
         );
 
@@ -157,52 +180,131 @@ public class LoginFrame extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-   
+
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
-       
+
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         int selectedRow = jTable1.getSelectedRow();
         address.setText(model.getValueAt(selectedRow, 1).toString());
     }//GEN-LAST:event_jTable1MouseClicked
-    
-    private void jLabel3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseClicked
-          Path.getInstance().setAddress(address.getText());
-          System.out.println(Path.getInstance().getAddress());
-        if (address.getText().equals("https://192.168.85.130/webissues/") || address.getText().equals("https://webissues-new.genetechz.com/")) {
-            AuthenticationFrame auth = new AuthenticationFrame();
-            auth.setLocationRelativeTo(null); // Center the window
-        auth.setVisible(true);
-        } else {
-            System.out.println("Wrong");
+
+    private void submitMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_submitMouseClicked
+        makeConnection();
+    }//GEN-LAST:event_submitMouseClicked
+    public void makeConnection(){
+         String inputAddress = address.getText();
+        if (inputAddress.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "The address you entered is not valid", "Warning", JOptionPane.WARNING_MESSAGE);
+            return;
         }
 
-    }//GEN-LAST:event_jLabel3MouseClicked
- 
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+        hostname = extractHostname(inputAddress);
+        System.out.println("Host name " + hostname);
+
+        int maxRetries = 3;
+        int retryCount = 0;
+        boolean errorOccurred = false;
+
+        apiUrl = "https://" + hostname + "/server/api/login.php";
+        while (retryCount < maxRetries) {
+            try {
+                InetAddress[] resolvedAddresses = InetAddress.getAllByName(hostname);
+
+                System.out.println("IP Addresses for " + hostname + ":");
+                for (InetAddress addr : resolvedAddresses) {
+                    System.out.println("  " + addr.getHostAddress());
+                }
+
+                // Create a URL object
+                URL url = new URL(apiUrl);
+
+                // Open a connection to the URL
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+                if (connection instanceof HttpsURLConnection) {
+                    HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
+
+                    // Disable hostname verification
+                    httpsConnection.setHostnameVerifier((host, session) -> true);
+                }
+
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(2000); //set timeout to 5 seconds
+
+                // Connect to the URL
+                connection.connect();
+
+                // Check the HTTP response code
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_BAD_REQUEST) {
+                    AuthenticationFrame auth = new AuthenticationFrame();
+                    auth.setLocationRelativeTo(null);
+                    auth.setVisible(true);
+                    break;
+                } else {
+                    System.out.println("Count "+retryCount);
+                    retryCount++;
+                    errorOccurred = true;
+                }
+                connection.disconnect();
+
+            }
+            catch (UnknownHostException e) {
+                JOptionPane.showMessageDialog(this, "Failed to resolve hostname: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                break; 
+            } catch (MalformedURLException e) {
+                JOptionPane.showMessageDialog(this, "Invalid URL: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                break; 
+            } catch (IOException e) {
+                System.out.println("Count "+retryCount);
+                if(retryCount >=1)
+                {
+                    JOptionPane.showMessageDialog(this, "Error while connecting to the URL", "Error", JOptionPane.ERROR_MESSAGE);
                     break;
                 }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(LoginFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(LoginFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(LoginFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(LoginFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+                else {
+                apiUrl = "http://" + hostname + "/webissues/server/api/login.php";
+                retryCount++;
+                errorOccurred = true;
+                }
+                }
         }
-        //</editor-fold>
 
-        /* Create and display the form */
+        if (errorOccurred && retryCount >= maxRetries) {
+            SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(this, "Error while connecting to the URL", "Error", JOptionPane.ERROR_MESSAGE);
+            //break;
+        });
+        }
+    }
+    private void addressKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_addressKeyPressed
+        // TODO add your handling code here:
+        if(evt.getKeyCode() == KeyEvent.VK_ENTER)
+        {
+         makeConnection();
+        }
+    }//GEN-LAST:event_addressKeyPressed
+    private String extractHostname(String fullAddress) {
+           // Remove the protocol component
+    int protocolIndex = fullAddress.indexOf("//");
+    String remaining;
+    if (protocolIndex != -1) {
+        remaining = fullAddress.substring(protocolIndex + 2);
+    } else {
+        remaining = fullAddress;
+    }
+
+    // Find the first slash to extract the hostname
+    int pathIndex = remaining.indexOf('/');
+    if (pathIndex != -1) {
+        return remaining.substring(0, pathIndex);
+    } else {
+        return remaining;
+    }
+    }
+
+    public static void main(String args[]) {
+        FlatLightLaf.setup();
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 new LoginFrame().setVisible(true);
@@ -215,12 +317,12 @@ public class LoginFrame extends javax.swing.JFrame {
     private javax.swing.JFrame jFrame1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JTable jTable1;
+    private javax.swing.JLabel submit;
     // End of variables declaration//GEN-END:variables
 
 }
