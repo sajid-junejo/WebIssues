@@ -19,8 +19,8 @@ HomeFrame home = new HomeFrame();
         this.setResizable(false);
         Image icon = new ImageIcon(this.getClass().getResource("/webissueslogo.png")).getImage();
         this.setIconImage(icon);
-        columnNames = issuesDAO.getColumnNames();
-        issuesDAO.getIssuesByTypeId(2, "");
+//        columnNames = issuesDAO.getColumnNames();
+//        issuesDAO.getIssuesByTypeId(2, "");
         System.out.println(columnNames);
         this.setTitle("Add Personal View");
         List<JCheckBox> checkBoxList = Arrays.asList(jCheckBox1, jCheckBox2, jCheckBox3, jCheckBox4,

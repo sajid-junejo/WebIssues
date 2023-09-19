@@ -5,7 +5,16 @@ public class SessionManager {
     private String csrfToken;
     private int userId; 
     private int userAccess;
-    String userName;
+    private String cookie;
+    private String userName;
+
+    public String getCookie() {
+        return cookie;
+    }
+
+    public void setCookie(String cookie) {
+        this.cookie = cookie;
+    }
 
     public int getUserAccess() {
         return userAccess;

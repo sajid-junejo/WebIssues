@@ -1,7 +1,6 @@
 package webissuesFrame;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import java.awt.Color;
 import java.awt.Image;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
@@ -22,9 +21,12 @@ import pojos.Path;
 
 public class LoginFrame extends javax.swing.JFrame {
 
+    // Loader load = new Loader();
     // Path path = new Path();
+
     public static String apiUrl;
     public static String hostname;
+
     public LoginFrame() {
         initComponents();
         DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer();
@@ -191,7 +193,7 @@ public class LoginFrame extends javax.swing.JFrame {
     private void submitMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_submitMouseClicked
         makeConnection();
     }//GEN-LAST:event_submitMouseClicked
-    public void makeConnection(){
+     public void makeConnection(){
          String inputAddress = address.getText();
         if (inputAddress.isEmpty()) {
             JOptionPane.showMessageDialog(this, "The address you entered is not valid", "Warning", JOptionPane.WARNING_MESSAGE);
@@ -217,31 +219,43 @@ public class LoginFrame extends javax.swing.JFrame {
 
                 // Create a URL object
                 URL url = new URL(apiUrl);
-
+                System.out.println("URL "+url);
                 // Open a connection to the URL
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
+                System.out.println("Connection "+connection);
                 if (connection instanceof HttpsURLConnection) {
                     HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
-
+                    System.out.println("Debug ");
                     // Disable hostname verification
                     httpsConnection.setHostnameVerifier((host, session) -> true);
                 }
 
                 connection.setRequestMethod("GET");
-                connection.setConnectTimeout(2000); //set timeout to 5 seconds
-
-                // Connect to the URL
+                connection.setConnectTimeout(5000); //set timeout to 5 seconds
+                
                 connection.connect();
 
+                System.out.println("Debug");
                 // Check the HTTP response code
                 int responseCode = connection.getResponseCode();
+                System.out.println("Response code "+responseCode);
                 if (responseCode == HttpURLConnection.HTTP_BAD_REQUEST) {
                     AuthenticationFrame auth = new AuthenticationFrame();
                     auth.setLocationRelativeTo(null);
                     auth.setVisible(true);
                     break;
-                } else {
+                }else if (responseCode == HttpURLConnection.HTTP_MOVED_PERM) {  
+                     AuthenticationFrame auth = new AuthenticationFrame();
+                    auth.setLocationRelativeTo(null);
+                    auth.setVisible(true);
+                    break;
+                }else if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {  
+                     AuthenticationFrame auth = new AuthenticationFrame();
+                    auth.setLocationRelativeTo(null);
+                    auth.setVisible(true);
+                    break;
+                }
+                else {
                     System.out.println("Count "+retryCount);
                     retryCount++;
                     errorOccurred = true;
@@ -259,6 +273,7 @@ public class LoginFrame extends javax.swing.JFrame {
                 System.out.println("Count "+retryCount);
                 if(retryCount >=1)
                 {
+                    e.printStackTrace();
                     JOptionPane.showMessageDialog(this, "Error while connecting to the URL", "Error", JOptionPane.ERROR_MESSAGE);
                     break;
                 }
@@ -278,29 +293,27 @@ public class LoginFrame extends javax.swing.JFrame {
         }
     }
     private void addressKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_addressKeyPressed
-        // TODO add your handling code here:
-        if(evt.getKeyCode() == KeyEvent.VK_ENTER)
-        {
-         makeConnection();
+         if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            makeConnection();
         }
     }//GEN-LAST:event_addressKeyPressed
     private String extractHostname(String fullAddress) {
-           // Remove the protocol component
-    int protocolIndex = fullAddress.indexOf("//");
-    String remaining;
-    if (protocolIndex != -1) {
-        remaining = fullAddress.substring(protocolIndex + 2);
-    } else {
-        remaining = fullAddress;
-    }
+        // Remove the protocol component
+        int protocolIndex = fullAddress.indexOf("//");
+        String remaining;
+        if (protocolIndex != -1) {
+            remaining = fullAddress.substring(protocolIndex + 2);
+        } else {
+            remaining = fullAddress;
+        }
 
-    // Find the first slash to extract the hostname
-    int pathIndex = remaining.indexOf('/');
-    if (pathIndex != -1) {
-        return remaining.substring(0, pathIndex);
-    } else {
-        return remaining;
-    }
+        // Find the first slash to extract the hostname
+        int pathIndex = remaining.indexOf('/');
+        if (pathIndex != -1) {
+            return remaining.substring(0, pathIndex);
+        } else {
+            return remaining;
+        }
     }
 
     public static void main(String args[]) {

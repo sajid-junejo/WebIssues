@@ -3,7 +3,9 @@ package webissuesFrame;
 import DAO.UserDAO;
 import DAOImpl.UserDAOImpl;
 import com.formdev.flatlaf.FlatLightLaf;
+import com.mysql.cj.log.Log;
 import java.awt.Image;
+import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -19,6 +21,7 @@ import java.sql.SQLException;
 import javax.net.ssl.HttpsURLConnection;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
+import org.json.JSONException;
 import pojos.Path;
 import pojos.Principal;
 import pojos.Sessions;
@@ -102,6 +105,12 @@ public class AuthenticationFrame extends javax.swing.JFrame {
         cancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cancelActionPerformed(evt);
+            }
+        });
+
+        password.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                passwordKeyPressed(evt);
             }
         });
 
@@ -202,38 +211,67 @@ public class AuthenticationFrame extends javax.swing.JFrame {
     private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jCheckBox1ActionPerformed
+   public void doAuthentication() {
+    String user = email.getText();
+    String pass = password.getText();
 
-    private void okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okActionPerformed
-        String user = email.getText();
-        String pass = password.getText();
-        try {     
-            System.out.println("address before using "+address);
-            String apiUrl = address ;
-            System.out.println("API URL "+apiUrl);
-            URL url = new URL(apiUrl);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            if (connection instanceof HttpsURLConnection) {
+    try {
+        System.out.println("address before using " + address);
+        String apiUrl = address;
+        System.out.println("API URL " + apiUrl);
+        URL url = new URL(apiUrl);
+
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setDoOutput(true);
+
+        if (connection instanceof HttpsURLConnection) {
             HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
-            
-            // Disable hostname verification
             httpsConnection.setHostnameVerifier((hostname, session) -> true);
-        }            
-            // Set headers
-            connection.setRequestProperty("Content-Type", "application/json");
+        }
 
-            // Create JSON request body
-            String jsonInputString = "{\"login\":\"" + user + "\",\"password\":\"" + pass + "\"}";
+        // Set headers
+        connection.setRequestProperty("Content-Type", "application/json");
 
-            try (OutputStream os = connection.getOutputStream()) {
-                byte[] input = jsonInputString.getBytes("utf-8");
-                os.write(input, 0, input.length);
+        // Create JSON request body
+        String jsonInputString = "{\"login\":\"" + user + "\",\"password\":\"" + pass + "\"}";
+
+        try (OutputStream os = connection.getOutputStream()) {
+            byte[] input = jsonInputString.getBytes("utf-8");
+            os.write(input, 0, input.length);
+        }
+
+        // Get the response code
+        int responseCode = connection.getResponseCode();
+        System.out.println("Response Code " + responseCode);
+
+        if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
+            if (responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
+                // Extract the new URL from the response content
+                String newUrl = connection.getHeaderField("Location");
+                if (newUrl != null) {
+                    // Handle the redirection by making a request to the new URL
+                    URL redirectedUrl = new URL(newUrl);
+                    connection.disconnect(); // Disconnect from the current connection
+                    connection = (HttpURLConnection) redirectedUrl.openConnection();
+                    connection.setRequestMethod("POST");
+                    connection.setDoOutput(true);
+                    connection.setRequestProperty("Content-Type", "application/json");
+
+                    try (OutputStream os = connection.getOutputStream()) {
+                        byte[] input = jsonInputString.getBytes("utf-8");
+                        os.write(input, 0, input.length);
+                    }
+
+                    responseCode = connection.getResponseCode(); // Get the new response code
+                } else {
+                    // Handle the case where no Location header is provided
+                    JOptionPane.showMessageDialog(this, "Error: Redirected without a new URL", "Error", JOptionPane.ERROR_MESSAGE);
+                    return; // Exit the method
+                }
             }
 
-            int responseCode = connection.getResponseCode();
-            //System.out.println("Response Code: " + responseCode);
-            // Read the response from the API
+            // Continue processing the response as before
             try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                 String inputLine;
                 StringBuilder response = new StringBuilder();
@@ -242,49 +280,67 @@ public class AuthenticationFrame extends javax.swing.JFrame {
                     response.append(inputLine);
                 }
 
-                System.out.println("Response Body: " + response.toString());
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    JSONObject jsonResponse = new JSONObject(response.toString());
-                    JSONObject result = jsonResponse.getJSONObject("result");
+                // Parse JSON response
+                JSONObject jsonResponse = new JSONObject(response.toString());
+                JSONObject result = jsonResponse.getJSONObject("result");
 
-                    SessionManager.getInstance().setUserId(result.getInt("userId"));
-                    SessionManager.getInstance().setCsrfToken(result.getString("csrfToken"));
-                    SessionManager.getInstance().setUserName(result.getString("userName"));
-                    SessionManager.getInstance().setUserAccess(result.getInt("userAccess"));
-                    int userId = SessionManager.getInstance().getUserId();
-                    String csrfToken = SessionManager.getInstance().getCsrfToken();
-                    String userName = SessionManager.getInstance().getUserName();
-//                    System.out.println("User ID: " + userId);
-//                    System.out.println("CSRF Token: " + csrfToken);
-                    
-                    LoginFrame login = new LoginFrame();
-                    login.dispose();
-                    dispose();
-                    HomeFrame home = new HomeFrame();
-                    home.setTitle("Welcome");
-                    home.setVisible(true);
-                    JOptionPane.showMessageDialog(this, "Successfully Logged in as " + userName);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Error, Username or Password Wrong!", "Sajid", JOptionPane.ERROR_MESSAGE);
+                // Extract and set session data
+                SessionManager.getInstance().setUserId(result.getInt("userId"));
+                SessionManager.getInstance().setCsrfToken(result.getString("csrfToken"));
+                SessionManager.getInstance().setUserName(result.getString("userName"));
+                SessionManager.getInstance().setUserAccess(result.getInt("userAccess"));
+
+                String userName = SessionManager.getInstance().getUserName();
+
+                // Extract and store the session cookie
+                String sessionCookie = connection.getHeaderField("Set-Cookie");
+                if (sessionCookie != null) {
+                    SessionManager.getInstance().setCookie(sessionCookie);
                 }
+
+                // Close the connection
+                connection.disconnect();
+
+                // Handle successful authentication
+                LoginFrame login = new LoginFrame();
+                login.dispose();
+                dispose();
+                HomeFrame home = new HomeFrame();
+                home.setTitle("Welcome");
+                home.setVisible(true);
+                JOptionPane.showMessageDialog(this, "Successfully Logged in as " + userName);
                 initializePrincipal();
-                //System.out.println(Principal.getCurrent());
+            } catch (JSONException e) {
+                // Handle JSON parsing error
+                JOptionPane.showMessageDialog(this, "Error parsing JSON response", "Error", JOptionPane.ERROR_MESSAGE);
             }
-
-            connection.disconnect();
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, e.getMessage());
+        } else {
+            // Handle non-successful response
+            JOptionPane.showMessageDialog(this, "Error, Username or Password Wrong!", "Sajid", JOptionPane.ERROR_MESSAGE);
         }
+    } catch (Exception e) {
+        // Handle other exceptions
+        JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+
+    private void okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okActionPerformed
+       doAuthentication();
     }//GEN-LAST:event_okActionPerformed
     public void initializePrincipal() {
         Principal principal = new Principal(SessionManager.getInstance().getUserId());
         Principal.setCurrent(principal);
     }
     private void cancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelActionPerformed
-        // TODO add your handling code here:
-        dispose();
+         dispose();
     }//GEN-LAST:event_cancelActionPerformed
+
+    private void passwordKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_passwordKeyPressed
+         if(evt.getKeyCode() == KeyEvent.VK_ENTER)
+        {
+         doAuthentication();
+        }
+    }//GEN-LAST:event_passwordKeyPressed
 
     public static void main(String args[]) {
        FlatLightLaf.setup();

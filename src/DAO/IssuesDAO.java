@@ -6,13 +6,10 @@
 package DAO;
 
 import java.util.List;
+import java.util.Map;
 import javax.swing.table.DefaultTableModel;
 public interface IssuesDAO {
-    //DefaultTableModel getIssuesByTypeId1();
-    DefaultTableModel getIssuesByTypeId(int typeId, String folderName);
-    //DefaultTableModel getIssuesByTypeId3(String folderName);
-     DefaultTableModel createTableModel(String[] columnNames, List<Object[]> data);
-     //DefaultTableModel getIssuesByTypeId3(String folderName,List<String> selectedColumns);
-     List<String> getColumnNames();
-     void deleteIssue(int issueId);
+    DefaultTableModel getTableData(int folderId); 
+    Map<String, Object> getAttributes(int issueId);
+    Map<String, Object> getIssueDetails(int issueId);
 }
