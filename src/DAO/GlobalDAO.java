@@ -11,4 +11,5 @@ package DAO;
  */
 public interface GlobalDAO {
     public String getUserName(int userId);
+    public String getAttributeName(int attributeId);
 }

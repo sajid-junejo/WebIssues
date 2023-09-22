@@ -231,7 +231,7 @@ public class LoginFrame extends javax.swing.JFrame {
                 }
 
                 connection.setRequestMethod("GET");
-                connection.setConnectTimeout(5000); //set timeout to 5 seconds
+                connection.setConnectTimeout(2000); //set timeout to 5 seconds
                 
                 connection.connect();
 

@@ -13,17 +13,24 @@ import DAOImpl.IssuesDAOImpl;
 import DAOImpl.ProjectsDAOImpl;
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import javax.swing.border.Border;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -56,6 +63,7 @@ public class HomeFrame extends javax.swing.JFrame {
     static String projectName = "";
     static String ProjectNamess = null;
     static int projectId = 0;
+    public static String PATH = null;
     int FoldersID = 0;
     int IssueID = 0;
 
@@ -118,15 +126,11 @@ public class HomeFrame extends javax.swing.JFrame {
                 DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(projectName);
                 courses.add(rootNode);
                 int ProjectId = project.getProjectId();
-                System.out.println("Project id in Load method " + ProjectId);
                 List<Folder> folders = projectsDAO.getFoldersForProject(ProjectId);
                 for (Folder folder : folders) {
                     String folderName = folder.getFolderName();
-                    System.out.println("type in " + folder.getTypeId());
                     String typeName = projectsDAO.getTypeName(folder.getTypeId());
-                    System.out.println("Type Name " + typeName);
                     String nodeValue = folderName + "      [" + typeName + "]";
-                    System.out.println("Node value " + nodeValue);
                     projectIds.put(projectName, ProjectId);
                     DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(folderName);
                     childNode.setUserObject(nodeValue);
@@ -388,6 +392,7 @@ public class HomeFrame extends javax.swing.JFrame {
         jScrollPane2.setBackground(new java.awt.Color(255, 255, 255));
         jScrollPane2.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         jScrollPane2.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        jScrollPane2.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPane2.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
                 jScrollPane2MouseWheelMoved(evt);
@@ -397,7 +402,7 @@ public class HomeFrame extends javax.swing.JFrame {
         jPanel2.setBackground(new java.awt.Color(255, 255, 255));
         jPanel2.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         jPanel2.setAutoscrolls(true);
-        jPanel2.setPreferredSize(new java.awt.Dimension(950, 215));
+        jPanel2.setPreferredSize(new java.awt.Dimension(950, 315));
         jPanel2.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
             public void mouseDragged(java.awt.event.MouseEvent evt) {
                 jPanel2MouseDragged(evt);
@@ -411,11 +416,11 @@ public class HomeFrame extends javax.swing.JFrame {
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1176, Short.MAX_VALUE)
+            .addGap(0, 1159, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 219, Short.MAX_VALUE)
+            .addGap(0, 311, Short.MAX_VALUE)
         );
 
         jScrollPane2.setViewportView(jPanel2);
@@ -605,12 +610,12 @@ public class HomeFrame extends javax.swing.JFrame {
         int cheight = 16;
         int clabelSpacing = 5;
 
-        try { 
-            Map<String, Object> attributesMap = issuesDAO.getAttributes(IssueID); 
+        try {
+            Map<String, Object> attributesMap = issuesDAO.getAttributes(IssueID);
             attributeY = cy;
-            for(Map.Entry<String, Object> entry : attributesMap.entrySet()) {
+            for (Map.Entry<String, Object> entry : attributesMap.entrySet()) {
                 String attrName = entry.getKey();
-                Object attrValueObj = entry.getValue(); 
+                Object attrValueObj = entry.getValue();
                 String attrValue = (attrValueObj != null) ? attrValueObj.toString() : "";
 
                 attributeLabel = new JLabel(attrName + "    :    " + attrValue);
@@ -624,7 +629,7 @@ public class HomeFrame extends javax.swing.JFrame {
         }
         jPanel2.revalidate();
         jPanel2.repaint();
-    
+
     }
 
     public void buttonsCreation() {
@@ -975,15 +980,15 @@ public class HomeFrame extends javax.swing.JFrame {
         }
     }
 
-    public void issueDetails() {
+ public void issueDetails() {
     int x = 30;
-    int y = 35;
+    int y = 15;
     int labelWidth = 900;
     int height = 20;
     int labelSpacing = 5;
     DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
     Object[] rowData = new Object[tableModel.getColumnCount()];
-    String description = "";
+    String description = issuesDAO.getDescription(IssueID);
     JLabel descrLabel = null;
     boolean flag = false;
     String modified_name = null;
@@ -993,192 +998,137 @@ public class HomeFrame extends javax.swing.JFrame {
         attributeY = y;
 
         // Define a list of keys you want to include in labels
-        List<String> keysToInclude = Arrays.asList("ID", "NAME", "folderId", "typeId");
-
-        for (Map.Entry<String, Object> entry : issueDetailsMap.entrySet()) {
-            String attrName = entry.getKey();
-            Object attrValueObj = entry.getValue();
+        Set<String> keysToInclude = new LinkedHashSet<>(Arrays.asList("NAME", "ID", "TYPE", "LOCATION", "CREATED", "LAST MODIFIED"));
+        for (String attrName : keysToInclude) {
+            Object attrValueObj = issueDetailsMap.get(attrName);
 
             // Check if the key is in the list of keys to include
-            if (keysToInclude.contains(attrName)) {
-                // Create JLabel for attribute name and value
-                JLabel attrLabel = new JLabel(attrName + " : ");
+            if (attrValueObj != null) {
+                // Create a single JLabel for attribute name and value
+                String labelText = attrName.equals("NAME") ? ("<html><b>" + attrValueObj.toString() + "</b></html>") : (attrName + " : " + attrValueObj.toString());
+
+                JLabel attrLabel = new JLabel(labelText);
                 attrLabel.setBounds(x, attributeY, labelWidth, height);
                 jPanel2.add(attrLabel);
-
-                JLabel attrValueLabel = new JLabel(attrValueObj != null ? attrValueObj.toString() : "");
-                attrValueLabel.setBounds(x + labelWidth + labelSpacing, attributeY, labelWidth, height);
-                jPanel2.add(attrValueLabel);
-
                 attributeY += height + labelSpacing;
+            }
+        }
+        attributeY += 15;
+        if (description != null && !description.isEmpty()) {
+    descrLabel = new JLabel("Description:");
+    descrLabel.setBounds(x, attributeY, labelWidth, height);
+    jPanel2.add(descrLabel);
+    attributeY += height + labelSpacing;
 
-                // Special handling for "name" and "description"
-                if ("name".equals(attrName)) {
-                    modified_name = attrValueObj != null ? attrValueObj.toString() : "";
-                } else if ("description".equals(attrName)) {
-                    description = attrValueObj != null ? attrValueObj.toString() : "";
+    System.out.println("This is the Description " + description);
+
+    // Replace \n with <br> to ensure proper line breaks in HTML
+    description = description.replace("\n", "<br>");
+
+    // Use a JEditorPane to render HTML content
+    JEditorPane descEditorPane = new JEditorPane();
+    descEditorPane.setContentType("text/html"); // Set content type to HTML
+    descEditorPane.setText("<html>" + description + "</html>"); // Wrap with <html> tag
+    descEditorPane.setEditable(false);
+
+    // Add a HyperlinkListener to make links clickable
+    descEditorPane.addHyperlinkListener(new HyperlinkListener() {
+        @Override
+        public void hyperlinkUpdate(HyperlinkEvent e) {
+            if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                if (Desktop.isDesktopSupported()) {
+                    try {
+                        Desktop.getDesktop().browse(e.getURL().toURI());
+                    } catch (IOException | java.net.URISyntaxException ex) {
+                        ex.printStackTrace();
+                    }
                 }
             }
         }
+    });
+    descEditorPane.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    JScrollPane scrollPane = new JScrollPane(descEditorPane);
+    scrollPane.setBounds(x, attributeY, labelWidth, height * 4);
+    jPanel2.add(scrollPane);
 
-        // Set the name and description labels
-        if (modified_name != null && !modified_name.isEmpty()) {
-            JLabel nameLabel = new JLabel("Name: " + modified_name);
-            nameLabel.setBounds(x, attributeY, labelWidth, height);
-            jPanel2.add(nameLabel);
-            attributeY += height + labelSpacing;
-        }
+    attributeY += height * 3 + labelSpacing;
 
-        if (description != null && !description.isEmpty()) {
-            descrLabel = new JLabel("Description:");
-            descrLabel.setBounds(x, attributeY, labelWidth, height);
-            jPanel2.add(descrLabel);
-            attributeY += height + labelSpacing;
+    // Create the button
+    JButton menuButton = new JButton("<span aria-hidden=\"true\" class=\"fa fa-ellipsis-v\"></span>");
+    menuButton.setToolTipText("Menu");
+    menuButton.setFocusable(false);
+    menuButton.setBounds(x + labelWidth - 30, 10, 30, 30); // Adjust the position as needed
+    menuButton.setBorderPainted(false);
+    menuButton.setContentAreaFilled(false);
+    menuButton.setOpaque(false);
+    jPanel2.add(menuButton);
+}
 
-            JTextArea descTextArea = new JTextArea(description);
-            descTextArea.setLineWrap(true);
-            descTextArea.setWrapStyleWord(true);
-            descTextArea.setEditable(false);
-
-            JScrollPane scrollPane = new JScrollPane(descTextArea);
-            scrollPane.setBounds(x, attributeY, labelWidth, height * 3); // Adjust the height as needed
-            jPanel2.add(scrollPane);
-
-            attributeY += height * 3 + labelSpacing;
-        }
     } catch (Exception e) {
         e.printStackTrace();
     }
     jPanel2.revalidate();
     jPanel2.repaint();
-}    
+}
+
+
     public void history() {
-        Connection con = null;
-        PreparedStatement statement = null;
-        JLabel changeLabel = null;
-        JLabel attribute = null;
+        int hx = 30;
+        int hy = attributeY + 25;
+        int hlabelWidth = 500;
+        int hheight = 16;
+        int hlabelSpacing = 5;
+        int labelY = hy;
 
-        try {
-            con = DbConnection.getConnection();
-            int hx = 30;
-            int hy = 183;
-            int hlabelWidth = 500;
-            int hheight = 16;
-            int hlabelSpacing = 5;
-            int labelY = hy;
+        JLabel label = new JLabel("<html><b>Issue History</b></html>");
+        label.setBounds(hx, labelY, hlabelWidth, hheight);
+        labelY += hheight + hlabelSpacing;
+        jPanel2.add(label);
 
-            JLabel label = new JLabel("<html><b>Issue History</b></html>");
-            label.setBounds(hx, labelY, hlabelWidth, hheight);
+        Map<String, String> history = issuesDAO.getHistory(IssueID);
+        for (Map.Entry<String, String> entry : history.entrySet()) {
+            String keyValue = entry.getKey();
+            String formattedEntry = entry.getValue();
+            System.out.println("Key :" + keyValue + " Value :" + formattedEntry);
+            String[] lines = formattedEntry.split("\n");
+            JLabel KeyLabel = new JLabel("<html><b>" + keyValue + "</b></html>");
+            KeyLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+            jPanel2.add(KeyLabel);
             labelY += hheight + hlabelSpacing;
-            jPanel2.add(label);
 
-            String sqlQuery = "SELECT ch.change_id, ch.change_type, ch.stamp_id, "
-                    + "sc.stamp_time AS created_date, "
-                    + "cu.user_login AS created_user_login, "
-                    + "sm.stamp_time AS modified_date, sm.user_id AS modified_user, "
-                    + "ch.attr_id, ch.value_old, ch.value_new, ch.from_folder_id, ch.to_folder_id "
-                    + "FROM changes AS ch "
-                    + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
-                    + "JOIN stamps AS sm ON sm.stamp_id = ch.stamp_id "
-                    + "JOIN users AS cu ON sc.user_id = cu.user_id "
-                    + "WHERE ch.issue_id = ?"
-                    + " ORDER BY created_date DESC";
+            JTextArea descTextArea = new JTextArea();
+            descTextArea.setLineWrap(true);
+            descTextArea.setWrapStyleWord(true);
+            descTextArea.setEditable(false);
 
-            statement = con.prepareStatement(sqlQuery);
-            statement.setInt(1, issueId);
-
-            ResultSet resultSet = statement.executeQuery();
-            Map<String, List<String>> changesByDate = new LinkedHashMap<>();
-            Map<Integer, String> attrIdToNameMap = new HashMap<>();
-
-            try {
-                String sqlQueryAttributes = "SELECT attr_id, attr_name FROM attr_types";
-                PreparedStatement attrStatement = con.prepareStatement(sqlQueryAttributes);
-                ResultSet attrResultSet = attrStatement.executeQuery();
-                while (attrResultSet.next()) {
-                    int attrId = attrResultSet.getInt("attr_id");
-                    String attrName = attrResultSet.getString("attr_name");
-                    attrIdToNameMap.put(attrId, attrName);
-                }
-            } catch (SQLException c) {
-                c.printStackTrace();
-            }
-
-            while (resultSet.next()) {
-                int attrId = resultSet.getInt("attr_id");
-                String attrName = attrIdToNameMap.get(attrId);
-                long createdDateMillis = resultSet.getLong("created_date") * 1000L;
-                Date createdDate = new Date(createdDateMillis);
-                String createdUserLogin = resultSet.getString("created_user_login");
-                long modifiedDateMillis = resultSet.getLong("modified_date") * 1000L;
-                Date modifiedDate = new Date(modifiedDateMillis);
-                //String modifiedUser = resultSet.getString("modified_user");
-                String valueOld = resultSet.getString("value_old");
-                String valueNew = resultSet.getString("value_new");
-                //int fromFolderId = resultSet.getInt("from_folder_id");
-                //int toFolderId = resultSet.getInt("to_folder_id");
-                SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
-                String formattedCreatedDate = sdf.format(createdDate);
-                String formattedModifiedDate = sdf.format(modifiedDate);
-
-                String changeLabelString = formattedCreatedDate + " --- " + createdUserLogin;
-                String attributeString = "";
-
-                if (attrName == null && valueOld == null) {
-                    attributeString = "Name -> " + valueNew;
-                } else if (attrName == null) {
-                    attributeString = "Name -> " + " -> " + valueOld + " -> " + valueNew;
-                } else {
-                    if (valueOld == null || valueOld.isEmpty()) {
-                        attributeString = attrName + " -> " + valueNew;
-                    } else if (valueNew == null || valueNew.isEmpty()) {
-                        attributeString = attrName + " -> " + valueOld + " -> empty";
+            for (String line : lines) {
+                if (!line.trim().isEmpty()) {
+                    if (line.startsWith("Comment: →")) {
+                        descTextArea.append(line.replace("Comment: →", "") + "");
                     } else {
-                        attributeString = attrName + " -> " + valueOld + " -> " + valueNew;
+                        JLabel historyLabel = new JLabel("<html><li>" + line + "</li></html>");
+                        historyLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+                        jPanel2.add(historyLabel);
+                        labelY += hheight + hlabelSpacing;
                     }
                 }
-
-                List<String> changesList = changesByDate.getOrDefault(changeLabelString, new ArrayList<>());
-                changesList.add(attributeString);
-                changesByDate.put(changeLabelString, changesList);
             }
 
-            resultSet.close();
-            statement.close();
-            con.close();
-
-            for (Map.Entry<String, List<String>> entry : changesByDate.entrySet()) {
-                String changeLabelString = entry.getKey();
-                List<String> changesList = entry.getValue();
-
-                changeLabel = new JLabel("<html><b>" + changeLabelString + "</b></html>");
-                changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
-                jPanel2.add(changeLabel);
-
-                labelY += (hheight + hlabelSpacing);
-
-                StringBuilder bulletList = new StringBuilder("<html><ul>");
-
-                for (String attributeString : changesList) {
-                    bulletList.append("<li>").append(attributeString).append("</li>");
-                }
-
-                bulletList.append("</ul></html>");
-
-                attribute = new JLabel(bulletList.toString());
-                attribute.setBounds(hx, labelY, hlabelWidth, hheight * changesList.size());
-                jPanel2.add(attribute);
-
-                labelY += (hheight + hlabelSpacing) * changesList.size();
-
-                labelY += hlabelSpacing + 5;
+            if (!descTextArea.getText().isEmpty()) {
+                JScrollPane scrollPane = new JScrollPane(descTextArea);
+                scrollPane.setBounds(hx, labelY, hlabelWidth, hheight * 3);
+                jPanel2.add(scrollPane);
+                labelY += hheight * 3 + hlabelSpacing;
             }
-            if (labelY > 215) {
-                jPanel2.setPreferredSize(new Dimension(jPanel2.getWidth(), labelY));
-            }
-        } catch (Exception v) {
-            v.printStackTrace();
         }
+
+        int currentHeight = jPanel2.getHeight();
+        if (labelY > currentHeight) {
+            jPanel2.setPreferredSize(new Dimension(jPanel2.getWidth(), labelY));
+        }
+
+        jPanel2.revalidate();
+        jPanel2.repaint();
     }
 
     private class ButtonClickListener implements ActionListener {
@@ -1188,9 +1138,7 @@ public class HomeFrame extends javax.swing.JFrame {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-
             JButton currentButton = (JButton) e.getSource();
-
             if (currentButton.getText().equals("All History")) {
             } else if (currentButton.getText().equals("Only Comments")) {
                 if (labelsAdded) {
@@ -1230,11 +1178,11 @@ public class HomeFrame extends javax.swing.JFrame {
         jTable1.repaint();
     }
     private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
- 
+
     }//GEN-LAST:event_jComboBox2ActionPerformed
 
     private void jLabel12MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel12MouseClicked
-         AddNewFolder folder = new AddNewFolder();
+        AddNewFolder folder = new AddNewFolder();
         if (jLabel12.getText() == "Add Issue") {
             issue.setVisible(true);
         } else if (jLabel12.getText() == "Add Folder") {
@@ -1260,7 +1208,6 @@ public class HomeFrame extends javax.swing.JFrame {
             int x = evt.getX();
             int y = evt.getY();
             TreePath path = jTree1.getPathForLocation(x, y);
-            System.out.println("Path " + path);
             if (path != null) {
                 String pathString = path.toString();
                 int firstCommaIndex = pathString.indexOf(",");
@@ -1288,13 +1235,11 @@ public class HomeFrame extends javax.swing.JFrame {
                             // Now you have the project ID to work with
                             System.out.println("Project ID: " + projectId);
                             List<Folder> folders = projectsDAO.getFoldersForProject(projectId);
-
+                            PATH = valueBetweenCommas + " - " + folderName;
                             // Loop through the folders to find the folder ID by folder name.
                             for (Folder folder : folders) {
                                 if (folder.getFolderName().equals(folderName)) {
                                     FoldersID = folder.getFolderId();
-                                    // System.out.println("Folder ID: " + folderId);
-                                    // Do something with the folder ID.
                                     break; // Exit the loop once you find the folder ID.
                                 }
                             }
@@ -1321,29 +1266,12 @@ public class HomeFrame extends javax.swing.JFrame {
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
         jLabel12.setEnabled(true);
         jLabel12.setText("Add Issue");
-        Connection con = null;
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-        try {
-            con = DbConnection.getConnection();
-            String query = "SELECT project_id FROM folders WHERE folder_name = ?";
-            statement = con.prepareStatement(query);
-            statement.setString(1, folderName);
-
-            resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                projectId = resultSet.getInt("project_id");
-                //System.out.println("project id i n the home "+projectId);
-            }
-        } catch (Exception e) {
-        }
         //System.out.println("folder name in the table mouse clicked "+folderName);
         if (SwingUtilities.isRightMouseButton(evt)) {
-            selectedRowIndex = jTable1.getSelectedRow(); 
+            selectedRowIndex = jTable1.getSelectedRow();
             JPopupMenu popupMenu = new JPopupMenu();
-
             JMenuItem updateItem = new JMenuItem("Edit Attributes");
-            JMenuItem insertItem = new JMenuItem("Add Issue"); 
+            JMenuItem insertItem = new JMenuItem("Add Issue");
             ImageIcon insertIcon = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\edit.png");
             ImageIcon addIssue = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\mail.png");
             updateItem.setIcon(insertIcon);
@@ -1388,7 +1316,7 @@ public class HomeFrame extends javax.swing.JFrame {
                                 "Confirmation",
                                 JOptionPane.YES_NO_OPTION);
 
-                        if (option == JOptionPane.YES_OPTION) { 
+                        if (option == JOptionPane.YES_OPTION) {
                             refreshJTable();
                             jPanel2.removeAll();
                             jPanel2.repaint();
@@ -1409,11 +1337,13 @@ public class HomeFrame extends javax.swing.JFrame {
                 int idColumnIndex = jTable1.getColumnModel().getColumnIndex("ID");
                 Object idValue = jTable1.getValueAt(selectedRow, idColumnIndex);
                 if (idValue != null) {
-                    String idString = idValue.toString(); 
+                    String idString = idValue.toString();
                     idString = idString.replaceAll("\\<.*?\\>|[^0-9]", "");
                     IssueID = Integer.parseInt(idString);
-                     issueAttributes();
-                     issueDetails();
+                    issueAttributes();
+                    //buttonsCreation();
+                    issueDetails();
+                    history();
                 }
             }
         }

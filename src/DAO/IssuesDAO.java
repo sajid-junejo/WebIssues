@@ -12,4 +12,6 @@ public interface IssuesDAO {
     DefaultTableModel getTableData(int folderId); 
     Map<String, Object> getAttributes(int issueId);
     Map<String, Object> getIssueDetails(int issueId);
+    Map<String, String> getHistory(int issueId);
+    String getDescription(int IssueID);
 }

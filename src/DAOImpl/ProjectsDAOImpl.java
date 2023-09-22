@@ -55,7 +55,6 @@ public class ProjectsDAOImpl implements ProjectsDAO {
 
             URL url = new URL(LoginFrame.apiUrl);
             String api = url.getProtocol() + "://" + url.getHost() + "/";
-            System.out.println("Original API " + api);
             String apiUrl = api + "server/api/projects/list.php";
             System.out.println("Appending Api " + apiUrl);
 
@@ -145,7 +144,6 @@ public class ProjectsDAOImpl implements ProjectsDAO {
         try {
             URL url = new URL(LoginFrame.apiUrl);
             String api = url.getProtocol() + "://" + url.getHost() + "/";
-            System.out.println("Original API " + api);
             String apiUrl = api + "server/api/projects/load.php";
 
             // Open a connection to the API endpoint using apiUrl
@@ -218,7 +216,6 @@ public class ProjectsDAOImpl implements ProjectsDAO {
     try {
         URL url = new URL(LoginFrame.apiUrl);
         String api = url.getProtocol() + "://" + url.getHost() + "/";
-        System.out.println("Original API " + api);
         String apiUrl = api + "server/api/types/load.php";  // Update the API endpoint URL
 
         // Open a connection to the API endpoint using apiUrl
@@ -284,42 +281,4 @@ public class ProjectsDAOImpl implements ProjectsDAO {
         }
     }
 }
-
-    @Override
-    public int getFolderIdByName(String folderName) {
-        Connection con = null;
-        Statement statement = null;
-        ResultSet resultSet = null;
-        try {
-            con = DbConnection.getConnection();
-            statement = con.createStatement();
-
-            String folderQuery = "SELECT folder_id FROM folders WHERE folder_name = '" + folderName + "'";
-            resultSet = statement.executeQuery(folderQuery);
-            if (resultSet.next()) {
-                int folderId = resultSet.getInt("folder_id");
-                resultSet.close();
-                statement.close();
-                con.close();
-                return folderId;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (resultSet != null) {
-                    resultSet.close();
-                }
-                if (statement != null) {
-                    statement.close();
-                }
-                if (con != null) {
-                    con.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return -1; // Return -1 if folder ID is not found
-    }
 }

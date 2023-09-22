@@ -1,7 +1,6 @@
 package webissuesFrame;
 
-import com.formdev.flatlaf.FlatLightLaf;
-import org.jdatepicker.JDatePicker;
+import com.formdev.flatlaf.FlatLightLaf; 
 import dbConnection.DbConnection;
 import java.awt.Component;
 import java.awt.Image;
@@ -9,24 +8,20 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.text.DateFormat;
+import java.sql.Statement; 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import javafx.scene.control.DatePicker;
+import java.util.Objects; 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
+import javax.swing.JComboBox; 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
-import static javax.xml.bind.DatatypeConverter.parseDate;
+import javax.swing.SwingUtilities; 
 import org.jdesktop.swingx.JXDatePicker;
 import pojos.SessionManager;
 

@@ -312,7 +312,7 @@ public class AuthenticationFrame extends javax.swing.JFrame {
                 initializePrincipal();
             } catch (JSONException e) {
                 // Handle JSON parsing error
-                JOptionPane.showMessageDialog(this, "Error parsing JSON response", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Username or Password Wrong", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } else {
             // Handle non-successful response

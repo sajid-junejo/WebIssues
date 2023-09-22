@@ -5,6 +5,7 @@ import dbConnection.DbConnection;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -18,6 +19,7 @@ import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
@@ -27,10 +29,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import pojos.SessionManager;
+import webissuesFrame.HomeFrame;
 import webissuesFrame.LoginFrame;
 
 public class IssuesDAOImpl implements IssuesDAO {
+
     GlobalDAOImpl global = new GlobalDAOImpl();
+    ProjectsDAOImpl projectsDao = new ProjectsDAOImpl();
+
     @Override
     public DefaultTableModel getTableData(int folderId) {
         DefaultTableModel tableModel = new DefaultTableModel();
@@ -41,7 +47,6 @@ public class IssuesDAOImpl implements IssuesDAO {
         try {
             URL url = new URL(LoginFrame.apiUrl);
             String api = url.getProtocol() + "://" + url.getHost() + "/";
-            System.out.println("Original API " + api);
             String apiUrl = api + "server/api/issues/list.php";
 
             // Open a connection to the API endpoint using apiUrl
@@ -53,9 +58,7 @@ public class IssuesDAOImpl implements IssuesDAO {
             connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
             connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
             connection.setRequestProperty("Content-Type", "application/json");
-
-            System.out.println("Folder ID in getTable Data " + folderId);
-            String jsonInputString = "{\"folderId\": " + folderId + ", \"limit\": " + 10 + "}";
+            String jsonInputString = "{\"folderId\": " + folderId + ", \"limit\": " + 50 + "}";
             // Enable input/output streams for the connection
             connection.setDoInput(true);
             connection.setDoOutput(true);
@@ -64,7 +67,6 @@ public class IssuesDAOImpl implements IssuesDAO {
 
             // Get the response code
             int responseCode = connection.getResponseCode();
-            System.out.println("Respoce Code " + responseCode);
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 // Read the response
                 reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -136,7 +138,6 @@ public class IssuesDAOImpl implements IssuesDAO {
         try {
             URL url = new URL(LoginFrame.apiUrl);
             String api = url.getProtocol() + "://" + url.getHost() + "/";
-            System.out.println("Original API " + api);
             String apiUrl = api + "server/api/issues/load.php";
 
             // Open a connection to the API endpoint using apiUrl
@@ -169,7 +170,6 @@ public class IssuesDAOImpl implements IssuesDAO {
 
             // Get the response code
             int responseCode = connection.getResponseCode();
-            System.out.println("Response Code " + responseCode);
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 // Read the response
                 reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -239,13 +239,12 @@ public class IssuesDAOImpl implements IssuesDAO {
         String createdDate = null;
         int createdBy = 0;
         String modifiedDate = null;
-        int modifiedBy = 0; 
+        int modifiedBy = 0;
 
         try {
             URL url = new URL(LoginFrame.apiUrl);
             String api = url.getProtocol() + "://" + url.getHost() + "/";
-            System.out.println("Original API " + api);
-            String apiUrl = api + "server/api/issues/load.php"; 
+            String apiUrl = api + "server/api/issues/load.php";
             // Open a connection to the API endpoint using apiUrl
             connection = (HttpURLConnection) new URL(apiUrl).openConnection();
             connection.setRequestMethod("POST");
@@ -272,7 +271,6 @@ public class IssuesDAOImpl implements IssuesDAO {
             connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
 
             int responseCode = connection.getResponseCode();
-            System.out.println("Response Code " + responseCode);
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 // Read the response
                 reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -282,7 +280,7 @@ public class IssuesDAOImpl implements IssuesDAO {
                     response.append(inputLine);
                 }
 
-                try { 
+                try {
                     JSONObject jsonResponse = new JSONObject(response.toString());
                     if (jsonResponse.has("result")) {
                         JSONObject result = jsonResponse.getJSONObject("result");
@@ -295,7 +293,7 @@ public class IssuesDAOImpl implements IssuesDAO {
                         createdDate = formatDateTime(details.getLong("createdDate")); // Convert Unix timestamp to milliseconds
                         createdBy = details.getInt("createdBy");
                         modifiedDate = formatDateTime(details.getLong("modifiedDate")); // Convert Unix timestamp to milliseconds
-                        modifiedBy = details.getInt("modifiedBy"); 
+                        modifiedBy = details.getInt("modifiedBy");
                     } else {
                         System.err.println("Error: 'result' not found in the JSON response.");
                     }
@@ -308,18 +306,247 @@ public class IssuesDAOImpl implements IssuesDAO {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        String username = global.getUserName(createdBy);
-        System.out.println("User NAme ---------------------------->>>>>>>>>> "+username);
+        String createdByUser = global.getUserName(createdBy);
+        String typename = projectsDao.getTypeName(typeId);
+        String modifiedByUser = global.getUserName(modifiedBy);
+        Object createdDetails = createdDate + " - " + createdByUser;
+        Object modifiedDetails = modifiedDate + " - " + modifiedByUser;
         //Object created = createdDate + createdBy;
         issueDetailsMap.put("ID", id);
         issueDetailsMap.put("NAME", name);
-        issueDetailsMap.put("folderId", folderId);
-        issueDetailsMap.put("typeId", typeId);
-        issueDetailsMap.put("created", createdDate);
-        issueDetailsMap.put("createdBy", username);
-        issueDetailsMap.put("modifiedDate", modifiedDate);
-        issueDetailsMap.put("modifiedBy", modifiedBy);
+        issueDetailsMap.put("LOCATION", HomeFrame.PATH);
+        issueDetailsMap.put("TYPE", typename);
+        issueDetailsMap.put("CREATED", createdDetails);
+        issueDetailsMap.put("LAST MODIFIED", modifiedDetails);
 
         return issueDetailsMap;
+    }
+
+    @Override
+    public Map<String, String> getHistory(int issueId) {
+        Map<String, String> historyMap = new LinkedHashMap<>(); // Use LinkedHashMap to preserve order
+        HttpURLConnection connection = null;
+        BufferedReader reader = null;
+
+        try {
+            URL url = new URL(LoginFrame.apiUrl);
+            String api = url.getProtocol() + "://" + url.getHost() + "/";
+            String apiUrl = api + "server/api/issues/load.php";
+
+            // Create the JSON request body using a JSONObject
+            String jsonInputString = "{"
+                    + "\"issueId\": " + issueId + ","
+                    + "\"description\": true,"
+                    + "\"attributes\": true,"
+                    + "\"history\": true,"
+                    + "\"modifiedSince\": 0,"
+                    + "\"filter\": 1,"
+                    + "\"unread\": false,"
+                    + "\"html\": true"
+                    + "}";
+
+            // Open a connection to the API endpoint using apiUrl
+            connection = (HttpURLConnection) new URL(apiUrl).openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+
+            // Set headers
+            connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
+            connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
+            connection.setRequestProperty("Content-Type", "application/json");
+
+            // Write the JSON request body to the output stream
+            // Write the JSON request body to the output stream
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8); // Use jsonInputString here
+                os.write(input, 0, input.length);
+            }
+
+            // Get the response code
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                // Read the response
+                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String inputLine;
+                while ((inputLine = reader.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                // Parse the JSON response
+                try {
+                    JSONObject jsonResponse = new JSONObject(response.toString());
+                    if (jsonResponse.has("result")) {
+                        // Assuming that the API response is stored in a variable named 'apiResponse'
+                        JSONObject result = jsonResponse.getJSONObject("result");
+                        JSONArray historyArray = result.getJSONArray("history");
+                        String currentKey = ""; // Initialize current key
+                        StringBuilder currentEntry = new StringBuilder(); //
+                        String currentAttribute = null; // Initialize current attribute
+                        for (int i = 0; i < historyArray.length(); i++) {
+                            JSONObject historyEntry = historyArray.getJSONObject(i);
+                            String createdDate = formatDateTime(historyEntry.getLong("createdDate"));
+                            String createdByStr = historyEntry.optString("createdBy");
+                            int created = Integer.parseInt(createdByStr);
+                            String createdBy = global.getUserName(created);
+
+                            // Check if currentKey is empty or different from the current entry's key
+                            if (currentKey.isEmpty() || !currentKey.equals(createdDate + " — " + createdBy)) {
+                                // If it's a new key, create a new StringBuilder
+                                currentKey = createdDate + " — " + createdBy;
+                                currentEntry = new StringBuilder();
+                                currentAttribute = null; // Reset current attribute
+                            }
+
+                            String newValue = historyEntry.optString("new");
+                            String oldValue = historyEntry.optString("old");
+                            String text = historyEntry.optString("text");
+                            String name = historyEntry.optString("name");
+                            String attributeId = historyEntry.optString("attributeId");
+                            int atrID = 0; // Default value if attributeId is empty
+                            if (!attributeId.isEmpty()) {
+                                atrID = Integer.parseInt(attributeId);
+                            }
+                            String attributeName = global.getAttributeName(atrID);
+
+                            // Check for null attributeName and provide a default value
+                            if (attributeName == null) {
+                                if (!historyEntry.has("attributeId") && !historyEntry.has("text") && !historyEntry.has("name")) {
+                                    attributeName = "NAME";
+                                } else if (!historyEntry.has("attributeId")) {
+                                    attributeName = "Comment";
+                                } else {
+                                    attributeName = "UNKNOWN ATTRIBUTE";
+                                }
+                            }
+
+                            // Handle attachments generically
+                            if (historyEntry.has("name")) { // Assuming type 4 represents attachments
+                                attributeName = "ATTACHMENT";
+                            }
+
+                            // Append the information to the current entry
+                            if (!newValue.equals(oldValue) || !attributeName.equals(currentAttribute)) {
+                                // Insert a newline if the attribute or value has changed
+                                currentEntry.append("\n");
+                            }
+                            currentAttribute = attributeName; // Update current attribute
+
+                            currentEntry.append("   ").append(attributeName).append(": ");
+                            if ("Comment".equals(attributeName) || "Comment".equals(currentAttribute)) {
+                               currentEntry.append(text.replace("\n", " "));
+                            } else if ("ATTACHMENT".equals(attributeName) || "ATTACHMENT".equals(currentAttribute)) {
+                                currentEntry.append(name).append(" (Size: ").append(historyEntry.optString("size")).append(")");
+                            } else {
+                                currentEntry.append(oldValue).append(" → ").append(newValue);
+                            }
+
+                            // Add the current entry to the historyMap
+                            historyMap.put(currentKey, currentEntry.toString());
+
+                        }
+                    } else {
+                        System.err.println("Error: 'result' not found in the JSON response.");
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                System.err.println("Error: HTTP Response Code " + responseCode);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            // Close the reader and connection in a finally block
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            //in pther cases it show liek cihrtoscindm
+        }
+        return historyMap;
+    }
+
+    @Override
+    public String getDescription(int IssueID) {
+        HttpURLConnection connection = null;
+        BufferedReader reader = null;
+        String text = null;
+
+        try {
+            URL url = new URL(LoginFrame.apiUrl);
+            String api = url.getProtocol() + "://" + url.getHost() + "/";
+            String apiUrl = api + "server/api/issues/load.php";
+            // Open a connection to the API endpoint using apiUrl
+            connection = (HttpURLConnection) new URL(apiUrl).openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            // Set headers
+            connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
+            connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
+            connection.setRequestProperty("Content-Type", "application/json");
+            // Construct the request body
+            String jsonInputString = "{"
+                    + "\"issueId\": " + IssueID + ","
+                    + "\"description\": true,"
+                    + "\"attributes\": true,"
+                    + "\"history\": true,"
+                    + "\"modifiedSince\": 0,"
+                    + "\"filter\": 1,"
+                    + "\"unread\": false,"
+                    + "\"html\": true"
+                    + "}";
+
+            connection.setDoInput(true);
+            connection.setDoOutput(true);
+
+            connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                // Read the response
+                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String inputLine;
+                while ((inputLine = reader.readLine()) != null) {
+                    response.append(inputLine);
+                }
+
+                try {
+                    JSONObject jsonResponse = new JSONObject(response.toString());
+                    if (jsonResponse.has("result")) {
+                        JSONObject result = jsonResponse.getJSONObject("result");
+                        // Check if "description" is not null and is an object
+                        if (!result.isNull("description") && result.get("description") instanceof JSONObject) {
+                            JSONObject description = result.getJSONObject("description");
+
+                            // Get the "text" field from the "description" object
+                            if (description.has("text")) {
+                                text = description.getString("text");
+                            } else {
+                                System.err.println("Error: 'text' not found in the 'description' object.");
+                            }
+                        } else {
+                            System.err.println("Error: 'description' is null or not a JSONObject.");
+                        }
+                    } else {
+                        System.err.println("Error: 'result' not found in the JSON response.");
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                System.err.println("Error: HTTP Response Code " + responseCode);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return text;
     }
 }
