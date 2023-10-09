@@ -20,11 +20,7 @@ import javax.swing.table.DefaultTableModel;
 import pojos.Path;
 
 public class LoginFrame extends javax.swing.JFrame {
-
-    // Loader load = new Loader();
-    // Path path = new Path();
-
-    public static String apiUrl;
+     public static String apiUrl;
     public static String hostname;
 
     public LoginFrame() {
@@ -221,24 +217,19 @@ public class LoginFrame extends javax.swing.JFrame {
                 URL url = new URL(apiUrl);
                 System.out.println("URL "+url);
                 // Open a connection to the URL
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                System.out.println("Connection "+connection);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection(); 
                 if (connection instanceof HttpsURLConnection) {
-                    HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
-                    System.out.println("Debug ");
+                    HttpsURLConnection httpsConnection = (HttpsURLConnection) connection; 
                     // Disable hostname verification
                     httpsConnection.setHostnameVerifier((host, session) -> true);
                 }
 
                 connection.setRequestMethod("GET");
-                connection.setConnectTimeout(2000); //set timeout to 5 seconds
+                connection.setConnectTimeout(1000); //set timeout to 5 seconds
                 
-                connection.connect();
-
-                System.out.println("Debug");
+                connection.connect(); 
                 // Check the HTTP response code
-                int responseCode = connection.getResponseCode();
-                System.out.println("Response code "+responseCode);
+                int responseCode = connection.getResponseCode(); 
                 if (responseCode == HttpURLConnection.HTTP_BAD_REQUEST) {
                     AuthenticationFrame auth = new AuthenticationFrame();
                     auth.setLocationRelativeTo(null);
@@ -255,8 +246,7 @@ public class LoginFrame extends javax.swing.JFrame {
                     auth.setVisible(true);
                     break;
                 }
-                else {
-                    System.out.println("Count "+retryCount);
+                else { 
                     retryCount++;
                     errorOccurred = true;
                 }
@@ -269,8 +259,7 @@ public class LoginFrame extends javax.swing.JFrame {
             } catch (MalformedURLException e) {
                 JOptionPane.showMessageDialog(this, "Invalid URL: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 break; 
-            } catch (IOException e) {
-                System.out.println("Count "+retryCount);
+            } catch (IOException e) { 
                 if(retryCount >=1)
                 {
                     e.printStackTrace();
@@ -285,10 +274,9 @@ public class LoginFrame extends javax.swing.JFrame {
                 }
         }
 
-        if (errorOccurred && retryCount >= maxRetries) {
+        if (errorOccurred && retryCount >= maxRetries){
             SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(this, "Error while connecting to the URL", "Error", JOptionPane.ERROR_MESSAGE);
-            //break;
+            JOptionPane.showMessageDialog(this, "Error while connecting to the URL", "Error", JOptionPane.ERROR_MESSAGE); 
         });
         }
     }

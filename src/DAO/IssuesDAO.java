@@ -14,4 +14,5 @@ public interface IssuesDAO {
     Map<String, Object> getIssueDetails(int issueId);
     Map<String, String> getHistory(int issueId);
     String getDescription(int IssueID);
+    String deleteIssue(int issueId);
 }

@@ -1,18 +1,23 @@
 package webissuesFrame;
 
+import DAOImpl.GlobalDAOImpl;
+import DAOImpl.IssuesDAOImpl;
 import com.formdev.flatlaf.FlatLightLaf;
-import dbConnection.DbConnection;
+import com.toedter.calendar.JDateChooser;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.Image;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
@@ -20,13 +25,17 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
-import org.jdesktop.swingx.JXDatePicker;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import pojos.SessionManager;
 
 public class AddNewIssue extends javax.swing.JFrame {
 
     public AddNewIssue() {
         initComponents();
+        AddForm();
+        typename.setText(HomeFrame.folderName);
         Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Add Issue");
@@ -45,398 +54,296 @@ public class AddNewIssue extends javax.swing.JFrame {
     int userID = SessionManager.getInstance().getUserId();
     int userAccess = SessionManager.getInstance().getUserAccess();
     private Map<String, String> attrValues = new HashMap<>();
+    IssuesDAOImpl issueDao = new IssuesDAOImpl();
+    GlobalDAOImpl global = new GlobalDAOImpl();
+    int id = HomeFrame.IssueID;
+    Map<Integer, Object> attributeValues = issueDao.printAttributes(id);
+    Map<Integer, Object> getAttributeValues = new HashMap<>();
+    public static Map<Integer, Object> filteredValues = new HashMap<>();
+    private Map<Component, Integer> componentIdMap = new HashMap<>();
+    public static String name = null;
+    public static String getDescription = null;
 
-    public void setRowData(Object[] rowData, String[] columnNames) {
-        int numFields = columnNames.length;
-        jPanel5.removeAll();
-        int x = 30;
-        int tx = 40;
+    public void AddForm() {
+        System.out.println("Running ");
+        int x = 1;
+        int tx = 20;
         int y = 10;
         int labelWidth = 100;
         int componentWidth = 500;
         int height = 28;
         int spacing = 7;
-        // attrValues = new HashMap<>();
-
-        for (int i = 0; i < numFields; i++) {
-            if (columnNames[i].equalsIgnoreCase("LOCATION") && rowData[i] != null) {
-                String locationString = rowData[i].toString();
-                int lastDashIndex = locationString.lastIndexOf("-");
-                if (lastDashIndex != -1 && lastDashIndex < locationString.length() - 1) {
-                    locationValue = locationString.substring(lastDashIndex + 1).trim();
-                }
-            }
-        }
-
-        if (locationValue != null) {
-            Connection con = null;
-            Statement statement = null;
-
-            try {
-                con = DbConnection.getConnection();
-                statement = con.createStatement();
-
-                String getTypeQuery = "SELECT type_id FROM folders WHERE folder_name = '" + locationValue + "'";
-                ResultSet typeResultSet = statement.executeQuery(getTypeQuery);
-                int typeId = 0;
-                if (typeResultSet.next()) {
-                    typeId = typeResultSet.getInt("type_id");
-                }
-
-                String getTypeName = "SELECT type_name FROM issue_types WHERE type_id = " + typeId;
-                ResultSet typeNameResultSet = statement.executeQuery(getTypeName);
-
-                if (typeNameResultSet.next()) {
-                    String typeName = typeNameResultSet.getString("type_name");
-                    typename.setText(typeName);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        int issueId = 0;
-        for (int i = 0; i < numFields; i++) {
-            if (columnNames[i].equalsIgnoreCase("Issue") && columnNames[i + 1].equalsIgnoreCase("ID")) {
-                issueId = rowData[i + 1] != null ? Integer.parseInt(rowData[i + 1].toString()) : 0;
-                break;
-            }
-        }
-
+        HttpURLConnection connection = null;
+        BufferedReader reader = null;
+        String text = null;
+        System.out.println("Add Issue Form");
+        issueDao.printAttributes(id);
         try {
-            Connection con = DbConnection.getConnection();
-            Statement statement = con.createStatement();
-
-            if (locationValue != null) {
-                ResultSet resultSet = statement.executeQuery("SELECT type_id FROM folders WHERE folder_name = '" + locationValue + "'");
-                if (resultSet.next()) {
-                    typeId = resultSet.getInt("type_id");
-
-                    resultSet = statement.executeQuery("SELECT attr_name, attr_def FROM attr_types WHERE type_id = " + typeId);
-                    while (resultSet.next()) {
-                        String attrName = resultSet.getString("attr_name");
-                        attrDef = resultSet.getString("attr_def");
-
-                        JLabel label = new JLabel(attrName);
-                        label.setBounds(x, y, labelWidth, height);
-                        jPanel5.add(label);
-
-                        if (attrDef.startsWith("ENUM")) {
-                            String enumItems = attrDef.substring(attrDef.indexOf("items={") + 7, attrDef.lastIndexOf("}"));
-                            String[] values = enumItems.split(",");
-                            DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
-                            JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
-                            comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                            for (String value : values) {
-                                String trimmedValue = value.trim().replaceAll("\"", "");
-                                comboBoxModel.addElement(trimmedValue);
-                            }
-
-                            jPanel5.add(comboBox);
-                            //attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
-                        } else if (attrDef.startsWith("NUMERIC")) {
-                            double minValue = 0.0;
-                            double maxValue = 0.0;
-                            String[] parts = attrDef.split(" ");
-                            for (String part : parts) {
-                                if (part.startsWith("min-value=")) {
-                                    String value = part.substring(part.indexOf("\"") + 1, part.lastIndexOf("\""));
-                                    minValue = Double.parseDouble(value);
-                                } else if (part.startsWith("max-value=")) {
-                                    String value = part.substring(part.indexOf("\"") + 1, part.lastIndexOf("\""));
-                                    maxValue = Double.parseDouble(value);
-                                }
-                            }
-
-                            if (maxValue > 3.0 || maxValue == 0.0) {
-                                JTextField textField = new JTextField();
-                                textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                jPanel5.add(textField);
-                                // attrValues.put(attrName, textField.getText());
-                            } else {
-                                DefaultComboBoxModel<Integer> comboBoxModel = new DefaultComboBoxModel<>();
-                                JComboBox<Integer> comboBox = new JComboBox<>(comboBoxModel);
-                                comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                for (int value = (int) minValue; value <= maxValue; value++) {
-                                    comboBoxModel.addElement(value);
-                                }
-                                jPanel5.add(comboBox);
-                                //attrValues.put(attrName, comboBoxModel.getSelectedItem().toString());
-                            }
-                        } else if (attrDef.startsWith("USER")) {
-                            DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
-                            JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
-                            comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                            Statement attrStatement = con.createStatement();
-                            ResultSet attrResultSet = attrStatement.executeQuery("SELECT user_name\n"
-                                    + "FROM users\n"
-                                    + "WHERE user_id IN (SELECT user_id FROM rights WHERE project_id = " + HomeFrame.projectId + ")\n"
-                                    + "ORDER BY user_name ASC;");
-
-                            while (attrResultSet.next()) {
-                                String userName = attrResultSet.getString("user_name");
-                                comboBoxModel.addElement(userName);
-                            }
-                            comboBox.setSelectedItem(null);
-                            jPanel5.add(comboBox);
-
-                            attrResultSet.close();
-                            attrStatement.close();
-                        } else if (attrDef.startsWith("TEXT")) {
-                            JTextField textField = new JTextField();
-                            textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                            jPanel5.add(textField);
-                        } else if (attrDef.startsWith("DATETIME")) {
-                            JXDatePicker datePicker = new JXDatePicker();
-                            datePicker.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                            jPanel5.add(datePicker);
-                            if (datePicker.getDate() != null) {
-                                // attrValues.put(attrName, datePicker.getDate().toString());
-                            }
-                        }
-
-                        y += height + spacing;
-                        if (y > 255) {
-                            jPanel5.setPreferredSize(new Dimension(jPanel5.getWidth(), y));
-                        }
-                    }
+            URL url = new URL(LoginFrame.apiUrl);
+            String api = url.getProtocol() + "://" + url.getHost() + "/";
+            String apiUrl = api + "server/api/global.php";
+            connection = (HttpURLConnection) new URL(apiUrl).openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            // Set headers
+            connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
+            connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
+            connection.setRequestProperty("Content-Type", "application/json");
+            String jsonInputString = "{}";
+            connection.setDoInput(true);
+            connection.setDoOutput(true);
+            connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+            int responseCode = connection.getResponseCode();
+            System.out.println("Response Code " + responseCode);
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String inputLine;
+                while ((inputLine = reader.readLine()) != null) {
+                    response.append(inputLine);
                 }
+                try {
+                    JSONObject jsonResponse = new JSONObject(response.toString());
+                    System.out.println("JSON response " + jsonResponse);
+                    if (jsonResponse.has("result")) {
+                        JSONObject result = jsonResponse.getJSONObject("result");
+                        JSONArray typesArray = result.getJSONArray("types");
+                        for (int i = 0; i < typesArray.length(); i++) {
+                            JSONObject typeObject = typesArray.getJSONObject(i);
+                            int currentProjectId = typeObject.getInt("id");
+                            int typeId = HomeFrame.typeId;
+                            if (currentProjectId == typeId) {
+                                JSONArray attributesArray = typeObject.getJSONArray("attributes");
+                                System.out.println("Attributes Array " + attributesArray);
+                                for (int j = 0; j < attributesArray.length(); j++) {
+                                    JSONObject attributeObject = attributesArray.getJSONObject(j);
+                                    String attributeName = attributeObject.getString("name");
+                                    String attributeType = attributeObject.getString("type");
+                                    boolean required = false;
+                                    if (attributeObject.has("required")) {
+                                        required = true;
+                                    }
+                                    int attributeId = attributeObject.getInt("id");
+                                    // Create a label for the attribute using the "name" from the API response
+                                    JLabel label = new JLabel(attributeName + ":");
+                                    label.setBounds(tx, y, labelWidth, height);
+                                    jPanel5.add(label);
+                                    if ("USER".equals(attributeType)) {
+                                        DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
+                                        JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
+                                        comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                        y += height + spacing;
+                                        componentIdMap.put(comboBox, attributeId);
+                                        Integer projectId = HomeFrame.projectId;
+                                        List<Integer> members = global.getMembersByProjectId(projectId);
+                                        for (Integer memberId : members) {
+                                            comboBoxModel.addElement(global.getUserName(memberId));
+                                        }
+                                        if (attributeObject.has("default")) {
+                                            String defaultValue = attributeObject.getString("default");
+                                            comboBox.setSelectedItem(defaultValue);
+                                        } else {
+                                            comboBox.setSelectedItem(null);
+                                        }
+                                        getAttributeValues.put(attributeId, comboBox.getSelectedItem());
+                                        jPanel5.add(comboBox);
+                                        System.out.println("Attribute Id " + attributeId);
+                                    } else if ("ENUM".equals(attributeType)) {
+                                        DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
+                                        JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
+                                        comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                        y += height + spacing;
+                                        componentIdMap.put(comboBox, attributeId);
+                                        if (attributeObject.has("items")) {
+                                            JSONArray itemsArray = attributeObject.getJSONArray("items");
+                                            for (int k = 0; k < itemsArray.length(); k++) {
+                                                comboBoxModel.addElement(itemsArray.getString(k));
+                                            }
+                                        }
+                                        if (attributeObject.has("default")) {
+                                            String defaultValue = attributeObject.getString("default");
+                                            comboBox.setSelectedItem(defaultValue);
+                                        } else {
+                                            comboBox.setSelectedItem(null);
+                                        }
+                                        System.out.println("Attribute Id " + attributeId); 
+                                        getAttributeValues.put(attributeId, comboBox.getSelectedItem());
+                                        jPanel5.add(comboBox);
+                                    } else if ("NUMERIC".equals(attributeType)) {
+                                        double minValue = 0.0;
+                                        if (attributeObject.has("min-value")) {
+
+                                            try {
+                                                String minValStr = attributeObject.getString("min-value");
+                                                minValue = Double.parseDouble(minValStr);
+
+                                                if (minValue == (int) minValue) {
+                                                    int intValue = (int) minValue;
+                                                    minValue = intValue;
+                                                }
+                                            } catch (NumberFormatException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+
+                                        System.out.println("Attribute Id " + attributeId);
+
+                                        if (attributeObject.has("max-value")) {
+                                            double maxValue = 0.0; // Default value for maxValue if not specified
+
+                                            try {
+                                                // Parse the "max-value" as a double
+                                                String maxValStr = attributeObject.getString("max-value");
+                                                maxValue = Double.parseDouble(maxValStr);
+
+                                                // Check if maxValue is actually an integer (e.g., 10.00)
+                                                if (maxValue == (int) maxValue) {
+                                                    // It's an integer, so convert it to an integer
+                                                    int intValue = (int) maxValue;
+                                                    maxValue = intValue;
+                                                }
+                                            } catch (NumberFormatException e) {
+                                                e.printStackTrace();
+                                            }
+
+                                            if (maxValue > 10) {
+                                                JTextField textField = new JTextField();
+                                                textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                                y += height + spacing;
+                                                componentIdMap.put(textField, attributeId); 
+                                                getAttributeValues.put(attributeId, textField.getText());
+                                                jPanel5.add(textField);
+                                                System.out.println("Attribute with type NUMERIC (max-value > 10) found: " + attributeObject.toString());
+                                            } else {
+                                                DefaultComboBoxModel<Integer> comboBoxModel = new DefaultComboBoxModel<>();
+                                                JComboBox<Integer> comboBox = new JComboBox<>(comboBoxModel);
+                                                comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                                y += height + spacing;
+                                                componentIdMap.put(comboBox, attributeId);
+
+                                                for (int num = (int) minValue; num <= (int) maxValue; num++) {
+                                                    comboBoxModel.addElement(num);
+                                                }
+
+                                                if (attributeObject.has("default")) {
+                                                    String defaultValueStr = attributeObject.getString("default");
+                                                    Integer defaultValue = Integer.parseInt(defaultValueStr); // Convert the default value to Integer
+                                                    comboBox.setSelectedItem(defaultValue);
+                                                } else {
+                                                    comboBox.setSelectedItem(null);
+                                                } 
+                                                getAttributeValues.put(attributeId, comboBox.getSelectedItem());
+                                                jPanel5.add(comboBox);
+                                                System.out.println("Attribute with type NUMERIC (max-value <= 10) found: " + attributeObject.toString());
+                                            }
+
+                                        } else {
+                                            JTextField textField = new JTextField();
+                                            textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                            y += height + spacing;
+                                            if (attributeObject.has("default")) {
+                                                            String defaultValue = attributeObject.getString("default");
+                                                            try {
+                                                                // Try to parse the defaultValue as an integer
+                                                                int intValue = Integer.parseInt(defaultValue);
+                                                                textField.setText(Integer.toString(intValue)); // Store as an integer and set as text
+                                                            } catch (NumberFormatException e) {
+                                                                // Handle the case where defaultValue is not a valid integer
+                                                                e.printStackTrace(); // Print an error message or handle as needed
+                                                            }
+                                                        }
+                                            componentIdMap.put(textField, attributeId);
+                                            getAttributeValues.put(attributeId, textField.getText());
+                                            jPanel5.add(textField);
+                                        }
+                                    } else if ("TEXT".equals(attributeType)) {
+                                        JTextField textField = new JTextField();
+                                        textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                        y += height + spacing;
+                                        componentIdMap.put(textField, attributeId);
+                                        getAttributeValues.put(attributeId, textField.getText());
+                                        jPanel5.add(textField);
+                                    } else if ("DATETIME".equals(attributeType)) {
+                                        JDateChooser dateChooser = new JDateChooser();
+                                        dateChooser.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                        y += height + spacing;
+                                        componentIdMap.put(dateChooser, attributeId);
+
+                                        getAttributeValues.put(attributeId, dateChooser.getDate());
+                                        jPanel5.add(dateChooser);
+                                    }
+
+                                }
+                            }
+                        }
+                    } else {
+                        System.err.println("Error: 'result' not found in the JSON response.");
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                System.err.println("Error: HTTP Response Code " + responseCode);
             }
-            con.close();
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
         jPanel5.revalidate();
         jPanel5.repaint();
     }
 
-    private void handleOkButton() {
-        HomeFrame home = new HomeFrame();
-        Connection con = null;
-        PreparedStatement statement = null;
-        try {
-            con = DbConnection.getConnection();
-            con.setAutoCommit(false);
-            String insertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
-            PreparedStatement insertStampsStatement = con.prepareStatement(insertStampsQuery, Statement.RETURN_GENERATED_KEYS);
-            insertStampsStatement.setInt(1, userID);
-            insertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
-            insertStampsStatement.executeUpdate();
-            ResultSet resultSet = insertStampsStatement.getGeneratedKeys();
-            int issueId = 0;
-            if (resultSet.next()) {
-                issueId = resultSet.getInt(1);
-            }
-
-            String getFolderId = "SELECT folder_id from folders where folder_name = '" + locationValue + "'";
-            ///System.out.println("query " + getFolderId);
-            PreparedStatement folderid = con.prepareStatement(getFolderId);
-            System.out.println("query on line 205 " + getFolderId);
-            ResultSet get = folderid.executeQuery();
-            if (get.next()) {
-                folderId = get.getInt("folder_id");
-            }
-            if (newissue.getText() == null || newissue.getText().isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Issue name cannot be null or empty", "Error", JOptionPane.ERROR_MESSAGE);
-            } else {
-                String query = "INSERT INTO issues (issue_id, folder_id, issue_name, stamp_id) VALUES (?, ?, ?, ?)";
-                statement = con.prepareStatement(query);
-                statement.setInt(1, issueId);
-                statement.setInt(2, folderId);
-                statement.setString(3, newissue.getText());
-                statement.setInt(4, issueId);
-                statement.executeUpdate();
-
-                System.out.println("Inserted into issues table.");
-            }
-            String changesQuery = "INSERT INTO changes (change_id, issue_id, change_type, stamp_id, value_new) VALUES (?, ?, ?, ?, ?)";
-            statement = con.prepareStatement(changesQuery);
-            statement.setInt(1, issueId);
-            statement.setInt(2, issueId);
-            statement.setInt(3, 0);
-            statement.setInt(4, issueId);
-            statement.setString(5, newissue.getText());
-            statement.executeUpdate();
-            String newChangesQuery = "INSERT INTO changes (change_id, issue_id, change_type, stamp_id, attr_id, value_new) VALUES (?, ?, ?, ?, ?, ?)";
-            PreparedStatement changeStatement = con.prepareStatement(newChangesQuery);
-
-            String attrValuesQuery = "INSERT INTO attr_values (issue_id, attr_id, attr_value) VALUES (?, ?, ?)";
-            PreparedStatement attrValueStatement = con.prepareStatement(attrValuesQuery);
-
-            for (Map.Entry<String, String> entry : attrValues.entrySet()) {
-                String attrName = entry.getKey();
-                String attrValue = entry.getValue();
-                System.out.println("Name : " + attrName + " value " + attrValue);
-                String attrIdQuery = "SELECT attr_id FROM attr_types WHERE attr_name = ? AND type_id = ?";
-                PreparedStatement attrIdStatement = con.prepareStatement(attrIdQuery);
-                attrIdStatement.setString(1, attrName);
-                attrIdStatement.setInt(2, typeId);
-                ResultSet attrIdResult = attrIdStatement.executeQuery();
-
-                while (attrIdResult.next()) {
-                    if (attrValue != null && !attrValue.trim().isEmpty()) {
-                        attrId = attrIdResult.getInt("attr_id");
-                        System.out.println("Attribute: " + attrName + ", attr_id: " + attrId);
-
-                        // Insert into stamps table to get the new stamp_id
-                        String newInsertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
-                        PreparedStatement newInsertStampsStatement = con.prepareStatement(newInsertStampsQuery, Statement.RETURN_GENERATED_KEYS);
-                        newInsertStampsStatement.setInt(1, userID);
-                        newInsertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
-                        newInsertStampsStatement.executeUpdate();
-
-                        ResultSet stampResult = newInsertStampsStatement.getGeneratedKeys();
-                        int stampId = 0;
-                        if (stampResult.next()) {
-                            stampId = stampResult.getInt(1);
-                        }
-                        System.out.println("New Stamp ID: " + stampId);
-                        changeStatement.setInt(1, stampId);
-                        changeStatement.setInt(2, issueId);
-                        changeStatement.setInt(3, 0);
-                        changeStatement.setInt(4, stampId);
-                        changeStatement.setInt(5, attrId);
-                        changeStatement.setString(6, attrValue);
-                        changeStatement.executeUpdate();
-
-                        // Insert into attr_values table
-                        attrValueStatement.setInt(1, issueId);
-                        attrValueStatement.setInt(2, attrId);
-                        attrValueStatement.setString(3, attrValue);
-                        attrValueStatement.executeUpdate();
-                    }
-                }
-            }
-
-            String updateQuery = "UPDATE folders SET stamp_id = ? WHERE folder_id = ? AND COALESCE(stamp_id, 0) < ?";
-            statement = con.prepareStatement(updateQuery);
-            statement.setInt(1, issueId);
-            statement.setInt(2, folderId);
-            statement.setInt(3, issueId);
-            statement.executeUpdate();
-
-            if (description.getText() != null && !description.getText().isEmpty()) {
-                String stampQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
-                PreparedStatement stampStatement = con.prepareStatement(stampQuery, Statement.RETURN_GENERATED_KEYS);
-                stampStatement.setInt(1, userID);
-                stampStatement.setLong(2, System.currentTimeMillis() / 1000);
-                stampStatement.executeUpdate();
-
-                ResultSet stampResult = stampStatement.getGeneratedKeys();
-                int stampId = 0;
-                if (stampResult.next()) {
-                    stampId = stampResult.getInt(1);
-                }
-
-                String descriptionQuery = "INSERT INTO issue_descriptions (issue_id, descr_text, descr_format) VALUES (?, ?, ?)";
-                PreparedStatement descriptionStatement = con.prepareStatement(descriptionQuery);
-                descriptionStatement.setInt(1, issueId);
-                descriptionStatement.setString(2, description.getText());
-                descriptionStatement.setInt(3, 1);
-                descriptionStatement.executeUpdate();
-
-                String updateIssuesQuery = "UPDATE issues SET descr_id = ? WHERE issue_id = ? AND COALESCE(descr_id, descr_stub_id, 0) < ?";
-                PreparedStatement updateIssuesStatement = con.prepareStatement(updateIssuesQuery);
-                updateIssuesStatement.setInt(1, stampId);
-                updateIssuesStatement.setInt(2, issueId);
-                updateIssuesStatement.setInt(3, stampId);
-                updateIssuesStatement.executeUpdate();
-
-                String updateStampQuery = "UPDATE issues SET stamp_id = ? WHERE issue_id = ? AND stamp_id < ?";
-                PreparedStatement updateStampStatement = con.prepareStatement(updateStampQuery);
-                updateStampStatement.setInt(1, stampId);
-                updateStampStatement.setInt(2, issueId);
-                updateStampStatement.setInt(3, stampId);
-                updateStampStatement.executeUpdate();
-
-                String updateFoldersQuery = "UPDATE folders SET stamp_id = ? WHERE folder_id = ? AND COALESCE(stamp_id, 0) < ?";
-                PreparedStatement updateFoldersStatement = con.prepareStatement(updateFoldersQuery);
-                updateFoldersStatement.setInt(1, stampId);
-                updateFoldersStatement.setInt(2, folderId);
-                updateFoldersStatement.setInt(3, stampId);
-                updateFoldersStatement.executeUpdate();
-
-                con.commit();
-            }
-
-            con.commit();
-            home.refreshJTable();
-            System.out.println("Transaction committed successfully.");
-        } catch (SQLException ex) {
-            if (con != null) {
-                try {
-                    con.rollback();
-                    System.out.println("Transaction rolled back.");
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            ex.printStackTrace();
-        } finally {
-            if (con != null) {
-                try {
-                    con.close();
-                    System.out.println("Connection closed.");
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (statement != null) {
-                try {
-                    statement.close();
-                    System.out.println("Statement closed.");
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    private void handleOK() {
-        attrValues = new HashMap<>();
-        for (Component component : jPanel5.getComponents()) {
+    public void printComboBoxNames() {
+        Component[] components = jPanel5.getComponents();
+        for (Component component : components) {
             if (component instanceof JComboBox) {
                 JComboBox<?> comboBox = (JComboBox<?>) component;
-                int labelIndex = jPanel5.getComponentZOrder(component) - 1;
-                if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
-                    JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
-                    String attrName = label.getText();
-                    if (comboBox.getSelectedItem() != null) {
-                        attrValues.put(attrName, comboBox.getSelectedItem().toString());
-                    }
-                }
+                Integer comboBoxId = componentIdMap.get(comboBox);
+                Object comboBoxValue = comboBox.getSelectedItem();
+                filteredValues.put(comboBoxId, comboBoxValue);
+                System.out.println("Updated Key : " + comboBoxId + " Updated Value :" + comboBoxValue);
             } else if (component instanceof JTextField) {
                 JTextField textField = (JTextField) component;
-                int labelIndex = jPanel5.getComponentZOrder(component) - 1;
-                System.out.println("label index " + labelIndex);
-                if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
-                    JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
-                    String attrName = label.getText();
-                    if (textField.getText() != null || !textField.getText().isEmpty()) {
-                        attrValues.put(attrName, textField.getText());
-                    }
-                }
-            } else if (component instanceof JXDatePicker) {
-                JXDatePicker datePicker = (JXDatePicker) component;
-                Date date = datePicker.getDate();
-                int labelIndex = jPanel5.getComponentZOrder(component) - 1;
-                if (labelIndex >= 0 && jPanel5.getComponent(labelIndex) instanceof JLabel) {
-                    JLabel label = (JLabel) jPanel5.getComponent(labelIndex);
-                    String attrName = label.getText();
-                    if (datePicker.getDate() != null) {
-                        Object getdate = new java.sql.Date(date.getTime());
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                        String dateString = dateFormat.format(getdate);
-                        attrValues.put(attrName, dateString);
-                    }
-                }
-            }
+                Integer textFieldId = componentIdMap.get(textField);
+                String textFieldValue = textField.getText();
+                filteredValues.put(textFieldId, textFieldValue);
+                System.out.println("Updated Key : " + textFieldId + "Updated Value :" + textFieldValue);
+            }else if (component instanceof JDateChooser) {
+    JDateChooser dateChooser = (JDateChooser) component;
+    Integer dateChooserId = componentIdMap.get(dateChooser);
+    Date dateChooserValue = dateChooser.getDate();
+    
+    if (dateChooserValue != null) {
+        SimpleDateFormat inputDateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
+        
+        Date parsedDate = null; // Initialize parsedDate as null
+        
+        try {
+            parsedDate = inputDateFormat.parse(dateChooserValue.toString()); // Use toString() to get the date as a string
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
-//        for (Map.Entry<String, String> entry : attrValues.entrySet()) {
-//        String attrName = entry.getKey();
-//        String attrValue = entry.getValue();
-//        System.out.println(attrName + ": " + attrValue);
-//    }
+        
+        if (parsedDate != null) {
+            SimpleDateFormat outputDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            String formattedDateStr = outputDateFormat.format(parsedDate);
+            
+            // Make sure that formattedDateStr is in the correct format
+            System.out.println("Formatted Date: " + formattedDateStr);
+            
+            filteredValues.put(dateChooserId, formattedDateStr); // Store as a string
+        } else {
+            // Handle the case where parsing failed (e.g., show an error message)
+            System.err.println("Error parsing date.");
+        }
+    } else {
+        // Handle the case where dateChooserValue is null (e.g., show an error message or set a default value)
+        // Example: filteredValues.put(dateChooserId, "default_value");
+        System.err.println("Date is null.");
+    }
+}
+
+
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -598,7 +505,6 @@ public class AddNewIssue extends javax.swing.JFrame {
         jLabel2.setText("Name:");
 
         typename.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        typename.setText("jLabel3");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -678,15 +584,27 @@ public class AddNewIssue extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        handleOK();
-        handleOkButton();
-        dispose();
+        name = newissue.getText();
+        System.out.println("Name " + name);
+        if (name == null || name.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Name cannot be null.", "Error", JOptionPane.ERROR_MESSAGE);
+        } else {
+            printComboBoxNames();
+            for (Map.Entry<Integer, Object> entry : filteredValues.entrySet()) {
+                Integer key = entry.getKey();
+                Object value = entry.getValue();
+                System.out.println("Key Added " + key + " Value : " + value);
+            }
+            System.out.println(" Description : "+description.getText());
+            getDescription = description.getText();
+            issueDao.addIssue();
+            filteredValues.clear();
+            dispose();
+        }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-
         dispose();
-
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed

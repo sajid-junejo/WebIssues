@@ -215,10 +215,8 @@ public class AuthenticationFrame extends javax.swing.JFrame {
     String user = email.getText();
     String pass = password.getText();
 
-    try {
-        System.out.println("address before using " + address);
-        String apiUrl = address;
-        System.out.println("API URL " + apiUrl);
+    try { 
+        String apiUrl = address; 
         URL url = new URL(apiUrl);
 
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -242,8 +240,7 @@ public class AuthenticationFrame extends javax.swing.JFrame {
         }
 
         // Get the response code
-        int responseCode = connection.getResponseCode();
-        System.out.println("Response Code " + responseCode);
+        int responseCode = connection.getResponseCode(); 
 
         if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
             if (responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
@@ -313,6 +310,8 @@ public class AuthenticationFrame extends javax.swing.JFrame {
             } catch (JSONException e) {
                 // Handle JSON parsing error
                 JOptionPane.showMessageDialog(this, "Username or Password Wrong", "Error", JOptionPane.ERROR_MESSAGE);
+                LoginFrame login = new LoginFrame();
+                login.dispose();
             }
         } else {
             // Handle non-successful response

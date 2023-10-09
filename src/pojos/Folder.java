@@ -29,13 +29,11 @@ public class Folder {
         this.typeName = typeName;
         this.typeId = typeId;
     }
-
-    // Add a method to add folder names to the FoldersNames list
+      
     public void addFolderName(String folderName) {
         FoldersNames.add(folderName);
     }
-
-    // Add a getter for the FoldersNames list
+ 
     public List<String> getFoldersNames() {
         return FoldersNames;
     }

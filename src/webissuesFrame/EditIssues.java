@@ -1,39 +1,45 @@
 package webissuesFrame;
 
-import com.formdev.flatlaf.FlatLightLaf; 
-import dbConnection.DbConnection;
+import DAOImpl.GlobalDAOImpl;
+import DAOImpl.IssuesDAOImpl;
+import com.formdev.flatlaf.FlatLightLaf;
+import com.toedter.calendar.JDateChooser;
 import java.awt.Component;
 import java.awt.Image;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement; 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Objects; 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
-import javax.swing.JComboBox; 
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JTextField;
-import javax.swing.SwingUtilities; 
+import javax.swing.SwingUtilities;
 import org.jdesktop.swingx.JXDatePicker;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import pojos.Issues;
 import pojos.SessionManager;
 
 public class EditIssues extends javax.swing.JFrame {
 
     JXDatePicker datetime = new JXDatePicker();
     HomeFrame home = new HomeFrame();
-    private String[] columnNames;
-    private Object[] rowData;
     private JLabel[] labels;
     private JTextField[] textFields;
     private JComboBox[] combobox;
+    public static String oldName = null;
 
     public EditIssues() {
         initComponents();
@@ -42,6 +48,7 @@ public class EditIssues extends javax.swing.JFrame {
         this.setIconImage(icon);
         this.setTitle("Edit Attributes");
         labels = new JLabel[0];
+
         textFields = new JTextField[0];
         combobox = new JComboBox[0];
         this.setLocationRelativeTo(null);
@@ -49,22 +56,20 @@ public class EditIssues extends javax.swing.JFrame {
         ImageIcon icon1 = new ImageIcon(this.getClass().getResource("/img/information.png"));
         info.setIcon(icon1);
     }
-    String locationValue = "";
-    int issueId = 0;
-    int attrId = 0;
-    Map<Integer, Object> attrIdToSelectedItemMap = new HashMap<>();
-    Map<String, String> attrValues = new HashMap<>();
-    Map<Integer, Object> attrIdToOldValueMap = new HashMap<>();
     String csrfToken = SessionManager.getInstance().getCsrfToken();
     int userID = SessionManager.getInstance().getUserId();
+    GlobalDAOImpl global = new GlobalDAOImpl();
+    Issues issue = new Issues();
+    IssuesDAOImpl issueDao = new IssuesDAOImpl();
+    int id = HomeFrame.IssueID;
+    Map<Integer, Object> attributeValues = issueDao.printAttributes(id);
+    Map<Integer, Object> getAttributeValues = new HashMap<>();
+    Map<Integer, Object> filteredValues = new HashMap<>();
+    private Map<Component, Integer> componentIdMap = new HashMap<>();
+    public static Map<Integer, Object> getAPIValues = new HashMap<>();
+    public static String modifiedName = null;
 
-    public void setRowData(Object[] rowData, String[] columnNames) {
-        int numFields = columnNames.length;
-        Connection con = null;
-        Statement statement = null;
-        ResultSet resultSet = null;
-
-        jPanel3.removeAll();
+    public void EditForm() {
         int x = 30;
         int tx = 75;
         int y = 10;
@@ -72,855 +77,318 @@ public class EditIssues extends javax.swing.JFrame {
         int componentWidth = 500;
         int height = 28;
         int spacing = 7;
-        boolean isIssueNameSet = false;
-        //System.out.println("Old value " + nametext.getText());
-
-        for (int i = 0; i < numFields; i++) {
-            if (columnNames[i].equalsIgnoreCase("LOCATION") && rowData[i] != null) {
-                String locationString = rowData[i].toString();
-                int lastDashIndex = locationString.lastIndexOf("-");
-                if (lastDashIndex != -1 && lastDashIndex < locationString.length() - 1) {
-                    locationValue = locationString.substring(lastDashIndex + 1).trim();
-                }
-            }
-            if (columnNames[i].equalsIgnoreCase("ISSUE_NAME")) {
-                if (!isIssueNameSet) {
-                    nametext.setText(rowData[i] != null ? rowData[i].toString() : "");
-                    typename.setText(rowData[i] != null ? rowData[i].toString() : "");
-                    isIssueNameSet = true;
-                    continue;
-                }
-            }
-            if (columnNames[i].equalsIgnoreCase("ID")) {
-                issueId = rowData[i] != null ? Integer.parseInt(rowData[i].toString()) : 0;
-            }
-        }
-
+        HttpURLConnection connection = null;
+        BufferedReader reader = null;
+        String text = null;
+        nametext.setText(IssuesDAOImpl.name);
+        issueDao.printAttributes(id);
         try {
-            con = DbConnection.getConnection();
-            statement = con.createStatement();
-            if (locationValue != null) {
-                resultSet = statement.executeQuery("SELECT type_id FROM folders WHERE folder_name = '" + locationValue + "'");
-                if (resultSet.next()) {
-                    int typeId = resultSet.getInt("type_id");
-                    resultSet = statement.executeQuery("SELECT attr_id, attr_name, attr_def FROM attr_types WHERE type_id = " + typeId);
-                    while (resultSet.next()) {
-                        String attrName = resultSet.getString("attr_name");
-                        String attrDef = resultSet.getString("attr_def");
-                        attrId = resultSet.getInt("attr_id");
-                        //System.out.println("attribute id ------------------------------------------------------------>>>>>>>>>>>>>>"+attrId);
-                        int i;
-                        boolean matchFound = false;
-                        for (i = 0; i < numFields; i++) {
-                            if (columnNames[i].equalsIgnoreCase(attrName)) {
-                                matchFound = true;
-                                if (attrDef.startsWith("ENUM")) {
-                                    System.out.println("attr name in enum " + attrName);
-                                    String enumItems = attrDef.substring(attrDef.indexOf("items={") + 7, attrDef.lastIndexOf("}"));
-                                    String[] values = enumItems.split(",");
-                                    DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
-                                    JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
-                                    comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-
-                                    for (String value : values) {
-                                        String trimmedValue = value.trim().replaceAll("\"", "");
-                                        comboBoxModel.addElement(trimmedValue);
+            URL url = new URL(LoginFrame.apiUrl);
+            String api = url.getProtocol() + "://" + url.getHost() + "/";
+            String apiUrl = api + "server/api/global.php";
+            connection = (HttpURLConnection) new URL(apiUrl).openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            // Set headers
+            connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
+            connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
+            connection.setRequestProperty("Content-Type", "application/json");
+            String jsonInputString = "{}";
+            connection.setDoInput(true);
+            connection.setDoOutput(true);
+            connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                // Read the response
+                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String inputLine;
+                while ((inputLine = reader.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                try {
+                    JSONObject jsonResponse = new JSONObject(response.toString());
+                    if (jsonResponse.has("result")) {
+                        JSONObject result = jsonResponse.getJSONObject("result");
+                        JSONArray typesArray = result.getJSONArray("types");
+                        for (int i = 0; i < typesArray.length(); i++) {
+                            JSONObject typeObject = typesArray.getJSONObject(i);
+                            int currentProjectId = typeObject.getInt("id");
+                            int typeId = HomeFrame.typeId;
+                            if (currentProjectId == typeId) {
+                                JSONArray attributesArray = typeObject.getJSONArray("attributes");
+                                for (int j = 0; j < attributesArray.length(); j++) {
+                                    JSONObject attributeObject = attributesArray.getJSONObject(j);
+                                    String attributeName = attributeObject.getString("name");
+                                    String attributeType = attributeObject.getString("type");
+                                    int attributeId = attributeObject.getInt("id");
+                                    boolean required = false;
+                                    if (attributeObject.has("required")) {
+                                        required = true;
                                     }
-                                    if (rowData[i] != null) {
-                                        String selectedValue = rowData[i].toString();
-                                        comboBox.setSelectedItem(selectedValue);
-                                    } else {
-                                        comboBox.setSelectedItem(null);
-                                    }
-                                    jPanel3.add(comboBox);
-                                }
-
-                                if (attrDef.startsWith("NUMERIC")) {
-                                    System.out.println("attr name numeric 141 " + attrName);
-                                    DefaultComboBoxModel<Integer> comboBoxModel = new DefaultComboBoxModel<>();
-                                    JComboBox<Integer> comboBox = new JComboBox<>(comboBoxModel);
-                                    comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                    int minValue = 0;
-                                    int maxValue = 0;
-                                    String minStr = attrDef.substring(attrDef.indexOf("min-value=\"") + 11, attrDef.indexOf("\"", attrDef.indexOf("min-value=\"") + 11));
-                                    String maxStr = attrDef.substring(attrDef.indexOf("max-value=\"") + 11, attrDef.indexOf("\"", attrDef.indexOf("max-value=\"") + 11));
-                                    //System.out.println("row data " + rowData[i]);
-                                    try {
-                                        minValue = Integer.parseInt(minStr);
-                                        maxValue = Integer.parseInt(maxStr);
-                                    } catch (NumberFormatException e) {
-                                        e.printStackTrace();
-                                    }
-
-                                    for (int value = minValue; value <= maxValue; value++) {
-                                        comboBoxModel.addElement(value);
-                                    }
-
-                                    String selectedValue = rowData[i] != null ? rowData[i].toString() : null;
-                                    if (selectedValue != null) {
-                                        try {
-                                            Integer intValue = Integer.parseInt(selectedValue);
-                                            comboBox.setSelectedItem(intValue);
-                                        } catch (NumberFormatException e) {
-                                            e.printStackTrace();
-                                        }
-                                    }
-//                                    Object selectedItem = comboBox.getSelectedItem();
-//                                    attrIdToSelectedItemMap.put(attrId, selectedItem);
-                                    jPanel3.add(comboBox);
-                                } else if (attrDef.startsWith("USER")) {
-                                    // System.out.println("attr name user 174 " + attrName);
-                                    DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
-                                    JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
-                                    comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                    Statement attrStatement = con.createStatement();
-
-                                    System.out.println("project id before using " + HomeFrame.projectId);
-                                    ResultSet attrResultSet = attrStatement.executeQuery("SELECT user_name\n"
-                                            + "FROM users\n"
-                                            + "WHERE user_id IN (SELECT user_id FROM rights WHERE project_id = " + HomeFrame.projectId + ")\n"
-                                            + "ORDER BY user_name ASC;");
-
-                                    while (attrResultSet.next()) {
-                                        String userName = attrResultSet.getString("user_name");
-                                        comboBoxModel.addElement(userName);
-                                    }
-                                    //System.out.println(attrId + " line number 175");
-                                    comboBoxModel.addElement(null);
-                                    if (rowData[i] != null) {
-                                        String selectedValue = rowData[i] != null ? rowData[i].toString() : null;
-                                        if (selectedValue != null) {
-                                            comboBox.setSelectedItem(selectedValue);
-                                        }
-                                    } else {
-                                        comboBox.setSelectedItem(null);
-                                    }
-//                                    Object selectedItem = comboBox.getSelectedItem();
-//                                    attrIdToSelectedItemMap.put(attrId, selectedItem);
-                                    jPanel3.add(comboBox);
-                                    attrResultSet.close();
-                                    attrStatement.close();
-                                } else if (attrDef.startsWith("TEXT")) {
-                                    System.out.println("attr name text 200 " + attrName);
-                                    JTextField textField = new JTextField(rowData[i] != null ? rowData[i].toString() : "");
-                                    textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                    jPanel3.add(textField);
-                                    //System.out.println(attrId + " line number 195");
-                                }
-
-                                JLabel label = new JLabel(attrName);
-                                label.setBounds(x, y, labelWidth, height);
-                                jPanel3.add(label);
-
-                                y += height + spacing;
-                                break;
-                            }
-                        }
-
-                        if (!matchFound) {
-                            if (attrDef.startsWith("USER")) {
-                                PreparedStatement stmt = null;
-                                Connection conn = null;
-                                ResultSet rst = null;
-                                //System.out.println(attrId + " attr id in the match not found user");
-                                DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
-                                JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
-                                comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                Statement attrStatement = con.createStatement();
-                                ResultSet attrResultSet = attrStatement.executeQuery("SELECT user_name\n"
-                                        + "FROM users\n"
-                                        + "WHERE user_id IN (SELECT user_id FROM rights WHERE project_id = " + HomeFrame.projectId + ")\n"
-                                        + "ORDER BY user_name ASC;");
-
-                                while (attrResultSet.next()) {
-                                    String userName = attrResultSet.getString("user_name");
-                                    comboBoxModel.addElement(userName);
-                                }
-                                conn = DbConnection.getConnection();
-                                String query = "SELECT attr_value FROM attr_values WHERE attr_id = ? AND issue_id = ?";
-                                stmt = conn.prepareStatement(query);
-                                stmt.setInt(1, attrId);
-                                stmt.setInt(2, issueId);
-
-                                rst = stmt.executeQuery();
-                                if (rst.next()) {
-
-                                    String selectedValue = rst.getString("attr_value");
-                                    //System.out.println(selectedValue);
-                                    comboBox.setSelectedItem(selectedValue);
-                                } else {
-                                    comboBox.setSelectedItem(null);
-                                }
-                                jPanel3.add(comboBox);
-                            } else if (attrDef.startsWith("DATETIME")) {
-                                int atr_id = 0;
-                                Connection conn = null;
-                                PreparedStatement stmt = null;
-                                ResultSet rst = null;
-
-                                try {
-                                    conn = DbConnection.getConnection();
-                                    stmt = conn.prepareStatement("SELECT attr_id FROM attr_types WHERE attr_name = ?");
-                                    stmt.setString(1, attrName);
-                                    rst = stmt.executeQuery();
-                                    if (rst.next()) {
-                                        atr_id = rst.getInt("attr_id");
-                                    }
-                                    // System.out.println(attrId + " line number 285");
-                                    rst.close();
-                                    stmt.close();
-                                    stmt = conn.prepareStatement("SELECT attr_value FROM attr_values WHERE attr_id = ? AND issue_id = ?");
-                                    stmt.setInt(1, atr_id);
-                                    stmt.setInt(2, issueId);
-                                    rst = stmt.executeQuery();
-                                    if (rst.next()) {
-                                        String attr_value = rst.getString("attr_value");
-
-                                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                                        Date date = dateFormat.parse(attr_value);
-
-                                        datetime.setDate(date);
-                                        datetime.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                        jPanel3.add(datetime);
-                                    } else {
-                                        datetime.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                        jPanel3.add(datetime);
-                                    }
-//                                    Object selectedItem = datetime.getDate();
-//                                    attrIdToSelectedItemMap.put(attrId, selectedItem);
-                                } catch (SQLException e) {
-                                    e.printStackTrace();
-                                } catch (ParseException e) {
-                                    e.printStackTrace();
-                                }
-                            } else if (attrDef.equalsIgnoreCase("NUMERIC min-value=\"0\" max-value=\"100\"")) {
-                                int atr_id = 0;
-                                String attr_value = null;
-                                Connection conn = null;
-                                PreparedStatement stmt = null;
-                                ResultSet rst = null;
-                                System.out.println(attrId + " line number 318");
-                                try {
-                                    conn = DbConnection.getConnection();
-                                    stmt = conn.prepareStatement("SELECT attr_id FROM attr_types WHERE attr_name = ?");
-                                    stmt.setString(1, attrName);
-                                    rst = stmt.executeQuery();
-                                    if (rst.next()) {
-                                        atr_id = rst.getInt("attr_id");
-                                    }
-                                    rst.close();
-                                    stmt.close();
-                                    stmt = conn.prepareStatement("SELECT attr_value FROM attr_values WHERE attr_id = ? AND issue_id = ?");
-                                    stmt.setInt(1, atr_id);
-                                    stmt.setInt(2, issueId);
-                                    rst = stmt.executeQuery();
-                                    if (rst.next()) {
-                                        attr_value = rst.getString("attr_value");
-                                    }
-                                } catch (SQLException e) {
-                                    e.printStackTrace();
-
-                                }
-                                JTextField textField = new JTextField(attr_value);
-                                textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                jPanel3.add(textField);
-//                                Object selectedItem = textField.getText();
-//                                attrIdToSelectedItemMap.put(attrId, selectedItem);
-                            } else if (attrDef.startsWith("NUMERIC")) {
-                                System.out.println("attr name in NUMERIC 322 " + attrName);
-                                int atr_id = 0;
-                                String attr_value = null;
-                                Connection conn = null;
-                                PreparedStatement stmt = null;
-                                ResultSet rst = null;
-                                //System.out.println(attrId + " line number 351");
-                                try {
-                                    conn = DbConnection.getConnection();
-                                    stmt = conn.prepareStatement("SELECT attr_id FROM attr_types WHERE attr_name = ?");
-                                    stmt.setString(1, attrName);
-                                    rst = stmt.executeQuery();
-                                    if (rst.next()) {
-                                        atr_id = rst.getInt("attr_id");
-                                    }
-                                    rst.close();
-                                    stmt.close();
-                                    stmt = conn.prepareStatement("SELECT attr_value FROM attr_values WHERE attr_id = ? AND issue_id = ?");
-                                    stmt.setInt(1, atr_id);
-                                    stmt.setInt(2, issueId);
-                                    rst = stmt.executeQuery();
-                                    if (rst.next()) {
-                                        attr_value = rst.getString("attr_value");
-                                    }
-                                } catch (SQLException e) {
-                                    e.printStackTrace();
-
-                                }
-
-                                JTextField textField = new JTextField(attr_value);
-                                textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                jPanel3.add(textField);
-                            } else if (attrDef.startsWith("TEXT")) {
-                                System.out.println("attr name text 355 " + attrName);
-                                int atr_id = 0;
-                                String attr_value = null;
-                                Connection conn = null;
-                                PreparedStatement stmt = null;
-                                ResultSet rst = null;
-                                //System.out.println(attrId + " line number 383");
-                                try {
-                                    conn = DbConnection.getConnection();
-                                    stmt = conn.prepareStatement("SELECT attr_id FROM attr_types WHERE attr_name = ?");
-                                    stmt.setString(1, attrName);
-                                    rst = stmt.executeQuery();
-                                    if (rst.next()) {
-                                        atr_id = rst.getInt("attr_id");
-                                    }
-                                    rst.close();
-                                    stmt.close();
-                                    stmt = conn.prepareStatement("SELECT attr_value FROM attr_values WHERE attr_id = ? AND issue_id = ?");
-                                    stmt.setInt(1, atr_id);
-                                    stmt.setInt(2, issueId);
-                                    rst = stmt.executeQuery();
-                                    if (rst.next()) {
-                                        attr_value = rst.getString("attr_value");
-                                    }
-                                } catch (SQLException e) {
-                                    e.printStackTrace();
-
-                                }
-
-                                JTextField textField = new JTextField(attr_value);
-                                textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                jPanel3.add(textField);
-                            } else if (attrDef.startsWith("ENUM")) {
-                                System.out.println("attr name 388 " + attrName);
-                                if (attrName.equalsIgnoreCase("Reason") || attrName.equalsIgnoreCase("Status") || attrName.equalsIgnoreCase("Types")) {
-                                    String enumItems = attrDef.substring(attrDef.indexOf("items={") + 7, attrDef.lastIndexOf("}"));
-                                    String[] values = enumItems.split(",");
-                                    DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
-                                    JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
-                                    comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                    for (String value : values) {
-                                        String trimmedValue = value.trim().replaceAll("\"", "");
-                                        comboBoxModel.addElement(trimmedValue);
-                                    }
-
-                                    int atr_id = 0;
-                                    String attr_value = null;
-                                    Connection conn = null;
-                                    PreparedStatement stmt = null;
-                                    ResultSet rst = null;
-                                    try {
-                                        conn = DbConnection.getConnection();
-                                        stmt = conn.prepareStatement("SELECT attr_id FROM attr_types WHERE attr_name = ?");
-                                        stmt.setString(1, attrName);
-                                        rst = stmt.executeQuery();
-                                        if (rst.next()) {
-                                            atr_id = rst.getInt("attr_id");
-                                        }
-                                        rst.close();
-                                        stmt.close();
-                                        stmt = conn.prepareStatement("SELECT attr_value FROM attr_values WHERE attr_id = ? AND issue_id = ?");
-                                        stmt.setInt(1, attrId);
-                                        stmt.setInt(2, issueId);
-                                        rst = stmt.executeQuery();
-                                        if (rst.next()) {
-                                            attr_value = rst.getString("attr_value");
-                                        }
-                                    } catch (SQLException e) {
-                                        e.printStackTrace();
-                                    }
-                                    if (attr_value != null && !attr_value.isEmpty()) {
-                                        comboBox.setSelectedItem(attr_value);
-                                    } else {
-                                        comboBox.setSelectedItem(null);
-                                    }
-//                                Object selectedItem = comboBox.getSelectedItem();
-//                                attrIdToSelectedItemMap.put(attrId, selectedItem);
-                                    jPanel3.add(comboBox);
-                                }
-                            } else {
-                                //System.out.println("else block in types attrname");
-                                if (attrName.equalsIgnoreCase("Types")) {
-                                    if (attrDef.startsWith("ENUM")) {
-                                        String enumItems = attrDef.substring(attrDef.indexOf("items={") + 7, attrDef.lastIndexOf("}"));
-                                        String[] values = enumItems.split(",");
+                                    // Create a label for the attribute using the "name" from the API response
+                                    JLabel label = new JLabel(attributeName + ":");
+                                    label.setBounds(tx, y, labelWidth, height);
+                                    jPanel3.add(label);
+                                    if ("USER".equals(attributeType)) {
                                         DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
                                         JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
                                         comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                        y += height + spacing;
+                                        componentIdMap.put(comboBox, attributeId);
+                                        Integer projectId = HomeFrame.projectId;
+                                        List<Integer> members = global.getMembersByProjectId(projectId);
+                                        for (Integer memberId : members) {
+                                            comboBoxModel.addElement(global.getUserName(memberId));
+                                        }
+                                        for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                            System.out.println("Entry key " + entry.getKey());
+                                            System.out.println("Attribute values " + entry.getValue());
+                                            if (entry.getKey() == attributeId) {
+                                                Object attributeValue = entry.getValue();
+                                                System.out.println("Entry Value " + attributeValue);
 
-                                        for (String value : values) {
-                                            String trimmedValue = value.trim().replaceAll("\"", "");
-                                            comboBoxModel.addElement(trimmedValue);
+                                                // Check if attributeValue is null or an empty string
+                                                if (attributeValue == null || attributeValue.toString().isEmpty()) {
+                                                    comboBox.setSelectedItem(null); // Deselect the combo box
+                                                } else {
+                                                    // Find the index of attributeValue in the combo box model
+                                                    int index = comboBoxModel.getIndexOf(attributeValue.toString());
+                                                    if (index != -1) {
+                                                        comboBox.setSelectedIndex(index);
+                                                    } else {
+                                                        // Handle the case where attributeValue doesn't exist in the model
+                                                        comboBox.setSelectedItem(null); // or choose a default selection
+                                                    }
+                                                }
+                                            }
                                         }
 
-                                        String query = "SELECT attr_value FROM attr_values WHERE attr_id = ? AND issue_id = ?";
-                                        PreparedStatement state = con.prepareStatement(query);
-
-                                        state.setInt(1, attrId);
-                                        state.setInt(2, issueId);
-
-                                        resultSet = state.executeQuery();
-
-                                        if (resultSet.next()) {
-                                            String selectedValue = resultSet.getString("attr_value");
-                                            comboBox.setSelectedItem(selectedValue);
-                                        } else {
-                                            comboBox.setSelectedItem(null);
-                                        }
-
+                                        getAttributeValues.put(attributeId, comboBox.getSelectedItem());
                                         jPanel3.add(comboBox);
+                                        System.out.println("Attribute Id " + attributeId);
+                                    } else if ("ENUM".equals(attributeType)) {
+                                        DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
+                                        JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
+                                        comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                        y += height + spacing;
+                                        componentIdMap.put(comboBox, attributeId);
+                                        if (attributeObject.has("items")) {
+                                            JSONArray itemsArray = attributeObject.getJSONArray("items");
+                                            for (int k = 0; k < itemsArray.length(); k++) {
+                                                comboBoxModel.addElement(itemsArray.getString(k));
+                                            }
+                                        }
+                                        for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+
+                                            if (entry.getKey() == attributeId) {
+                                                if (entry.getValue() != null) {
+                                                    comboBox.setSelectedItem(entry.getValue());
+                                                } else {
+                                                    if (attributeObject.has("default")) {
+                                                        String defaultValue = attributeObject.getString("default");
+                                                        comboBox.setSelectedItem(defaultValue);
+                                                    } else {
+                                                        comboBox.setSelectedItem(null);
+
+                                                    }
+                                                }
+
+                                            }
+                                        }
+                                        System.out.println("Attribute Id " + attributeId);
+                                        getAttributeValues.put(attributeId, comboBox.getSelectedItem());
+                                        jPanel3.add(comboBox);
+                                    } else if ("NUMERIC".equals(attributeType)) {
+                                        // Handle NUMERIC type (combobox or text field)
+                                        double minValue = 0.0; // Default value for minValue if not specified
+
+                                        if (attributeObject.has("min-value")) {
+                                            try {
+                                                // Parse the "min-value" as a double
+                                                String minValStr = attributeObject.getString("min-value");
+                                                minValue = Double.parseDouble(minValStr);
+
+                                                // Check if minValue is actually an integer (e.g., 1.00)
+                                                if (minValue == (int) minValue) {
+                                                    // It's an integer, so convert it to an integer
+                                                    int intValue = (int) minValue;
+                                                    minValue = intValue;
+                                                }
+                                            } catch (NumberFormatException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+
+                                        System.out.println("Attribute Id " + attributeId);
+
+                                        if (attributeObject.has("max-value")) {
+                                            double maxValue = 0.0;
+                                            try {
+                                                String maxValStr = attributeObject.getString("max-value");
+                                                maxValue = Double.parseDouble(maxValStr);
+                                                if (maxValue == (int) maxValue) {
+                                                    int intValue = (int) maxValue;
+                                                    maxValue = intValue;
+                                                }
+                                            } catch (NumberFormatException e) {
+                                                e.printStackTrace();
+                                            }
+                                            if (maxValue > 10) {
+                                                JTextField textField = new JTextField();
+                                                textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                                y += height + spacing;
+                                                componentIdMap.put(textField, attributeId);
+                                                for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                                    if (entry.getKey() == attributeId) {
+                                                        if (entry.getValue() != null) {
+                                                            textField.setText(entry.getValue().toString());
+                                                        } else {
+                                                            if (attributeObject.has("default")) {
+                                                                String defaultValue = attributeObject.getString("default");
+                                                                textField.setText(defaultValue);
+                                                            } else {
+                                                                textField.setText(null);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                getAttributeValues.put(attributeId, textField.getText());
+                                                jPanel3.add(textField);
+                                                System.out.println("Attribute with type NUMERIC (max-value > 10) found: " + attributeObject.toString());
+                                            } else {
+                                                DefaultComboBoxModel<Integer> comboBoxModel = new DefaultComboBoxModel<>();
+                                                JComboBox<Integer> comboBox = new JComboBox<>(comboBoxModel);
+                                                comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                                y += height + spacing;
+                                                componentIdMap.put(comboBox, attributeId);
+                                                for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                                    if (entry.getKey() == attributeId) {
+                                                        if (entry.getValue() != null) {
+                                                            comboBox.setSelectedItem(entry.getValue());
+                                                        } else {
+                                                            if (attributeObject.has("default")) {
+                                                                String defaultValue = attributeObject.getString("default");
+                                                                comboBox.setSelectedItem(defaultValue);
+                                                            } else {
+                                                                comboBox.setSelectedItem(null);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                for (int num = (int) minValue; num <= (int) maxValue; num++) {
+                                                    comboBoxModel.addElement(num);
+                                                }
+                                                getAttributeValues.put(attributeId, comboBox.getSelectedItem());
+                                                jPanel3.add(comboBox);
+                                                System.out.println("Attribute with type NUMERIC (max-value <= 10) found: " + attributeObject.toString());
+                                            }
+                                        } else {
+                                            JTextField textField = new JTextField();
+                                            textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                            y += height + spacing;
+                                            componentIdMap.put(textField, attributeId);
+                                            for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                                if (entry.getKey() == attributeId) {
+                                                    if (entry.getValue() != null) {
+                                                        textField.setText(entry.getValue().toString());
+                                                    } else {
+                                                        if (attributeObject.has("default")) {
+                                                            String defaultValue = attributeObject.getString("default");
+                                                            try {
+                                                                // Try to parse the defaultValue as an integer
+                                                                int intValue = Integer.parseInt(defaultValue);
+                                                                textField.setText(Integer.toString(intValue)); // Store as an integer and set as text
+                                                            } catch (NumberFormatException e) {
+                                                                // Handle the case where defaultValue is not a valid integer
+                                                                e.printStackTrace(); // Print an error message or handle as needed
+                                                            }
+                                                        } else {
+                                                            textField.setText(null);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            getAttributeValues.put(attributeId, textField.getText());
+                                            jPanel3.add(textField);
+                                            System.out.println("Attribute with type NUMERIC (max-value not present) found: " + attributeObject.toString());
+                                        }
+                                    } else if ("TEXT".equals(attributeType)) {
+                                        JTextField textField = new JTextField();
+                                        textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                        y += height + spacing;
+                                        componentIdMap.put(textField, attributeId);
+                                        System.out.println("Attribute Id " + attributeId);
+                                        for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                            if (entry.getKey() == attributeId) {
+                                                if (entry.getValue() != null) {
+                                                    textField.setText(entry.getValue().toString());
+                                                } else {
+                                                    if (attributeObject.has("default")) {
+                                                        String defaultValue = attributeObject.getString("default");
+                                                        textField.setText(defaultValue);
+                                                    } else {
+                                                        textField.setText(null);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        getAttributeValues.put(attributeId, textField.getText());
+                                        jPanel3.add(textField);
+                                        System.out.println("Attribute with type TEXT found: " + attributeObject.toString());
+                                    } else if ("DATETIME".equals(attributeType)) {
+                                        JDateChooser dateChooser = new JDateChooser();
+                                        dateChooser.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                        y += height + spacing;
+                                        componentIdMap.put(dateChooser, attributeId);
+
+                                        System.out.println("Attribute Id " + attributeId);
+
+                                        for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                            if (entry.getKey() == attributeId) {
+                                                String dateValue = entry.getValue() != null ? entry.getValue().toString().trim() : null;
+                                                System.out.println("Date " + dateValue);
+                                                if (dateValue != null && !dateValue.isEmpty()) {
+                                                    try {
+                                                        Date selectedDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(dateValue);
+                                                        String formattedDate = new SimpleDateFormat("yyyy-MM-dd").format(selectedDate);
+                                                        dateChooser.setDate(new SimpleDateFormat("yyyy-MM-dd").parse(formattedDate));
+                                                    } catch (ParseException e) {
+                                                        e.printStackTrace();
+                                                    }
+                                                } else if (attributeObject.has("default")) {
+                                                    String defaultValue = attributeObject.getString("default");
+                                                    try {
+                                                        Date defaultDate = new SimpleDateFormat("yyyy-MM-dd").parse(defaultValue);
+                                                        dateChooser.setDate(defaultDate);
+                                                    } catch (ParseException e) {
+                                                        e.printStackTrace();
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        getAttributeValues.put(attributeId, dateChooser.getDate());
+                                        jPanel3.add(dateChooser);
+                                        System.out.println("Attribute with type DATETIME found: " + attributeObject.toString());
                                     }
+
                                 }
                             }
-
-                            JLabel label = new JLabel(attrName);
-                            label.setBounds(x, y, labelWidth, height);
-                            jPanel3.add(label);
-
-                            y += height + spacing;
-                            i++;
                         }
-
+                    } else {
+                        System.err.println("Error: 'result' not found in the JSON response.");
                     }
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
+            } else {
+                System.err.println("Error: HTTP Response Code " + responseCode);
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
-
         jPanel3.revalidate();
         jPanel3.repaint();
-    }
-
-    private void handleOkButtonClick() {
-        Component[] components = jPanel3.getComponents();
-        Connection connection = null;
-        Statement statement = null;
-        int stampId = 0;
-        int attr_change_id = 0;
-        String valueNew = "";
-        String valueOld = "";
-        try {
-            connection = DbConnection.getConnection();
-            statement = connection.createStatement();
-            String getTypeQuery = "SELECT type_id FROM folders WHERE folder_name = '" + locationValue + "'";
-            ResultSet typeResultSet = statement.executeQuery(getTypeQuery);
-            int typeId = 0;
-            if (typeResultSet.next()) {
-                typeId = typeResultSet.getInt("type_id");
-            }
-
-            String valueQuery = "SELECT attr_id, value_new, value_old FROM changes WHERE issue_id = ? AND attr_id IS NULL ORDER BY change_id DESC";
-            PreparedStatement preparedStatement = connection.prepareStatement(valueQuery);
-            preparedStatement.setInt(1, issueId);
-            ResultSet resultSet = preparedStatement.executeQuery();
-
-            if (resultSet.next()) {
-                attr_change_id = resultSet.getInt("attr_id");
-                valueNew = resultSet.getString("value_new");
-                valueOld = resultSet.getString("value_old");
-            } else {
-                valueNew = null;
-                valueOld = null;
-            }
-            int StampsIssueId = 0;
-            String nameTextValue = nametext.getText();
-            if (nameTextValue == null || nameTextValue.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Issue name cannot be null or empty", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            } else {
-                if (valueNew == null) {
-                    valueNew = "";
-                }
-                if (!valueNew.equals(nameTextValue)) {
-                    String insertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
-                    PreparedStatement insertStampsStatement = connection.prepareStatement(insertStampsQuery, Statement.RETURN_GENERATED_KEYS);
-                    insertStampsStatement.setInt(1, userID);
-                    insertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
-                    insertStampsStatement.executeUpdate();
-                    resultSet = insertStampsStatement.getGeneratedKeys();
-                    if (resultSet.next()) {
-                        StampsIssueId = resultSet.getInt(1);
-                    }
-
-                    String changeIssueName = "UPDATE issues SET issue_name = ?, stamp_id = ? WHERE issue_id = ?";
-                    preparedStatement = connection.prepareStatement(changeIssueName);
-                    preparedStatement.setString(1, nameTextValue);
-                    preparedStatement.setInt(2, StampsIssueId);
-                    preparedStatement.setInt(3, issueId);
-                    preparedStatement.executeUpdate();
-                    String updateName = "INSERT INTO changes (change_id, issue_id, change_type, stamp_id, value_old, value_new) VALUES(?,?,?,?,?,?)";
-                    PreparedStatement updateIssueStatement = connection.prepareStatement(updateName);
-                    updateIssueStatement.setInt(1, StampsIssueId);
-                    updateIssueStatement.setInt(2, issueId);
-                    if (valueNew == null || valueNew.isEmpty()) {
-                        updateIssueStatement.setInt(3, 0);
-                    } else {
-                        updateIssueStatement.setInt(3, 1);
-                    }
-                    updateIssueStatement.setInt(4, StampsIssueId);
-                    updateIssueStatement.setString(5, valueNew);
-                    updateIssueStatement.setString(6, nameTextValue);
-                    updateIssueStatement.executeUpdate();
-                }
-            }
-            //int attrId = 0;
-            String getAttrIdQuery = "SELECT attr_id FROM attr_types WHERE type_id = " + typeId + " LIMIT 1";
-            ResultSet attrIdResultSet = statement.executeQuery(getAttrIdQuery);
-            if (attrIdResultSet.next()) {
-                attrId = attrIdResultSet.getInt("attr_id");
-            }
-            for (Component component : jPanel3.getComponents()) {
-                if (component instanceof JLabel) {
-                    JLabel label = (JLabel) component;
-                    String labelName = label.getText();
-                    String query = "SELECT attr_id FROM attr_types WHERE attr_name = '" + labelName + "' AND type_id = " + typeId;
-                    resultSet = statement.executeQuery(query);
-                    if (resultSet.next()) {
-                        attrId = resultSet.getInt("attr_id") + 1;
-                        System.out.println("attribute id  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% >>>>>>>>>>>>>> " + attrId);
-                        if (attrId == 11) {
-                            attrId += 5;
-                        }
-                    }
-                } else if (component instanceof JTextField) {
-                    JTextField textField = (JTextField) component;
-                    String textFieldValue = textField.getText();
-                    //System.out.println("label name in textfield "+labelName);
-                    System.out.println("textfield value " + textFieldValue);
-                    String attrDefQuery = "SELECT attr_def FROM attr_types WHERE attr_id = ?";
-                    PreparedStatement attrDefStatement = connection.prepareStatement(attrDefQuery);
-                    System.out.println("attr id 572 " + attrId);
-                    attrDefStatement.setInt(1, attrId);
-                    ResultSet attrDefResult = attrDefStatement.executeQuery();
-                    if (attrDefResult.next()) {
-                        String attrDef = attrDefResult.getString("attr_def");
-                        System.out.println("attr def in 577 " + attrDef);
-                        if (attrDef.startsWith("NUMERIC")) {
-                            double minValue = Double.NEGATIVE_INFINITY;
-                            double maxValue = Double.POSITIVE_INFINITY;
-                            boolean isRequired = false;
-                            int decimalPlaces = 0;
-                            String[] attrDefParts = attrDef.split(" ");
-                            for (String attrDefPart : attrDefParts) {
-                                if (attrDefPart.contains("required")) {
-                                    isRequired = true;
-                                } else if (attrDefPart.startsWith("min-value")) {
-                                    String minValueString = attrDefPart.split("=")[1].replace("\"", "");
-                                    minValue = Double.parseDouble(minValueString);
-                                } else if (attrDefPart.startsWith("max-value")) {
-                                    String maxValueString = attrDefPart.split("=")[1].replace("\"", "");
-                                    maxValue = Double.parseDouble(maxValueString);
-                                } else if (attrDefPart.startsWith("decimal")) {
-                                    String decimalString = attrDefPart.split("=")[1].replace("\"", "");
-                                    decimalPlaces = Integer.parseInt(decimalString);
-                                }
-                            }
-
-                            if (isRequired && textFieldValue.isEmpty()) {
-                                JOptionPane.showMessageDialog(null, "Invalid input! Numeric value is required.", "Error", JOptionPane.ERROR_MESSAGE);
-                            }
-
-                            if (textFieldValue != null && !textFieldValue.isEmpty() && !textFieldValue.matches("-?\\d+(\\.\\d+)?")) {
-                                JOptionPane.showMessageDialog(null, "Invalid input! Numeric value expected.", "Error", JOptionPane.ERROR_MESSAGE);
-                            }
-                            if (textFieldValue != null && !textFieldValue.isEmpty()) {
-                                double numericValue = Double.parseDouble(textFieldValue);
-                                if (numericValue < minValue || numericValue > maxValue) {
-                                    JOptionPane.showMessageDialog(null, "Invalid input! Numeric value should be between " + minValue + " and " + maxValue + ".", "Error", JOptionPane.ERROR_MESSAGE);
-                                }
-                            }
-                            if (decimalPlaces > 0) {
-                                String[] valueParts = textFieldValue.split("\\.");
-                                if (valueParts.length > 1 && valueParts[1].length() > decimalPlaces) {
-                                    JOptionPane.showMessageDialog(null, "Invalid input! Numeric value should have a maximum of " + decimalPlaces + " decimal places.", "Error", JOptionPane.ERROR_MESSAGE);
-                                }
-                            }
-                        } else if (attrDef.startsWith("TEXT")) {
-                            System.out.println("attr id where exception happens " + attrId);
-                            if (textFieldValue != null && !textFieldValue.isEmpty() && !textFieldValue.matches("[A-Za-z ]+")) {
-                                JOptionPane.showMessageDialog(null, "Invalid input! Text value expected.", "Error", JOptionPane.ERROR_MESSAGE);
-                            }
-                        }
-                    }
-                    String checkQuery = "SELECT COUNT(*) AS count FROM attr_values WHERE attr_id = ? AND issue_id = ?";
-                    PreparedStatement checkStatement = connection.prepareStatement(checkQuery);
-                    checkStatement.setInt(1, attrId);
-                    checkStatement.setInt(2, issueId);
-                    ResultSet checkResult = checkStatement.executeQuery();
-                    checkResult.next();
-                    int rowCount = checkResult.getInt("count");
-                    if (rowCount > 0) {
-                        if (textFieldValue != null && !textFieldValue.isEmpty()) {
-                            String updateQuery = "UPDATE attr_values SET attr_value = ? WHERE attr_id = ? AND issue_id = ?";
-                            PreparedStatement updateStatement = connection.prepareStatement(updateQuery);
-                            updateStatement.setString(1, textFieldValue);
-                            updateStatement.setInt(2, attrId);
-                            updateStatement.setInt(3, issueId);
-                            updateStatement.executeUpdate();
-                            Object selectedItem = textFieldValue;
-                            attrIdToSelectedItemMap.put(attrId, selectedItem);
-
-                        } else {
-                            String deleteQuery = "DELETE FROM attr_values WHERE attr_id = ? AND issue_id = ?";
-                            PreparedStatement deleteStatement = connection.prepareStatement(deleteQuery);
-                            deleteStatement.setInt(1, attrId);
-                            deleteStatement.setInt(2, issueId);
-                            deleteStatement.executeUpdate();
-                        }
-                    } else {
-                        if (attrId == 11 && textFieldValue == null) {
-                            JOptionPane.showMessageDialog(null, "Invalid input! 'Name' value is required.", "Error", JOptionPane.ERROR_MESSAGE);
-                        } else {
-                            if (textFieldValue != null) {
-                                System.out.println(attrId + " textfield inside if stat " + textFieldValue);
-                                String insertQuery = "INSERT INTO attr_values (attr_id, issue_id, attr_value) VALUES (?, ?, ?)";
-                                PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
-                                insertStatement.setInt(1, attrId);
-                                insertStatement.setInt(2, issueId);
-                                insertStatement.setString(3, textFieldValue);
-                                insertStatement.executeUpdate();
-                                System.out.println("textfield inside if stat " + textFieldValue);
-                                Object selectedItem = textFieldValue;
-                                attrIdToSelectedItemMap.put(attrId, selectedItem);
-                            } else {
-
-                            }
-                        }
-                    }
-                } else if (component instanceof JComboBox) {
-                    //System.out.println("attr id in combobox "+Attr_id);
-                    JComboBox<?> comboBox = (JComboBox<?>) component;
-                    Object comboBoxValue = comboBox.getSelectedItem();
-
-                    String checkQuery = "SELECT COUNT(*) AS count FROM attr_values WHERE attr_id = ? AND issue_id = ?";
-                    PreparedStatement checkStatement = connection.prepareStatement(checkQuery);
-                    checkStatement.setInt(1, attrId);
-                    checkStatement.setInt(2, issueId);
-                    ResultSet checkResult = checkStatement.executeQuery();
-                    checkResult.next();
-                    int rowCount = checkResult.getInt("count");
-
-                    if (rowCount > 0) {
-                        if (comboBoxValue != null) {
-                            String updateQuery = "UPDATE attr_values SET attr_value = ? WHERE attr_id = ? AND issue_id = ?";
-                            PreparedStatement updateStatement = connection.prepareStatement(updateQuery);
-                            updateStatement.setString(1, comboBoxValue.toString());
-                            updateStatement.setInt(2, attrId);
-                            updateStatement.setInt(3, issueId);
-                            updateStatement.executeUpdate();
-                            Object selectedItem = comboBoxValue.toString();
-                            attrIdToSelectedItemMap.put(attrId, selectedItem);
-
-                        } else {
-                            String deleteQuery = "DELETE FROM attr_values WHERE attr_id = ? AND issue_id = ?";
-                            PreparedStatement deleteStatement = connection.prepareStatement(deleteQuery);
-                            deleteStatement.setInt(1, attrId);
-                            deleteStatement.setInt(2, issueId);
-                            deleteStatement.executeUpdate();
-                        }
-                    } else {
-                        if (comboBoxValue != null) {
-                            String insertQuery = "INSERT INTO attr_values (attr_id, issue_id, attr_value) VALUES (?, ?, ?)";
-                            PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
-                            insertStatement.setInt(1, attrId);
-                            insertStatement.setInt(2, issueId);
-                            insertStatement.setString(3, comboBoxValue.toString());
-                            insertStatement.executeUpdate();
-                            Object selectedItem = comboBoxValue.toString();
-                            attrIdToSelectedItemMap.put(attrId, selectedItem);
-                        } else {
-
-                        }
-                    }
-                } else if (component instanceof JXDatePicker) {
-                    JXDatePicker datePicker = (JXDatePicker) component;
-                    Date date = datePicker.getDate();
-
-                    // Check if attrId and issueId exist in the table
-                    String checkQuery = "SELECT COUNT(*) AS count FROM attr_values WHERE attr_id = ? AND issue_id = ?";
-                    PreparedStatement checkStatement = connection.prepareStatement(checkQuery);
-                    checkStatement.setInt(1, attrId);
-                    checkStatement.setInt(2, issueId);
-                    ResultSet checkResult = checkStatement.executeQuery();
-                    checkResult.next();
-                    int rowCount = checkResult.getInt("count");
-
-                    if (rowCount > 0) {
-                        if (date != null) {
-                            String updateQuery = "UPDATE attr_values SET attr_value = ? WHERE attr_id = ? AND issue_id = ?";
-                            PreparedStatement updateStatement = connection.prepareStatement(updateQuery);
-                            updateStatement.setDate(1, new java.sql.Date(date.getTime()));
-                            updateStatement.setInt(2, attrId);
-                            updateStatement.setInt(3, issueId);
-                            updateStatement.executeUpdate();
-                            Object selectedItem = new java.sql.Date(date.getTime());
-                            attrIdToSelectedItemMap.put(attrId, selectedItem);
-                        } else {
-                            // Remove the existing row
-                            String deleteQuery = "DELETE FROM attr_values WHERE attr_id = ? AND issue_id = ?";
-                            PreparedStatement deleteStatement = connection.prepareStatement(deleteQuery);
-                            deleteStatement.setInt(1, attrId);
-                            deleteStatement.setInt(2, issueId);
-                            deleteStatement.executeUpdate();
-                        }
-                    } else {
-                        if (date != null) {
-                            String insertQuery = "INSERT INTO attr_values (attr_id, issue_id, attr_value) VALUES (?, ?, ?)";
-                            PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
-                            insertStatement.setInt(1, attrId);
-                            insertStatement.setInt(2, issueId);
-                            insertStatement.setDate(3, new java.sql.Date(date.getTime()));
-                            insertStatement.executeUpdate();
-                            Object selectedItem = new java.sql.Date(date.getTime());
-                            attrIdToSelectedItemMap.put(attrId, selectedItem);
-                        }
-                    }
-                }
-                //attrId+=1;
-            }
-
-            String fetchOldValuesQuery = "SELECT c.attr_id, c.value_new "
-                    + "FROM changes c "
-                    + "JOIN ("
-                    + "    SELECT attr_id, MAX(stamp_id) AS max_stamp_id "
-                    + "    FROM changes "
-                    + "    WHERE issue_id = ? "
-                    + "    GROUP BY attr_id "
-                    + ") AS max_changes "
-                    + "ON c.attr_id = max_changes.attr_id AND c.stamp_id = max_changes.max_stamp_id "
-                    + "WHERE c.issue_id = ?";
-            PreparedStatement fetch = connection.prepareStatement(fetchOldValuesQuery);
-            fetch.setInt(1, issueId);
-            fetch.setInt(2, issueId);
-            ResultSet oldValuesResult = fetch.executeQuery();
-
-            while (oldValuesResult.next()) {
-                int attributeId = oldValuesResult.getInt("attr_id");
-                Object oldValue = oldValuesResult.getObject("value_new");
-                attrIdToOldValueMap.put(attributeId, oldValue);
-            }
-
-            String newChangesQuery = "INSERT INTO changes (change_id, issue_id, change_type, stamp_id, attr_id, value_old, value_new) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement changeStatement = connection.prepareStatement(newChangesQuery);
-
-            for (Map.Entry<Integer, Object> entry : attrIdToSelectedItemMap.entrySet()) {
-                int attributeId = entry.getKey();
-                Object selectedItem = entry.getValue();
-                Object oldValue = attrIdToOldValueMap.get(attributeId);
-                System.out.println("slected old and new values " + selectedItem + " " + oldValue);
-                if (selectedItem instanceof Date && oldValue instanceof String) {
-                    // Convert 'oldValue' (which is currently a String) to a Date
-                    try {
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                        Date oldDate = dateFormat.parse((String) oldValue);
-                        oldValue = oldDate;
-                    } catch (ParseException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                if (!Objects.equals(selectedItem, oldValue)) {
-                    if (oldValue instanceof Date) {
-                        System.out.println("it's date " + oldValue);
-                    }
-                    String newInsertStampsQuery = "INSERT INTO stamps (user_id, stamp_time) VALUES (?, ?)";
-                    PreparedStatement newInsertStampsStatement = connection.prepareStatement(newInsertStampsQuery, Statement.RETURN_GENERATED_KEYS);
-                    newInsertStampsStatement.setInt(1, userID);
-                    newInsertStampsStatement.setInt(2, (int) (System.currentTimeMillis() / 1000));
-                    newInsertStampsStatement.executeUpdate();
-
-                    ResultSet stampResult = newInsertStampsStatement.getGeneratedKeys();
-                    //int stampId = 0;
-                    if (stampResult.next()) {
-                        stampId = stampResult.getInt(1);
-                    }
-                    String updateIssuesStat = "UPDATE issues SET stamp_id = ? WHERE issue_id = ?";
-                    PreparedStatement newUpdateIssue = connection.prepareStatement(updateIssuesStat);
-                    newUpdateIssue.setInt(1, stampId);
-                    newUpdateIssue.setInt(2, issueId);
-                    newUpdateIssue.executeUpdate();
-
-                    changeStatement.setInt(1, stampId);
-                    changeStatement.setInt(2, issueId);
-                    changeStatement.setInt(3, 0);
-                    changeStatement.setInt(4, stampId);
-                    changeStatement.setInt(5, attributeId);
-                    if (selectedItem instanceof Date && oldValue instanceof Date) {
-                        Date selectedDate = (Date) selectedItem;
-                        Date oldSelected = (Date) oldValue;
-                        String formattedDate = new SimpleDateFormat("yyyy-MM-dd").format(selectedDate);
-                        String oldFormattedDate = new SimpleDateFormat("yyyy-MM-dd").format(oldSelected);
-                        changeStatement.setString(6, oldFormattedDate);
-                        changeStatement.setString(7, formattedDate);
-                    } else {
-                        if (oldValue == null || oldValue.equals(null)) {
-                            changeStatement.setString(6, null);
-                        } else {
-                            changeStatement.setString(6, oldValue.toString());
-                        }
-                        if (selectedItem.toString() == null) {
-                            changeStatement.setString(7, null);
-                        } else {
-                            changeStatement.setString(7, selectedItem.toString());
-                        }
-                    }
-                    changeStatement.executeUpdate();
-                }
-                System.out.println("updated stamps id" + stampId);
-                home.refreshJTable();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void handleOK() {
-        attrValues = new HashMap<>();
-        for (Component component : jPanel3.getComponents()) {
-            if (component instanceof JComboBox) {
-                JComboBox<?> comboBox = (JComboBox<?>) component;
-                int labelIndex = jPanel3.getComponentZOrder(component) - 1;
-                if (labelIndex >= 0 && jPanel3.getComponent(labelIndex) instanceof JLabel) {
-                    JLabel label = (JLabel) jPanel3.getComponent(labelIndex);
-                    String attrName = label.getText();
-                    if (comboBox.getSelectedItem() != null) {
-                        attrValues.put(attrName, comboBox.getSelectedItem().toString());
-                    }
-                }
-            } else if (component instanceof JTextField) {
-                JTextField textField = (JTextField) component;
-                int labelIndex = jPanel3.getComponentZOrder(component) - 1;
-                System.out.println("label index " + labelIndex);
-                if (labelIndex >= 0 && jPanel3.getComponent(labelIndex) instanceof JLabel) {
-                    JLabel label = (JLabel) jPanel3.getComponent(labelIndex);
-                    String attrName = label.getText();
-                    if (textField.getText() != null || !textField.getText().isEmpty()) {
-                        attrValues.put(attrName, textField.getText());
-                    }
-                }
-            } else if (component instanceof JXDatePicker) {
-                JXDatePicker datePicker = (JXDatePicker) component;
-                Date date = datePicker.getDate();
-                int labelIndex = jPanel3.getComponentZOrder(component) - 1;
-                if (labelIndex >= 0 && jPanel3.getComponent(labelIndex) instanceof JLabel) {
-                    JLabel label = (JLabel) jPanel3.getComponent(labelIndex);
-                    String attrName = label.getText();
-                    if (datePicker.getDate() != null) {
-                        Object getdate = new java.sql.Date(date.getTime());
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                        String dateString = dateFormat.format(getdate);
-                        attrValues.put(attrName, dateString);
-                    }
-                }
-            }
-        }
-//        for (Map.Entry<String, String> entry : attrValues.entrySet()) {
-//        String attrName = entry.getKey();
-//        String attrValue = entry.getValue();
-//        System.out.println(attrName + ": " + attrValue);
-//    }
     }
 
     @SuppressWarnings("unchecked")
@@ -1103,21 +571,89 @@ public class EditIssues extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
     private void nametextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nametextActionPerformed
-        // TODO add your handling code here:
+
     }//GEN-LAST:event_nametextActionPerformed
+    public void printComboBoxNames() {
+        Component[] components = jPanel3.getComponents();
+        for (Component component : components) {
+            if (component instanceof JComboBox) {
+                JComboBox<?> comboBox = (JComboBox<?>) component;
+                Integer comboBoxId = componentIdMap.get(comboBox);
+                Object comboBoxValue = comboBox.getSelectedItem();
+                filteredValues.put(comboBoxId, comboBoxValue);
+                //System.out.println("Updated Key : " + comboBoxId + " Updated Value :" + comboBoxValue);
+            } else if (component instanceof JTextField) {
+                JTextField textField = (JTextField) component;
+                Integer textFieldId = componentIdMap.get(textField);
+                String textFieldValue = textField.getText();
+                filteredValues.put(textFieldId, textFieldValue);
+                //System.out.println("Updated Key : " + textFieldId + "Updated Value :" + textFieldValue);
+            } else if (component instanceof JDateChooser) {
+                JDateChooser dateChooser = (JDateChooser) component;
+                Integer dateChooserId = componentIdMap.get(dateChooser);
+                Date dateChooserValue = dateChooser.getDate();
 
+                if (dateChooserValue != null) {
+                    SimpleDateFormat inputDateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
+
+                    Date parsedDate = null; // Initialize parsedDate as null
+
+                    try {
+                        parsedDate = inputDateFormat.parse(dateChooserValue.toString()); // Use toString() to get the date as a string
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (parsedDate != null) {
+                        SimpleDateFormat outputDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                        String formattedDateStr = outputDateFormat.format(parsedDate);
+
+                        // Make sure that formattedDateStr is in the correct format
+                        System.out.println("Formatted Date: " + formattedDateStr);
+
+                        filteredValues.put(dateChooserId, formattedDateStr); // Store as a string
+                    } else {
+                        // Handle the case where parsing failed (e.g., show an error message)
+                        System.err.println("Error parsing date.");
+                    }
+                } else {
+        // Handle the case where dateChooserValue is null (e.g., show an error message or set a default value)
+                    // Example: filteredValues.put(dateChooserId, "default_value");
+                    System.err.println("Date is null.");
+                }
+            }
+
+        }
+    }
     private void okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okActionPerformed
-
         SwingUtilities.invokeLater(() -> {
+            printComboBoxNames();
             home.refreshJTable();
-            //System.out.println("After refreshJTable() call");
-
-            handleOkButtonClick();
+            for (Map.Entry<Integer, Object> entry : getAttributeValues.entrySet()) {
+                Integer key = entry.getKey();
+                Object value = entry.getValue();
+                if (value == null && filteredValues.containsKey(key)) {
+                    Object filteredValue = filteredValues.get(key);
+                    if (filteredValue != null) {
+                        System.out.println("Key: " + key + ", Value from filteredValues: " + filteredValue);
+                        getAPIValues.put(key, filteredValue);
+                    }
+                }
+                if (value != null && filteredValues.containsKey(key)) {
+                    Object filteredValue = filteredValues.get(key);
+                    if (!value.equals(filteredValue)) {
+                        System.out.println("Key: " + key + ", Value from filteredValues: " + filteredValue);
+                        getAPIValues.put(key, filteredValue);
+                    }
+                }
+            }
+            //printComboBoxNames();
+            oldName = nametext.getText();
+            issueDao.editIssue();
+            getAPIValues.clear();
             dispose();
         });
-
     }//GEN-LAST:event_okActionPerformed
 
     private void cancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelActionPerformed

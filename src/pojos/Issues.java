@@ -28,6 +28,10 @@ public class Issues {
         this.assignedTo = assignedTo;
     }
 
+    public Issues() {
+        
+    }
+
     public int getIssueId() {
         return issueId;
     }

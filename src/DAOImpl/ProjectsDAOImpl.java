@@ -63,8 +63,7 @@ public class ProjectsDAOImpl implements ProjectsDAO {
 
             // Set up the connection
             connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            System.out.println(SessionManager.getInstance().getCsrfToken());
+            connection.setDoOutput(true); 
             // Set headers
             connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
             connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
@@ -77,8 +76,7 @@ public class ProjectsDAOImpl implements ProjectsDAO {
             }
 
             // Get the response
-            int responseCode = connection.getResponseCode();
-            System.out.println("Response Status Code: " + responseCode);
+            int responseCode = connection.getResponseCode(); 
             System.out.println(connection.getResponseMessage());
 
             if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -88,10 +86,7 @@ public class ProjectsDAOImpl implements ProjectsDAO {
 
                     while ((line = in.readLine()) != null) {
                         jsonResponse.append(line);
-                    }
-
-                    // Print the JSON response for debugging purposes
-                    System.out.println("JSON Response: " + jsonResponse.toString());
+                    } 
 
                     // Parse the JSON response
                     JSONObject jsonObject = new JSONObject(jsonResponse.toString());
@@ -198,10 +193,7 @@ public class ProjectsDAOImpl implements ProjectsDAO {
                     folder.setFolderId(folderId);
                     folder.setTypeId(typeId);
                     folder.setFolderName(folderName);
-                    folders.add(folder);
-                    System.out.println("Type ma,e"+folder.getFolderName());
-//                    IssueTypes issuetypes = new IssueTypes();
-//                    issuetypes.setTypeId(typeId);
+                    folders.add(folder);  
                 }
             }
         } catch (Exception e) {
@@ -250,7 +242,6 @@ public class ProjectsDAOImpl implements ProjectsDAO {
                     response.append(inputLine);
                 }
 
-                // Parse the JSON response
                 JSONObject jsonResponse = new JSONObject(response.toString());
 
                 // Extract the "name" field from the "result" object
@@ -267,18 +258,6 @@ public class ProjectsDAOImpl implements ProjectsDAO {
         e.printStackTrace();
         // Handle the exception (e.g., return an error message)
         return "Error: " + e.getMessage();
-    } finally {
-        // Close the connection and reader if necessary
-        if (connection != null) {
-            connection.disconnect();
-        }
-        if (reader != null) {
-            try {
-                reader.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+    } 
 }
 }

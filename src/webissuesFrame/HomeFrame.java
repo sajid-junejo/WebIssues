@@ -3,8 +3,7 @@ package webissuesFrame;
 import DAOImpl.FoldersDAOImpl;
 import dbConnection.DbConnection;
 import java.awt.Image;
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.*; 
 import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -23,12 +22,10 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.HashMap; 
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
-import javax.swing.border.Border;
+import java.util.Set; 
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -39,56 +36,76 @@ import pojos.Project;
 import pojos.SessionManager;
 
 public class HomeFrame extends javax.swing.JFrame {
-
     FoldersDAOImpl folders = new FoldersDAOImpl();
     Folder folder = new Folder();
-    private Map<String, Integer> projectIds = new HashMap<>();
-    AddNewIssue issue = new AddNewIssue();
+    private final Map<String, Integer> projectIds = new HashMap<>();
     DefaultTreeModel model;
-    private IssuesDAOImpl issuesDAO = new IssuesDAOImpl();
-    private ProjectsDAOImpl projectsDAO = new ProjectsDAOImpl();
-    //SessionManager 
+    private final IssuesDAOImpl issuesDAO = new IssuesDAOImpl();
+    private final ProjectsDAOImpl projectsDAO = new ProjectsDAOImpl(); 
     AddViewFrame view;
     private JLabel[] labels;
-    int issueId = 0;
     JLabel attributeLabel = null;
     int selectedRowIndex = 0;
     String typeName = null;
-    int typeId = 0;
+    AddNewIssue issue;
+    public static int typeId = 0;
+    
+    //public static int projectId = 0;
+    ImageIcon add ;
+    ImageIcon edit;
     int attributeY = 0;
     String issueName = "";
     int userID = SessionManager.getInstance().getUserId();
     int userAccess = SessionManager.getInstance().getUserAccess();
-    String folderName = null;
+    public static String folderName = null;
     static String projectName = "";
     static String ProjectNamess = null;
     static int projectId = 0;
     public static String PATH = null;
-    int FoldersID = 0;
-    int IssueID = 0;
+    public static int FoldersID = 0;
+    public static int IssueID = 0;
 
     public HomeFrame() {
         initComponents();
-        // Get the default screen device
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         LoadImages();
+        setUSer();
+        jPanel2.setWrapStyleWord(true);
+        jPanel2.setEditable(false);
+        jPanel2.setLineWrap(true);
         int screenWidth = gd.getDisplayMode().getWidth();
         int screenHeight = gd.getDisplayMode().getHeight();
         System.out.println("width " + screenWidth + "Height" + screenHeight);
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
         this.setExtendedState(HomeFrame.MAXIMIZED_BOTH);
         Load();
-        username.setText(SessionManager.getInstance().getUserName());
-        username.setToolTipText(SessionManager.getInstance().getUserName());
         jLabel12.setEnabled(false);
         labels = new JLabel[0];
         Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Genetech WI - WebIssues Desktop Client");
         jPanel3.setVisible(false);
+        jTable1.setEditingRow(ERROR);
     }
 
     DefaultMutableTreeNode courses = new DefaultMutableTreeNode("<html><b>Projects</b></html>");
+    public void setUSer() {
+    String name = SessionManager.getInstance().getUserName();
+        System.out.println("Name length "+name.length());
+    if (name.length() > 10) {
+        int width = (name.length() + 2) * 4; // Calculate the desired width
+        System.out.println("width "+width);
+        int height = username.getPreferredSize().height; // Keep the default height
+        System.out.println("Heghit "+height);
+        Dimension preferredSize = new Dimension(width, height);
+        username.setPreferredSize(preferredSize);
+        username.setText(name);
+        username.setToolTipText(name);
+    } else {
+        username.setText(name);
+        username.setToolTipText(SessionManager.getInstance().getUserName());
+    }
+}
 
     public void LoadImages() {
         ImageIcon addissue = new ImageIcon(this.getClass().getResource("/img/addissue.jpg"));
@@ -114,11 +131,14 @@ public class HomeFrame extends javax.swing.JFrame {
 
         ImageIcon user = new ImageIcon(this.getClass().getResource("/img/user.png"));
         username.setIcon(user);
-
+        
+        add = new ImageIcon(this.getClass().getResource("/img/mail.png"));
+        
+        edit = new ImageIcon(this.getClass().getResource("/img/edit.png"));
+        
     }
 
     public void Load() {
-        //getUser();
         try {
             List<Project> projects = projectsDAO.getProjects();
             for (Project project : projects) {
@@ -127,14 +147,16 @@ public class HomeFrame extends javax.swing.JFrame {
                 courses.add(rootNode);
                 int ProjectId = project.getProjectId();
                 List<Folder> folders = projectsDAO.getFoldersForProject(ProjectId);
-                for (Folder folder : folders) {
+                for(Folder folder : folders) {
                     String folderName = folder.getFolderName();
                     String typeName = projectsDAO.getTypeName(folder.getTypeId());
+                    //System.out.println("type name "+ typeName);
                     String nodeValue = folderName + "      [" + typeName + "]";
                     projectIds.put(projectName, ProjectId);
                     DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(folderName);
                     childNode.setUserObject(nodeValue);
                     rootNode.add(childNode);
+                    //System.out.println("Type id "+folder.getTypeId());
                 }
 
             }
@@ -186,7 +208,7 @@ public class HomeFrame extends javax.swing.JFrame {
         jScrollPane3 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         jScrollPane2 = new javax.swing.JScrollPane();
-        jPanel2 = new javax.swing.JPanel();
+        jPanel2 = new javax.swing.JTextArea();
         username = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -399,35 +421,17 @@ public class HomeFrame extends javax.swing.JFrame {
             }
         });
 
-        jPanel2.setBackground(new java.awt.Color(255, 255, 255));
-        jPanel2.setBorder(javax.swing.BorderFactory.createEtchedBorder());
-        jPanel2.setAutoscrolls(true);
-        jPanel2.setPreferredSize(new java.awt.Dimension(950, 315));
-        jPanel2.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                jPanel2MouseDragged(evt);
-            }
-            public void mouseMoved(java.awt.event.MouseEvent evt) {
-                jPanel2MouseMoved(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1159, Short.MAX_VALUE)
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 311, Short.MAX_VALUE)
-        );
-
+        jPanel2.setColumns(20);
+        jPanel2.setRows(5);
         jScrollPane2.setViewportView(jPanel2);
 
         jSplitPane1.setRightComponent(jScrollPane2);
 
         jSplitPane2.setRightComponent(jSplitPane1);
+
+        username.setText("username");
+        username.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        username.setPreferredSize(new java.awt.Dimension(57, 14));
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -472,14 +476,14 @@ public class HomeFrame extends javax.swing.JFrame {
                                 .addComponent(jLabel1)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 124, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(0, 464, Short.MAX_VALUE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 207, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(username, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(10, 10, 10)))
+                        .addGap(0, 464, Short.MAX_VALUE)))
                 .addContainerGap())
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 207, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(username, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(70, 70, 70))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -529,7 +533,7 @@ public class HomeFrame extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
-                    .addComponent(username))
+                    .addComponent(username, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
 
@@ -546,62 +550,6 @@ public class HomeFrame extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    public static int getTypeIdFromNode(DefaultMutableTreeNode node) {
-        Object userObject = node.getUserObject();
-        if (userObject instanceof String) {
-            String nodeValue = (String) userObject;
-            String typeName = null;
-            int openingBracketIndex = nodeValue.lastIndexOf('[');
-            int closingBracketIndex = nodeValue.lastIndexOf(']');
-            if (openingBracketIndex != -1 && closingBracketIndex != -1) {
-                typeName = nodeValue.substring(openingBracketIndex + 1, closingBracketIndex).trim();
-            }
-
-            if (typeName != null && !typeName.isEmpty()) {
-                return getTypeIDFromDB(typeName);
-            }
-        }
-        return -1;
-    }
-
-    private static int getTypeIDFromDB(String typeName) {
-        Connection con = null;
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-        int typeId = -1;
-
-        try {
-            con = DbConnection.getConnection();
-            String query = "SELECT type_id FROM issue_types WHERE type_name = ?";
-            statement = con.prepareStatement(query);
-            statement.setString(1, typeName);
-
-            resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                typeId = resultSet.getInt("type_id");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            // Close the resources
-            try {
-                if (resultSet != null) {
-                    resultSet.close();
-                }
-                if (statement != null) {
-                    statement.close();
-                }
-                if (con != null) {
-                    con.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-
-        return typeId;
-    }
 
     public void issueAttributes() {
         int cx = 60;
@@ -741,45 +689,17 @@ public class HomeFrame extends javax.swing.JFrame {
             label.setBounds(hx, labelY, hlabelWidth, hheight);
             labelY += hheight + hlabelSpacing;
             jPanel2.add(label);
-            int issueID = issueId;
 //hktyirtju frtu
-            String sqlQuery = "SELECT fl.file_id, fl.file_name, fl.file_size, fl.file_descr, fl.file_storage, i.issue_id, i.folder_id, sc.user_id, sc.stamp_time, u.user_login "
-                    + "FROM files AS fl "
-                    + "JOIN changes AS ch ON ch.change_id = fl.file_id "
-                    + "JOIN issues AS i ON i.issue_id = ch.issue_id "
-                    + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
-                    + "JOIN folders AS f ON f.folder_id = i.folder_id "
-                    + "JOIN projects AS p ON p.project_id = f.project_id "
-                    + "JOIN users AS u ON u.user_id = sc.user_id "
-                    + "WHERE i.issue_id = ?"
-                    + " ORDER BY sc.stamp_time DESC";
+          
 
-            statement = con.prepareStatement(sqlQuery);
-            statement.setInt(1, issueID);
-
-            ResultSet resultSet = statement.executeQuery();
-
-            while (resultSet.next()) {
-                //int fileId = resultSet.getInt("file_id");
-                fileName = resultSet.getString("file_name");
-                //long fileSize = resultSet.getLong("file_size");
-                fileDescr = resultSet.getString("file_descr");
-                //String fileStorage = resultSet.getString("file_storage");
-                //int issueIdResult = resultSet.getInt("issue_id");
-                //int folderId = resultSet.getInt("folder_id");
-                //int userId = resultSet.getInt("user_id");
-                long stampTime = resultSet.getLong("stamp_time") * 1000L;
-                Date createdDate = new Date(stampTime);
-                SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
-                String formattedCreatedDate = sdf.format(createdDate);
-                String name = resultSet.getString("user_login");
+         
 
                 if (fileName == null || fileName.isEmpty()) {
                     changeLabel = new JLabel("There are no files");
                     changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
                     jPanel2.add(changeLabel);
                 } else {
-                    changeLabel = new JLabel("<html><b>" + formattedCreatedDate + " --- " + name + "</b></html>");
+                    //changeLabel = new JLabel("<html><b>" + formattedCreatedDate + " --- " + name + "</b></html>");
                     changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
                     jPanel2.add(changeLabel);
                     labelY += hheight + hlabelSpacing;
@@ -788,41 +708,17 @@ public class HomeFrame extends javax.swing.JFrame {
                     jPanel2.add(attribute);
                 }
                 labelY += hheight + hlabelSpacing + 5;
-            }
-            sqlQuery = "SELECT c.comment_id, c.comment_text, c.comment_format, i.issue_id, i.folder_id, sc.user_id, sc.stamp_time, u.user_login "
-                    + "FROM comments AS c "
-                    + "JOIN changes AS ch ON ch.change_id = c.comment_id "
-                    + "JOIN issues AS i ON i.issue_id = ch.issue_id "
-                    + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
-                    + "JOIN folders AS f ON f.folder_id = i.folder_id "
-                    + "JOIN projects AS p ON p.project_id = f.project_id "
-                    + "JOIN users AS u ON u.user_id = sc.user_id "
-                    + "WHERE i.issue_id = ?";
+            
+            
 
-            statement = con.prepareStatement(sqlQuery);
-            statement.setInt(1, issueID);
-
-            resultSet = statement.executeQuery();
-
-            while (resultSet.next()) {
-                //int commentId = resultSet.getInt("comment_id");
-                commentText = resultSet.getString("comment_text");
-                long stampTime = resultSet.getLong("stamp_time") * 1000L;
-                Date createdDate = new Date(stampTime);
-                SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
-                String formattedCreatedDate = sdf.format(createdDate);
-                String name = resultSet.getString("user_login");
-                //String commentFormat = resultSet.getString("comment_format");
-                //int retrievedIssue = resultSet.getInt("issue_id"); // Update issueId with the retrieved value
-                //int folderId = resultSet.getInt("folder_id");
-                //int userId = resultSet.getInt("user_id");
+           
                 if (commentText == null || commentText.isEmpty()) {
 
                     changeLabel = new JLabel("There are no comments");
                     changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
                     jPanel2.add(changeLabel);
                 } else {
-                    attribute = new JLabel("<html><b>" + formattedCreatedDate + " --- " + name + "</b></html>");
+                    //attribute = new JLabel("<html><b>" + formattedCreatedDate + " --- " + name + "</b></html>");
                     attribute.setBounds(hx, labelY, hlabelWidth, hheight);
                     jPanel2.add(attribute);
                     labelY += hheight + hlabelSpacing;
@@ -832,7 +728,7 @@ public class HomeFrame extends javax.swing.JFrame {
                 }
 
                 labelY += hheight + hlabelSpacing + 5;
-            }
+            
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -858,53 +754,8 @@ public class HomeFrame extends javax.swing.JFrame {
             label.setBounds(hx, labelY, hlabelWidth, hheight);
             labelY += hheight + hlabelSpacing;
             jPanel2.add(label);
-            int issueID = issueId;
-
-            String sqlQuery = "SELECT fl.file_id, fl.file_name, fl.file_size, fl.file_descr, fl.file_storage, i.issue_id, i.folder_id, sc.user_id, sc.stamp_time, u.user_login "
-                    + "FROM files AS fl "
-                    + "JOIN changes AS ch ON ch.change_id = fl.file_id "
-                    + "JOIN issues AS i ON i.issue_id = ch.issue_id "
-                    + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
-                    + "JOIN folders AS f ON f.folder_id = i.folder_id "
-                    + "JOIN projects AS p ON p.project_id = f.project_id "
-                    + "JOIN users AS u ON u.user_id = sc.user_id "
-                    + "WHERE i.issue_id = ?"
-                    + " ORDER BY sc.stamp_time DESC";
-
-            statement = con.prepareStatement(sqlQuery);
-            statement.setInt(1, issueID);
-
-            ResultSet resultSet = statement.executeQuery();
-
-            while (resultSet.next()) {
-                fileName = resultSet.getString("file_name");
-                fileDescr = resultSet.getString("file_descr");
-                long stampTime = resultSet.getLong("stamp_time") * 1000L;
-                Date createdDate = new Date(stampTime);
-                SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
-                String formattedCreatedDate = sdf.format(createdDate);
-                String name = resultSet.getString("user_login");
-
-                if (fileName == null || fileName.isEmpty()) {
-                    changeLabel = new JLabel("There are no files");
-                    changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
-                    jPanel2.add(changeLabel);
-                } else {
-                    changeLabel = new JLabel("<html><b>" + formattedCreatedDate + " --- " + name + "</b></html>");
-                    changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
-                    jPanel2.add(changeLabel);
-                    labelY += hheight + hlabelSpacing;
-                    attribute = new JLabel("<html><li>" + fileName + "---" + fileDescr + "</li></html>");
-                    attribute.setBounds(hx, labelY, hlabelWidth, hheight);
-                    jPanel2.add(attribute);
-                }
-                labelY += hheight + hlabelSpacing + 5;
-            }
-
-            resultSet.close();
-            statement.close();
-            con.close();
-        } catch (SQLException e) {
+           
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -927,60 +778,13 @@ public class HomeFrame extends javax.swing.JFrame {
             label.setBounds(hx, labelY, hlabelWidth, hheight);
             labelY += hheight + hlabelSpacing;
             jPanel2.add(label);
-            int issueID = issueId;
-
-            String sqlQuery = "SELECT c.comment_id, c.comment_text, c.comment_format, i.issue_id, i.folder_id, sc.user_id, sc.stamp_time, u.user_login "
-                    + "FROM comments AS c "
-                    + "JOIN changes AS ch ON ch.change_id = c.comment_id "
-                    + "JOIN issues AS i ON i.issue_id = ch.issue_id "
-                    + "JOIN stamps AS sc ON sc.stamp_id = ch.change_id "
-                    + "JOIN folders AS f ON f.folder_id = i.folder_id "
-                    + "JOIN projects AS p ON p.project_id = f.project_id "
-                    + "JOIN users AS u ON u.user_id = sc.user_id "
-                    + "WHERE i.issue_id = ?"
-                    + " ORDER BY sc.stamp_time DESC";
-
-            statement = con.prepareStatement(sqlQuery);
-            statement.setInt(1, issueID);
-
-            ResultSet resultSet = statement.executeQuery();
-
-            while (resultSet.next()) {
-                // int commentId = resultSet.getInt("comment_id");
-                commentText = resultSet.getString("comment_text");
-                long stampTime = resultSet.getLong("stamp_time") * 1000L;
-                Date createdDate = new Date(stampTime);
-                SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm a");
-                String formattedCreatedDate = sdf.format(createdDate);
-                String name = resultSet.getString("user_login");
-                if (commentText == null || commentText.isEmpty()) {
-                    // If commentText is null or empty, display "There are no comments" label
-                    changeLabel = new JLabel("There are no comments");
-                    changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
-                    jPanel2.add(changeLabel);
-                } else {
-                    // If commentText is not empty, display the comment details
-                    attribute = new JLabel("<html><b>" + formattedCreatedDate + " --- " + name + "</b></html>");
-                    attribute.setBounds(hx, labelY, hlabelWidth, hheight);
-                    jPanel2.add(attribute);
-                    labelY += hheight + hlabelSpacing;
-                    changeLabel = new JLabel("<html><li>" + commentText + "</li></html>");
-                    changeLabel.setBounds(hx, labelY, hlabelWidth, hheight);
-                    jPanel2.add(changeLabel);
-                }
-
-                labelY += hheight + hlabelSpacing + 5;
-            }
-
-            resultSet.close();
-            statement.close();
-            con.close();
-        } catch (SQLException e) {
+           
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
- public void issueDetails() {
+    public void issueDetails() {
     int x = 30;
     int y = 15;
     int labelWidth = 900;
@@ -1018,9 +822,7 @@ public class HomeFrame extends javax.swing.JFrame {
     descrLabel = new JLabel("Description:");
     descrLabel.setBounds(x, attributeY, labelWidth, height);
     jPanel2.add(descrLabel);
-    attributeY += height + labelSpacing;
-
-    System.out.println("This is the Description " + description);
+    attributeY += height + labelSpacing; 
 
     // Replace \n with <br> to ensure proper line breaks in HTML
     description = description.replace("\n", "<br>");
@@ -1071,7 +873,6 @@ public class HomeFrame extends javax.swing.JFrame {
     jPanel2.repaint();
 }
 
-
     public void history() {
         int hx = 30;
         int hy = attributeY + 25;
@@ -1084,12 +885,11 @@ public class HomeFrame extends javax.swing.JFrame {
         label.setBounds(hx, labelY, hlabelWidth, hheight);
         labelY += hheight + hlabelSpacing;
         jPanel2.add(label);
-
+        issuesDAO.printAttributes(IssueID);
         Map<String, String> history = issuesDAO.getHistory(IssueID);
         for (Map.Entry<String, String> entry : history.entrySet()) {
             String keyValue = entry.getKey();
             String formattedEntry = entry.getValue();
-            System.out.println("Key :" + keyValue + " Value :" + formattedEntry);
             String[] lines = formattedEntry.split("\n");
             JLabel KeyLabel = new JLabel("<html><b>" + keyValue + "</b></html>");
             KeyLabel.setBounds(hx, labelY, hlabelWidth, hheight);
@@ -1182,11 +982,12 @@ public class HomeFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jComboBox2ActionPerformed
 
     private void jLabel12MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel12MouseClicked
-        AddNewFolder folder = new AddNewFolder();
-        if (jLabel12.getText() == "Add Issue") {
+        AddNewFolder viewFolder = new AddNewFolder();
+        if (jLabel12.getText().equals("Add Issue")) {
             issue.setVisible(true);
-        } else if (jLabel12.getText() == "Add Folder") {
-            folder.setVisible(true);
+            issue.AddForm();
+        } else if (jLabel12.getText().equals("Add Folder")) {
+            viewFolder.setVisible(true);
         }
     }//GEN-LAST:event_jLabel12MouseClicked
 
@@ -1195,9 +996,7 @@ public class HomeFrame extends javax.swing.JFrame {
         String valueBetweenCommas = null;
         jLabel12.setEnabled(true);
         jPanel3.setVisible(false);
-        jPanel2.setEnabled(false);
-        //getUser();
-
+        jPanel2.setEnabled(false); 
         DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer();
         headerRenderer.setHorizontalAlignment(JLabel.LEFT);
         jTable1.getTableHeader().setDefaultRenderer(headerRenderer);
@@ -1213,15 +1012,13 @@ public class HomeFrame extends javax.swing.JFrame {
                 int firstCommaIndex = pathString.indexOf(",");
                 int lastCommaIndex = pathString.lastIndexOf(",");
                 if (firstCommaIndex != -1 && lastCommaIndex != -1 && lastCommaIndex > firstCommaIndex) {
-                    valueBetweenCommas = pathString.substring(firstCommaIndex + 1, lastCommaIndex).trim();
-                    System.out.println("value between : " + valueBetweenCommas);
+                    valueBetweenCommas = pathString.substring(firstCommaIndex + 1, lastCommaIndex).trim(); 
                 }
             }
             if (path != null) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                 //int typeId = getTypeIdFromNode(node);
-                projectName = node.toString();
-                System.out.println("Node : " + node);
+                projectName = node.toString(); 
                 if (typeId != -1) {
                     Object userObject = node.getUserObject();
                     if (userObject instanceof String) {
@@ -1230,20 +1027,19 @@ public class HomeFrame extends javax.swing.JFrame {
                         int closingBracketIndex = nodeValue.lastIndexOf(']');
                         if (openingBracketIndex != -1 && closingBracketIndex != -1) {
                             folderName = nodeValue.substring(0, openingBracketIndex).trim();
-                            int projectId = projectIds.get(valueBetweenCommas);
-
-                            // Now you have the project ID to work with
-                            System.out.println("Project ID: " + projectId);
+                            projectId = projectIds.get(valueBetweenCommas);
+                            System.out.println("Folder Name "+folderName); 
                             List<Folder> folders = projectsDAO.getFoldersForProject(projectId);
-                            PATH = valueBetweenCommas + " - " + folderName;
-                            // Loop through the folders to find the folder ID by folder name.
+                            PATH = valueBetweenCommas + " - " + folderName; 
                             for (Folder folder : folders) {
                                 if (folder.getFolderName().equals(folderName)) {
                                     FoldersID = folder.getFolderId();
-                                    break; // Exit the loop once you find the folder ID.
+                                    System.out.println("Folder Id "+FoldersID);
+                                    typeId = folder.getTypeId();
+                                    break;
                                 }
                             }
-                            System.out.println("Folder Name " + folderName);
+                            System.out.println("Type id in JTree "+typeId);
                         } else {
                             folderName = nodeValue.trim();
                             projectsDAO.setFolderName(folderName);
@@ -1251,8 +1047,6 @@ public class HomeFrame extends javax.swing.JFrame {
                         try {
                             DefaultTableModel tableModel = null;
                             tableModel = issuesDAO.getTableData(FoldersID);
-
-                            //tableModel = issuesDAO.getIssuesByTypeId(typeId, folderName);
                             jTable1.setModel(tableModel);
                         } catch (Exception e) {
                         }
@@ -1272,8 +1066,9 @@ public class HomeFrame extends javax.swing.JFrame {
             JPopupMenu popupMenu = new JPopupMenu();
             JMenuItem updateItem = new JMenuItem("Edit Attributes");
             JMenuItem insertItem = new JMenuItem("Add Issue");
-            ImageIcon insertIcon = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\edit.png");
-            ImageIcon addIssue = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\mail.png");
+            issue = new AddNewIssue();
+            ImageIcon insertIcon = edit;
+            ImageIcon addIssue = add;
             updateItem.setIcon(insertIcon);
             insertItem.setIcon(addIssue);
             updateItem.addActionListener(new ActionListener() {
@@ -1287,9 +1082,10 @@ public class HomeFrame extends javax.swing.JFrame {
                     }
                     EditIssues edit = new EditIssues();
                     edit.setVisible(true);
-                    edit.setRowData(rowData, getColumnNames(tableModel));
+                    edit.EditForm();
                     edit.setDefaultCloseOperation(edit.DISPOSE_ON_CLOSE);
-                    issue.setRowData(rowData, getColumnNames(tableModel));
+                    
+                    issue.AddForm();
                     //frame.setr
                 }
             });
@@ -1317,18 +1113,18 @@ public class HomeFrame extends javax.swing.JFrame {
                                 JOptionPane.YES_NO_OPTION);
 
                         if (option == JOptionPane.YES_OPTION) {
+                            issuesDAO.deleteIssue(IssueID);
                             refreshJTable();
                             jPanel2.removeAll();
                             jPanel2.repaint();
                             jPanel2.revalidate();
                         } else if (option == JOptionPane.NO_OPTION) {
                             System.out.println("User clicked NO.");
-                        }
-                        System.out.println("Delete option selected");
+                        } 
                     }
                 });
                 popupMenu.add(deleteItem);
-            };
+            }
             popupMenu.show(jTable1, evt.getX(), evt.getY());
         } else if (SwingUtilities.isLeftMouseButton(evt)) {
             jPanel2.removeAll();
@@ -1339,6 +1135,7 @@ public class HomeFrame extends javax.swing.JFrame {
                 if (idValue != null) {
                     String idString = idValue.toString();
                     idString = idString.replaceAll("\\<.*?\\>|[^0-9]", "");
+                    System.out.println("ISSUE ID "+IssueID);
                     IssueID = Integer.parseInt(idString);
                     issueAttributes();
                     //buttonsCreation();
@@ -1365,25 +1162,14 @@ public class HomeFrame extends javax.swing.JFrame {
         // TODO add your handling code here:
         jLabel12.setEnabled(true);
         jLabel12.setText("Add Issue");
-        if (jLabel12.getText() == "Add Issue") {
-        } else if (jLabel12.getText() == "Add Folder") {
+        if(jLabel12.getText().equals("Add Issue")) {
+        } else if (jLabel12.getText().equals("Add Folder")) {
         }
-
     }//GEN-LAST:event_jScrollPane3MouseClicked
 
     private void jScrollPane3KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jScrollPane3KeyPressed
         // TODO add your handling code here:
     }//GEN-LAST:event_jScrollPane3KeyPressed
-
-    private void jPanel2MouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel2MouseDragged
-        // Calculate the change in mouseY (vertical movement) during dragging
-
-    }//GEN-LAST:event_jPanel2MouseDragged
-
-    private void jPanel2MouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel2MouseMoved
-        // Save the initial heights of jScrollPane2 and jScrollPane3
-
-    }//GEN-LAST:event_jPanel2MouseMoved
 
     private void jScrollPane2MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_jScrollPane2MouseWheelMoved
         // TODO add your handling code here:
@@ -1445,7 +1231,7 @@ public class HomeFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
+    private javax.swing.JTextArea jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
