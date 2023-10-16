@@ -26,7 +26,7 @@ public class GlobalDAOImpl implements GlobalDAO {
             URL url = new URL(LoginFrame.apiUrl);
             String api = url.getProtocol() + "://" + url.getHost() + "/";
             String apiUrl = api + "server/api/global.php";
-            //String apiUrl = api + "webissues/server/api/global.php";
+            //String apiUrl = api + "server/api/global.php";
             // Open a connection to the API endpoint using apiUrl
             connection = (HttpURLConnection) new URL(apiUrl).openConnection();
             connection.setRequestMethod("POST");
@@ -90,8 +90,8 @@ public class GlobalDAOImpl implements GlobalDAO {
         try {
             URL url = new URL(LoginFrame.apiUrl);
             String api = url.getProtocol() + "://" + url.getHost() + "/";
-            String apiUrl = api + "server/api/global.php";
-            //String apiUrl = api + "webissues/server/api/global.php";
+            String apiUrl = api + "webissues-new/server/api/global.php";
+            //String apiUrl = api + server/api/global.php";
             // Open a connection to the API endpoint using apiUrl
             System.out.println("API URL "+apiUrl);
             connection = (HttpURLConnection) new URL(apiUrl).openConnection();

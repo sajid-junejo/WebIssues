@@ -21,7 +21,9 @@ import java.util.Locale;
 import java.util.Map;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
+import javax.swing.InputVerifier;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
@@ -45,6 +47,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         ImageIcon icon1 = new ImageIcon(this.getClass().getResource("/img/information.png"));
         info.setIcon(icon1);
     }
+    HomeFrame home = new HomeFrame();
     String locationValue = "";
     int issueId = 0;
     int folderId = 0;
@@ -125,9 +128,16 @@ public class AddNewIssue extends javax.swing.JFrame {
                                     }
                                     int attributeId = attributeObject.getInt("id");
                                     // Create a label for the attribute using the "name" from the API response
-                                    JLabel label = new JLabel(attributeName + ":");
-                                    label.setBounds(tx, y, labelWidth, height);
-                                    jPanel5.add(label);
+                                    if (required) {
+                                        JLabel label = new JLabel("<html>" + attributeName + "<sup>*</sup>:</html>");
+                                        label.setBounds(tx, y, labelWidth, height);
+                                        jPanel5.add(label);
+                                    } else {
+                                        JLabel label = new JLabel(attributeName + ":");
+                                        label.setBounds(tx, y, labelWidth, height);
+                                        jPanel5.add(label);
+                                    }
+
                                     if ("USER".equals(attributeType)) {
                                         DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
                                         JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
@@ -166,13 +176,12 @@ public class AddNewIssue extends javax.swing.JFrame {
                                         } else {
                                             comboBox.setSelectedItem(null);
                                         }
-                                        System.out.println("Attribute Id " + attributeId); 
+                                        System.out.println("Attribute Id " + attributeId);
                                         getAttributeValues.put(attributeId, comboBox.getSelectedItem());
                                         jPanel5.add(comboBox);
                                     } else if ("NUMERIC".equals(attributeType)) {
                                         double minValue = 0.0;
                                         if (attributeObject.has("min-value")) {
-
                                             try {
                                                 String minValStr = attributeObject.getString("min-value");
                                                 minValue = Double.parseDouble(minValStr);
@@ -210,8 +219,64 @@ public class AddNewIssue extends javax.swing.JFrame {
                                                 JTextField textField = new JTextField();
                                                 textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                                                 y += height + spacing;
-                                                componentIdMap.put(textField, attributeId); 
+                                                componentIdMap.put(textField, attributeId);
+
+                                                if (required) {
+                                                    textField.setInputVerifier(new InputVerifier() {
+                                                        @Override
+                                                        public boolean verify(JComponent input) {
+                                                            JTextField textField = (JTextField) input;
+                                                            String text = textField.getText();
+                                                            if (text == null || text.isEmpty()) {
+                                                                JOptionPane.showMessageDialog(null, "This field is required.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                                                                return false;
+                                                            }
+                                                            return true;
+                                                        }
+                                                    });
+                                                }
+
+                                                if (attributeObject.has("default")) {
+                                                    String defaultValue = attributeObject.getString("default");
+                                                    try {
+                                                        // Try to parse the defaultValue as an integer
+                                                        int intValue = Integer.parseInt(defaultValue);
+                                                        textField.setText(Integer.toString(intValue)); // Store as an integer and set as text
+                                                    } catch (NumberFormatException e) {
+                                                        // Handle the case where defaultValue is not a valid integer
+                                                        e.printStackTrace(); // Print an error message or handle as needed
+                                                    }
+                                                }
+                                                if (attributeObject.has("decimal")) {
+                                                    int decimalPlaces = attributeObject.getInt("decimal");
+
+                                                    if (decimalPlaces > 0) {
+                                                        String currentText = textField.getText();
+                                                        int indexOfDecimal = currentText.indexOf(".");
+
+                                                        // If there's no decimal point, append it along with the necessary number of zeros
+                                                        if (indexOfDecimal == -1) {
+                                                            currentText += ".";
+                                                            for(int m = 0; m < decimalPlaces; m++) {
+                                                                currentText += "0";
+                                                            }
+                                                        } else {
+                                                            // If there's a decimal point, check how many decimal places are currently present
+                                                            int currentDecimalCount = currentText.length() - indexOfDecimal - 1;
+
+                                                            // If the current number of decimal places is less than required, append zeros
+                                                            for (int n = currentDecimalCount; n < decimalPlaces; n++) {
+                                                                currentText += "0";
+                                                            }
+                                                        }
+
+                                                        // Set the modified text back to the textField
+                                                        textField.setText(currentText);
+                                                    }
+                                                }
+
                                                 getAttributeValues.put(attributeId, textField.getText());
+
                                                 jPanel5.add(textField);
                                                 System.out.println("Attribute with type NUMERIC (max-value > 10) found: " + attributeObject.toString());
                                             } else {
@@ -231,27 +296,41 @@ public class AddNewIssue extends javax.swing.JFrame {
                                                     comboBox.setSelectedItem(defaultValue);
                                                 } else {
                                                     comboBox.setSelectedItem(null);
-                                                } 
+                                                }
                                                 getAttributeValues.put(attributeId, comboBox.getSelectedItem());
                                                 jPanel5.add(comboBox);
                                                 System.out.println("Attribute with type NUMERIC (max-value <= 10) found: " + attributeObject.toString());
                                             }
-
                                         } else {
                                             JTextField textField = new JTextField();
                                             textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                                             y += height + spacing;
-                                            if (attributeObject.has("default")) {
-                                                            String defaultValue = attributeObject.getString("default");
-                                                            try {
-                                                                // Try to parse the defaultValue as an integer
-                                                                int intValue = Integer.parseInt(defaultValue);
-                                                                textField.setText(Integer.toString(intValue)); // Store as an integer and set as text
-                                                            } catch (NumberFormatException e) {
-                                                                // Handle the case where defaultValue is not a valid integer
-                                                                e.printStackTrace(); // Print an error message or handle as needed
-                                                            }
+
+                                            if (required) {
+                                                textField.setInputVerifier(new InputVerifier() {
+                                                    @Override
+                                                    public boolean verify(JComponent input) {
+                                                        JTextField textField = (JTextField) input;
+                                                        String text = textField.getText();
+                                                        if (text == null || text.isEmpty()) {
+                                                            JOptionPane.showMessageDialog(null, "This field is required.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                                                            return false;
                                                         }
+                                                        return true;
+                                                    }
+                                                });
+                                            }
+                                            if (attributeObject.has("default")) {
+                                                String defaultValue = attributeObject.getString("default");
+                                                try {
+                                                    // Try to parse the defaultValue as an integer
+                                                    int intValue = Integer.parseInt(defaultValue);
+                                                    textField.setText(Integer.toString(intValue)); // Store as an integer and set as text
+                                                } catch (NumberFormatException e) {
+                                                    // Handle the case where defaultValue is not a valid integer
+                                                    e.printStackTrace(); // Print an error message or handle as needed
+                                                }
+                                            }
                                             componentIdMap.put(textField, attributeId);
                                             getAttributeValues.put(attributeId, textField.getText());
                                             jPanel5.add(textField);
@@ -268,6 +347,22 @@ public class AddNewIssue extends javax.swing.JFrame {
                                         dateChooser.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                                         y += height + spacing;
                                         componentIdMap.put(dateChooser, attributeId);
+
+                                        if (attributeObject.has("default")) {
+                                            String defaultDateStr = attributeObject.getString("default");
+                                            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+                                            if (defaultDateStr.equals("[Today]")) {
+                                                dateChooser.setDate(new Date());
+                                            } else {
+                                                try {
+                                                    Date defaultDate = dateFormat.parse(defaultDateStr);
+                                                    dateChooser.setDate(defaultDate);
+                                                } catch (ParseException e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                        }
 
                                         getAttributeValues.put(attributeId, dateChooser.getDate());
                                         jPanel5.add(dateChooser);
@@ -307,41 +402,38 @@ public class AddNewIssue extends javax.swing.JFrame {
                 String textFieldValue = textField.getText();
                 filteredValues.put(textFieldId, textFieldValue);
                 System.out.println("Updated Key : " + textFieldId + "Updated Value :" + textFieldValue);
-            }else if (component instanceof JDateChooser) {
-    JDateChooser dateChooser = (JDateChooser) component;
-    Integer dateChooserId = componentIdMap.get(dateChooser);
-    Date dateChooserValue = dateChooser.getDate();
-    
-    if (dateChooserValue != null) {
-        SimpleDateFormat inputDateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
-        
-        Date parsedDate = null; // Initialize parsedDate as null
-        
-        try {
-            parsedDate = inputDateFormat.parse(dateChooserValue.toString()); // Use toString() to get the date as a string
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        
-        if (parsedDate != null) {
-            SimpleDateFormat outputDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            String formattedDateStr = outputDateFormat.format(parsedDate);
-            
-            // Make sure that formattedDateStr is in the correct format
-            System.out.println("Formatted Date: " + formattedDateStr);
-            
-            filteredValues.put(dateChooserId, formattedDateStr); // Store as a string
-        } else {
-            // Handle the case where parsing failed (e.g., show an error message)
-            System.err.println("Error parsing date.");
-        }
-    } else {
-        // Handle the case where dateChooserValue is null (e.g., show an error message or set a default value)
-        // Example: filteredValues.put(dateChooserId, "default_value");
-        System.err.println("Date is null.");
-    }
-}
+            } else if (component instanceof JDateChooser) {
+                JDateChooser dateChooser = (JDateChooser) component;
+                Integer dateChooserId = componentIdMap.get(dateChooser);
+                Date dateChooserValue = dateChooser.getDate();
 
+                if (dateChooserValue != null) {
+                    SimpleDateFormat inputDateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
+
+                    Date parsedDate = null; // Initialize parsedDate as null
+
+                    try {
+                        parsedDate = inputDateFormat.parse(dateChooserValue.toString()); // Use toString() to get the date as a string
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (parsedDate != null) {
+                        SimpleDateFormat outputDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                        String formattedDateStr = outputDateFormat.format(parsedDate);
+
+                        // Make sure that formattedDateStr is in the correct format
+                        System.out.println("Formatted Date: " + formattedDateStr);
+
+                        filteredValues.put(dateChooserId, formattedDateStr); // Store as a string
+                    } else {
+                        // Handle the case where parsing failed (e.g., show an error message)
+                        System.err.println("Error parsing date.");
+                    }
+                } else {
+                    System.err.println("Date is null.");
+                }
+            }
 
         }
     }
@@ -595,10 +687,12 @@ public class AddNewIssue extends javax.swing.JFrame {
                 Object value = entry.getValue();
                 System.out.println("Key Added " + key + " Value : " + value);
             }
-            System.out.println(" Description : "+description.getText());
-            getDescription = description.getText();
+            System.out.println(" Description : " + description.getText());
+            getDescription = description.getText().trim();
+            System.out.println("Description : " + getDescription);
             issueDao.addIssue();
             filteredValues.clear();
+            home.refreshJTable();
             dispose();
         }
     }//GEN-LAST:event_jButton1ActionPerformed

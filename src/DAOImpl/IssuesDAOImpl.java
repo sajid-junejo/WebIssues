@@ -1,8 +1,10 @@
 package DAOImpl;
 
 import DAO.IssuesDAO;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -15,6 +17,24 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.*;
+import com.sun.media.jai.codec.ImageCodec;
+import java.awt.Dimension;
+import java.awt.Image;
+import java.awt.MediaTracker;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -23,6 +43,8 @@ import pojos.SessionManager;
 import webissuesFrame.HomeFrame;
 import webissuesFrame.LoginFrame;
 import pojos.Issues;
+import pojos.Path;
+import sun.awt.image.ImageDecoder;
 import webissuesFrame.AddNewIssue;
 import webissuesFrame.EditIssues;
 
@@ -187,8 +209,8 @@ public class IssuesDAOImpl implements IssuesDAO {
                             JSONObject attribute = attributesArray.getJSONObject(i);
                             int attrId = attribute.getInt("id");
                             String attributeValue = attribute.optString("value", " "); // Use whitespace if "value" is null
-                            System.out.println("id :"+attrId + "Attr value :" +attributeValue);
-                                    
+                            System.out.println("id :" + attrId + "Attr value :" + attributeValue);
+
                             attributes.put(attrId, attributeValue);
                         }
                     } else {
@@ -494,6 +516,7 @@ public class IssuesDAOImpl implements IssuesDAO {
                             String oldValue = historyEntry.optString("old");
                             String text = historyEntry.optString("text");
                             String name = historyEntry.optString("name");
+                            int id = historyEntry.optInt("id");
                             String attributeId = historyEntry.optString("attributeId");
                             int atrID = 0; // Default value if attributeId is empty
                             if (!attributeId.isEmpty()) {
@@ -524,11 +547,11 @@ public class IssuesDAOImpl implements IssuesDAO {
                             }
                             currentAttribute = attributeName; // Update current attribute
 
-                            currentEntry.append("   ").append(attributeName).append(": ");
+                            currentEntry.append("   ").append(attributeName).append(":");
                             if ("Comment".equals(attributeName) || "Comment".equals(currentAttribute)) {
                                 currentEntry.append(text.replace("\n", " "));
                             } else if ("ATTACHMENT".equals(attributeName) || "ATTACHMENT".equals(currentAttribute)) {
-                                currentEntry.append(name).append(" (Size: ").append(historyEntry.optString("size")).append(")");
+                                currentEntry.append("{" + name + "}").append("[id:").append(historyEntry.optInt("id")).append("]");
                             } else {
                                 currentEntry.append(oldValue).append(" → ").append(newValue);
                             }
@@ -719,7 +742,7 @@ public class IssuesDAOImpl implements IssuesDAO {
                     // Convert the integer value to a string
                     value = String.valueOf(value);
                 }
-                System.out.println("Key in Map: " + key + " Value " + value); 
+                System.out.println("Key in Map: " + key + " Value " + value);
 
                 // Create a JSON object for each key-value pair and add it to the "values" array
                 JSONObject entryObject = new JSONObject();
@@ -735,20 +758,16 @@ public class IssuesDAOImpl implements IssuesDAO {
             requestObject.put("issueId", issueId);
             requestObject.put("name", name);
             requestObject.put("values", valuesArray);
-            // Convert the requestObject to a JSON string
             String jsonInputString = requestObject.toString();
             System.out.println("JSON Input" + jsonInputString);
-            // Enable input/output streams for the connection
             connection.setDoInput(true);
             connection.setDoOutput(true);
 
-            // Write the JSON payload to the connection's output stream
             try (OutputStream os = connection.getOutputStream()) {
                 byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
                 os.write(input, 0, input.length);
             }
 
-            // Check the HTTP response status code
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 // Read the response body
@@ -777,10 +796,12 @@ public class IssuesDAOImpl implements IssuesDAO {
             }
         }
     }
-    public void addIssue(){
-          HttpURLConnection connection = null;
+
+    public void addIssue() {
+        HttpURLConnection connection = null;
         JSONObject requestObject = null;
         JSONArray valuesArray = null;
+        String desc = AddNewIssue.getDescription;
         try {
             // Construct the API endpoint URL
             URL url = new URL(LoginFrame.apiUrl);
@@ -808,7 +829,7 @@ public class IssuesDAOImpl implements IssuesDAO {
                     // Convert the integer value to a string
                     value = String.valueOf(value);
                 }
-                System.out.println("Key in Map: " + key + " Value " + value); 
+                System.out.println("Key in Map: " + key + " Value " + value);
 
                 // Create a JSON object for each key-value pair and add it to the "values" array
                 JSONObject entryObject = new JSONObject();
@@ -823,6 +844,10 @@ public class IssuesDAOImpl implements IssuesDAO {
             requestObject.put("folderId", folderId);
             requestObject.put("name", name);
             requestObject.put("values", valuesArray);
+            if (desc != null && !desc.isEmpty()) {  // Check if desc is not null and not empty
+                requestObject.put("description", desc);
+                requestObject.put("descriptionFormat", 1);
+            }
             String jsonInputString = requestObject.toString();
             System.out.println("JSON Input" + jsonInputString);
             connection.setDoInput(true);
@@ -846,21 +871,103 @@ public class IssuesDAOImpl implements IssuesDAO {
                     }
                     String responseBody = responseStringBuilder.toString();
 
-                    // Process the response if needed
                     System.out.println("Response Body: " + responseBody);
+
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    if (jsonResponse.has("errorCode")) {
+                        int errorCode = jsonResponse.getInt("errorCode");
+                        String errorMessage = jsonResponse.getString("errorMessage");
+
+                        // Show the error message in a JOptionPane dialog
+                        JOptionPane.showMessageDialog(
+                                null,
+                                "API Error Code: " + errorCode + "\nError Message: " + errorMessage,
+                                "API Error",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+
+                        // Handle the error as needed, e.g., show an error message to the user
+                    } else {
+            // The response does not contain an error, process the response data
+                        // ... (your code to process the response data)
+                    }
                 }
             } else {
-                // Handle HTTP error responses
                 System.err.println("HTTP Error Response: " + responseCode);
             }
         } catch (IOException | JSONException e) {
             e.printStackTrace();
-            // Handle exceptions appropriately
         } finally {
             // Close the connection
             if (connection != null) {
                 connection.disconnect();
             }
+        }
+    }
+
+    public void getFile(String id) {
+        try {
+            URL url = new URL(LoginFrame.apiUrl);
+            String api = url.getProtocol() + "://" + url.getHost() + "/";
+            String apiUrl = api + "webissues/client/file.php?id=" + id;
+
+            // Open a connection to the API
+            HttpURLConnection connection = (HttpURLConnection) new URL(apiUrl).openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Accept", "image/jpeg");
+
+            // Get the response code
+            int responseCode = connection.getResponseCode();
+            System.out.println("Response code in Image " + responseCode);
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                try (InputStream inputStream = connection.getInputStream()) {
+                    byte[] imageData;
+                    try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+                        byte[] buffer = new byte[1024];
+                        int bytesRead;
+                        while ((bytesRead = inputStream.read(buffer)) != -1) {
+                            byteArrayOutputStream.write(buffer, 0, bytesRead);
+                        }
+                        imageData = byteArrayOutputStream.toByteArray();
+                    }
+
+                    SwingUtilities.invokeLater(() -> {
+                        displayImage(imageData);
+                    });
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                System.err.println("HTTP Error Response: " + responseCode);
+            }
+
+            connection.disconnect();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void displayImage(byte[] imageData) {
+        ImageIcon imageIcon = new ImageIcon(imageData);
+        Image image = imageIcon.getImage();
+
+        if (image != null) {
+            JFrame frame = new JFrame("Image Display");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+            JPanel panel = new JPanel();
+            JLabel imageLabel = new JLabel(new ImageIcon(image));
+            panel.add(imageLabel);
+
+            JScrollPane scrollPane = new JScrollPane(panel);
+            panel.setPreferredSize(new Dimension(800, 600));
+            scrollPane.setPreferredSize(new Dimension(800, 600));
+
+            frame.add(scrollPane);
+            frame.pack();
+            frame.setVisible(true);
+        } else {
+            System.err.println("Failed to load the image.");
         }
     }
 }

@@ -177,41 +177,51 @@ public class EditIssues extends javax.swing.JFrame {
                                             JSONArray itemsArray = attributeObject.getJSONArray("items");
                                             for (int k = 0; k < itemsArray.length(); k++) {
                                                 comboBoxModel.addElement(itemsArray.getString(k));
+                                                System.out.println("Elements : " + itemsArray.getString(k));
                                             }
                                         }
                                         for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                            System.out.println("Value " + entry.getValue());
+                                            Integer keyValue = entry.getKey();
+                                            String value = (String) entry.getValue();
 
-                                            if (entry.getKey() == attributeId) {
-                                                if (entry.getValue() != null) {
-                                                    comboBox.setSelectedItem(entry.getValue());
+                                            if (keyValue.equals(attributeId)) {
+                                                if (value != null && (value.length() > 1 || !value.isEmpty())) {
+                                                    System.out.println("Value length: " + value.length()); // Print the length of the value
+                                                    if (!value.isEmpty()) {
+                                                        System.out.println("-------checkingcccccccccccccccc : " + value);
+                                                        comboBox.setSelectedItem(value.toString());
+                                                        break;
+                                                    }
                                                 } else {
                                                     if (attributeObject.has("default")) {
+                                                        System.out.println("-------checkingcccccccccccccccc -> " + value);
                                                         String defaultValue = attributeObject.getString("default");
                                                         comboBox.setSelectedItem(defaultValue);
+                                                        break;
                                                     } else {
+                                                        System.out.println("-------checkingcccccccccccccccc = " + value);
                                                         comboBox.setSelectedItem(null);
-
+                                                        break;
                                                     }
                                                 }
 
                                             }
                                         }
+
                                         System.out.println("Attribute Id " + attributeId);
                                         getAttributeValues.put(attributeId, comboBox.getSelectedItem());
                                         jPanel3.add(comboBox);
                                     } else if ("NUMERIC".equals(attributeType)) {
-                                        // Handle NUMERIC type (combobox or text field)
-                                        double minValue = 0.0; // Default value for minValue if not specified
+                                        double minValue = 0.0;
 
                                         if (attributeObject.has("min-value")) {
                                             try {
-                                                // Parse the "min-value" as a double
+
                                                 String minValStr = attributeObject.getString("min-value");
                                                 minValue = Double.parseDouble(minValStr);
 
-                                                // Check if minValue is actually an integer (e.g., 1.00)
                                                 if (minValue == (int) minValue) {
-                                                    // It's an integer, so convert it to an integer
                                                     int intValue = (int) minValue;
                                                     minValue = intValue;
                                                 }
@@ -266,12 +276,15 @@ public class EditIssues extends javax.swing.JFrame {
                                                     if (entry.getKey() == attributeId) {
                                                         if (entry.getValue() != null) {
                                                             comboBox.setSelectedItem(entry.getValue());
+                                                            break;
                                                         } else {
                                                             if (attributeObject.has("default")) {
                                                                 String defaultValue = attributeObject.getString("default");
                                                                 comboBox.setSelectedItem(defaultValue);
+                                                                break;
                                                             } else {
                                                                 comboBox.setSelectedItem(null);
+                                                                break;
                                                             }
                                                         }
                                                     }
@@ -618,7 +631,7 @@ public class EditIssues extends javax.swing.JFrame {
                         System.err.println("Error parsing date.");
                     }
                 } else {
-        // Handle the case where dateChooserValue is null (e.g., show an error message or set a default value)
+                    // Handle the case where dateChooserValue is null (e.g., show an error message or set a default value)
                     // Example: filteredValues.put(dateChooserId, "default_value");
                     System.err.println("Date is null.");
                 }
@@ -652,6 +665,7 @@ public class EditIssues extends javax.swing.JFrame {
             oldName = nametext.getText();
             issueDao.editIssue();
             getAPIValues.clear();
+            home.refreshJTable();
             dispose();
         });
     }//GEN-LAST:event_okActionPerformed

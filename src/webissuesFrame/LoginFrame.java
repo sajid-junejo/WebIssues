@@ -25,6 +25,7 @@ public class LoginFrame extends javax.swing.JFrame {
 
     public LoginFrame() {
         initComponents();
+        jTable1.setDefaultEditor(Object.class, null);
         DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer();
         headerRenderer.setHorizontalAlignment(JLabel.LEFT);
         jTable1.getTableHeader().setDefaultRenderer(headerRenderer);
@@ -184,12 +185,15 @@ public class LoginFrame extends javax.swing.JFrame {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         int selectedRow = jTable1.getSelectedRow();
         address.setText(model.getValueAt(selectedRow, 1).toString());
+        if(evt.getClickCount()==2){
+            makeConnection();
+        }
     }//GEN-LAST:event_jTable1MouseClicked
 
     private void submitMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_submitMouseClicked
         makeConnection();
     }//GEN-LAST:event_submitMouseClicked
-     public void makeConnection(){
+    public void makeConnection(){
          String inputAddress = address.getText();
         if (inputAddress.isEmpty()) {
             JOptionPane.showMessageDialog(this, "The address you entered is not valid", "Warning", JOptionPane.WARNING_MESSAGE);
