@@ -1,28 +1,47 @@
 package webissuesFrame;
-
-import com.formdev.flatlaf.FlatLightLaf;
+ 
+import com.formdev.flatlaf.FlatLightLaf; 
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout; 
 import java.awt.Image;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.net.ssl.HttpsURLConnection;
-import javax.swing.ImageIcon;
+import javax.swing.ImageIcon; 
+import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import pojos.Path;
+import org.json.JSONException;
+import org.json.JSONObject; 
+import pojos.Principal;
+import pojos.SessionManager;
 
 public class LoginFrame extends javax.swing.JFrame {
-     public static String apiUrl;
-    public static String hostname;
 
+    public static String apiUrl;
+    public static String hostname;
+    String user = null;
+    char[] passwordChars = null; 
     public LoginFrame() {
         initComponents();
         jTable1.setDefaultEditor(Object.class, null);
@@ -33,6 +52,8 @@ public class LoginFrame extends javax.swing.JFrame {
         Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         ImageIcon icon1 = new ImageIcon(this.getClass().getResource("/img/play.png"));
         submit.setIcon(icon1);
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         this.setIconImage(icon);
         this.setTitle("Webissues 2.0.2");
     }
@@ -179,13 +200,15 @@ public class LoginFrame extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+    public void disposeFrame() {
+        this.dispose(); 
+    }
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
 
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         int selectedRow = jTable1.getSelectedRow();
         address.setText(model.getValueAt(selectedRow, 1).toString());
-        if(evt.getClickCount()==2){
+        if (evt.getClickCount() == 2) {
             makeConnection();
         }
     }//GEN-LAST:event_jTable1MouseClicked
@@ -193,8 +216,8 @@ public class LoginFrame extends javax.swing.JFrame {
     private void submitMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_submitMouseClicked
         makeConnection();
     }//GEN-LAST:event_submitMouseClicked
-    public void makeConnection(){
-         String inputAddress = address.getText();
+    public void makeConnection() {
+        String inputAddress = address.getText();
         if (inputAddress.isEmpty()) {
             JOptionPane.showMessageDialog(this, "The address you entered is not valid", "Warning", JOptionPane.WARNING_MESSAGE);
             return;
@@ -211,86 +234,238 @@ public class LoginFrame extends javax.swing.JFrame {
         while (retryCount < maxRetries) {
             try {
                 InetAddress[] resolvedAddresses = InetAddress.getAllByName(hostname);
-
                 System.out.println("IP Addresses for " + hostname + ":");
                 for (InetAddress addr : resolvedAddresses) {
                     System.out.println("  " + addr.getHostAddress());
                 }
-
-                // Create a URL object
                 URL url = new URL(apiUrl);
-                System.out.println("URL "+url);
-                // Open a connection to the URL
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection(); 
+                System.out.println("URL " + url);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 if (connection instanceof HttpsURLConnection) {
-                    HttpsURLConnection httpsConnection = (HttpsURLConnection) connection; 
-                    // Disable hostname verification
+                    HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
                     httpsConnection.setHostnameVerifier((host, session) -> true);
                 }
 
                 connection.setRequestMethod("GET");
-                connection.setConnectTimeout(1000); //set timeout to 5 seconds
-                
-                connection.connect(); 
-                // Check the HTTP response code
-                int responseCode = connection.getResponseCode(); 
-                if (responseCode == HttpURLConnection.HTTP_BAD_REQUEST) {
-                    AuthenticationFrame auth = new AuthenticationFrame();
-                    auth.setLocationRelativeTo(null);
-                    auth.setVisible(true);
+                connection.setConnectTimeout(1000);
+                connection.connect();
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_BAD_REQUEST
+                        || responseCode == HttpURLConnection.HTTP_MOVED_PERM
+                        || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+                    // Show the authentication panel
+                    showAuthenticationPanel();
                     break;
-                }else if (responseCode == HttpURLConnection.HTTP_MOVED_PERM) {  
-                     AuthenticationFrame auth = new AuthenticationFrame();
-                    auth.setLocationRelativeTo(null);
-                    auth.setVisible(true);
-                    break;
-                }else if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {  
-                     AuthenticationFrame auth = new AuthenticationFrame();
-                    auth.setLocationRelativeTo(null);
-                    auth.setVisible(true);
-                    break;
-                }
-                else { 
+                } else {
                     retryCount++;
                     errorOccurred = true;
                 }
                 connection.disconnect();
 
-            }
-            catch (UnknownHostException e) {
+            } catch (UnknownHostException e) {
                 JOptionPane.showMessageDialog(this, "Failed to resolve hostname: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                break; 
+                break;
             } catch (MalformedURLException e) {
                 JOptionPane.showMessageDialog(this, "Invalid URL: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                break; 
-            } catch (IOException e) { 
-                if(retryCount >=1)
-                {
+                break;
+            } catch (IOException e) {
+                if (retryCount >= 1) {
                     e.printStackTrace();
                     JOptionPane.showMessageDialog(this, "Error while connecting to the URL", "Error", JOptionPane.ERROR_MESSAGE);
                     break;
+                } else {
+                    apiUrl = "http://" + hostname + "/webissues/server/api/login.php";
+                    retryCount++;
+                    errorOccurred = true;
                 }
-                else {
-                apiUrl = "http://" + hostname + "/webissues/server/api/login.php";
-                retryCount++;
-                errorOccurred = true;
-                }
-                }
+            }
         }
 
-        if (errorOccurred && retryCount >= maxRetries){
+        if (errorOccurred && retryCount >= maxRetries) {
             SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(this, "Error while connecting to the URL", "Error", JOptionPane.ERROR_MESSAGE); 
-        });
+                JOptionPane.showMessageDialog(this, "Error while connecting to the URL", "Error", JOptionPane.ERROR_MESSAGE);
+            });
         }
     }
+
+  private void showAuthenticationPanel() {
+//    Logger logger = Logger.getLogger(getClass().getName());
+//            long startTime = System.currentTimeMillis();
+    JPanel authenticationPanel = new JPanel(new GridBagLayout());
+
+    JLabel urlLabel = new JLabel("Hostname: "+hostname);
+    JLabel hostnameLabel = new JLabel("Server name: Genetech WI");
+    JLabel loginLabel = new JLabel("Login");
+    JLabel passwordLabel = new JLabel("Password");
+
+    JTextField emailField = new JTextField(20);
+    JPasswordField passwordField = new JPasswordField(20);
+    emailField.requestFocusInWindow();
+    
+    JCheckBox rememberPasswordCheckBox = new JCheckBox("Remember Password");
+
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(5, 5, 5, 5);
+
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.gridwidth = 2;
+    gbc.anchor = GridBagConstraints.WEST;
+    authenticationPanel.add(urlLabel, gbc);
+
+    gbc.gridx = 0;
+    gbc.gridy = 1;
+    gbc.gridwidth = 2;
+    authenticationPanel.add(hostnameLabel, gbc);
+
+    gbc.gridx = 0;
+    gbc.gridy = 2;
+    gbc.gridwidth = 1;
+    authenticationPanel.add(loginLabel, gbc);
+
+    gbc.gridx = 1;
+    authenticationPanel.add(emailField, gbc);
+
+    gbc.gridx = 0;
+    gbc.gridy = 3;
+    authenticationPanel.add(passwordLabel, gbc);
+
+    gbc.gridx = 1;
+    authenticationPanel.add(passwordField, gbc);
+
+    // Create a nested panel for rememberPasswordCheckBox
+    JPanel checkBoxPanel = new JPanel(new GridBagLayout());
+    GridBagConstraints checkBoxGbc = new GridBagConstraints();
+    checkBoxGbc.gridx = 0;
+    checkBoxGbc.gridy = 0;
+    checkBoxGbc.anchor = GridBagConstraints.WEST;
+    checkBoxPanel.add(rememberPasswordCheckBox, checkBoxGbc);
+
+    gbc.gridx = 1;
+    gbc.gridy = 4;
+    authenticationPanel.add(checkBoxPanel, gbc);
+
+    user = emailField.getText();
+    passwordChars = passwordField.getPassword();
+    passwordField.addActionListener(new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+             Logger logger = Logger.getLogger(getClass().getName());
+            long startTime = System.currentTimeMillis();
+            user = emailField.getText();
+            passwordChars = passwordField.getPassword();
+            doLogin();
+            long endTime = System.currentTimeMillis();
+            long executionTime = endTime - startTime;
+            logger.log(Level.INFO, "Execution time: " + executionTime + " milliseconds");
+        }
+    });
+
+    int results = JOptionPane.showConfirmDialog(this, authenticationPanel, "Login", JOptionPane.OK_CANCEL_OPTION);
+
+    if (results == JOptionPane.OK_OPTION) {
+        user = emailField.getText();
+        passwordChars = passwordField.getPassword();
+        doLogin();
+    }
+ //   long endTime = System.currentTimeMillis();
+//            long executionTime = endTime - startTime;
+//            logger.log(Level.INFO, "Execution time: " + executionTime + " milliseconds");
+}
+
+    public void doLogin() {
+        System.out.println("User " + user);
+        System.out.println("Password " + passwordChars);
+        String pass = new String(passwordChars);
+
+        try {
+
+            URL url = new URL(apiUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            if (connection instanceof HttpsURLConnection) {
+                HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
+                httpsConnection.setHostnameVerifier((hostname, session) -> true);
+            }
+            connection.setRequestProperty("Content-Type", "application/json");
+            String jsonInputString = "{\"login\":\"" + user + "\",\"password\":\"" + pass + "\"}";
+
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+            int responseCode = connection.getResponseCode();
+
+            if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
+                if (responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
+                    String newUrl = connection.getHeaderField("Location");
+                    if (newUrl != null) {
+                        URL redirectedUrl = new URL(newUrl);
+                        connection.disconnect();
+                        connection = (HttpURLConnection) redirectedUrl.openConnection();
+                        connection.setRequestMethod("POST");
+                        connection.setDoOutput(true);
+                        connection.setRequestProperty("Content-Type", "application/json");
+
+                        try (OutputStream os = connection.getOutputStream()) {
+                            byte[] input = jsonInputString.getBytes("utf-8");
+                            os.write(input, 0, input.length);
+                        }
+
+                        responseCode = connection.getResponseCode();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Error: Redirected without a new URL", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    String inputLine;
+                    StringBuilder response = new StringBuilder();
+
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    JSONObject jsonResponse = new JSONObject(response.toString());
+                    JSONObject result = jsonResponse.getJSONObject("result");
+                    SessionManager.getInstance().setUserId(result.getInt("userId"));
+                    SessionManager.getInstance().setCsrfToken(result.getString("csrfToken"));
+                    SessionManager.getInstance().setUserName(result.getString("userName"));
+                    SessionManager.getInstance().setUserAccess(result.getInt("userAccess"));
+                    String userName = SessionManager.getInstance().getUserName();
+                    String sessionCookie = connection.getHeaderField("Set-Cookie");
+                    if (sessionCookie != null) {
+                        SessionManager.getInstance().setCookie(sessionCookie);
+                    }
+                    connection.disconnect();
+                    HomeFrame home = new HomeFrame();
+                    home.setTitle("Welcome");
+                    home.setVisible(true);
+                    dispose();
+                    JOptionPane.showMessageDialog(this, "Successfully Logged in as " + userName);
+                    //global.getAttributeName();
+                    initializePrincipal();
+                } catch (JSONException e) {
+                    JOptionPane.showMessageDialog(this, "Username or Password Wrong", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Error, Username or Password Wrong!", "Sajid", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void initializePrincipal() {
+        Principal principal = new Principal(SessionManager.getInstance().getUserId());
+        Principal.setCurrent(principal);
+    }
     private void addressKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_addressKeyPressed
-         if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
             makeConnection();
         }
     }//GEN-LAST:event_addressKeyPressed
     private String extractHostname(String fullAddress) {
-        // Remove the protocol component
         int protocolIndex = fullAddress.indexOf("//");
         String remaining;
         if (protocolIndex != -1) {
@@ -298,8 +473,6 @@ public class LoginFrame extends javax.swing.JFrame {
         } else {
             remaining = fullAddress;
         }
-
-        // Find the first slash to extract the hostname
         int pathIndex = remaining.indexOf('/');
         if (pathIndex != -1) {
             return remaining.substring(0, pathIndex);

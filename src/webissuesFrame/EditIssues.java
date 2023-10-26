@@ -1,17 +1,14 @@
 package webissuesFrame;
-
+ 
+import DAOImpl.ConnectionDAOImpl;
 import DAOImpl.GlobalDAOImpl;
 import DAOImpl.IssuesDAOImpl;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.toedter.calendar.JDateChooser;
 import java.awt.Component;
 import java.awt.Image;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.io.BufferedReader;  
+import java.net.HttpURLConnection; 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -19,10 +16,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import org.jdesktop.swingx.JXDatePicker;
@@ -30,7 +30,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import pojos.Issues;
-import pojos.SessionManager;
+import pojos.SessionManager; 
 
 public class EditIssues extends javax.swing.JFrame {
 
@@ -40,27 +40,37 @@ public class EditIssues extends javax.swing.JFrame {
     private JTextField[] textFields;
     private JComboBox[] combobox;
     public static String oldName = null;
+    GlobalDAOImpl global = new GlobalDAOImpl();
+    IssuesDAOImpl issueDao = new IssuesDAOImpl();
+    private Map<Integer, String> userMap = new HashMap<>();
+    boolean error = false;
+    List<JSONObject> types = issueDao.typesList;
 
     public EditIssues() {
         initComponents();
+        global.fetchData();
+        issueDao.getIssueResult(id);
         this.setLocationRelativeTo(null);
         Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Edit Attributes");
         labels = new JLabel[0];
-
         textFields = new JTextField[0];
-        combobox = new JComboBox[0];
-        this.setLocationRelativeTo(null);
+        combobox = new JComboBox[0]; 
         this.setResizable(false);
+        this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         ImageIcon icon1 = new ImageIcon(this.getClass().getResource("/img/information.png"));
         info.setIcon(icon1);
+        for (JSONObject user : usersList) {
+            int id = user.optInt("id");
+            String name = user.optString("name");
+            userMap.put(id, name);
+        }
     }
+    List<JSONObject> usersList = global.getUsersList();
     String csrfToken = SessionManager.getInstance().getCsrfToken();
     int userID = SessionManager.getInstance().getUserId();
-    GlobalDAOImpl global = new GlobalDAOImpl();
     Issues issue = new Issues();
-    IssuesDAOImpl issueDao = new IssuesDAOImpl();
     int id = HomeFrame.IssueID;
     Map<Integer, Object> attributeValues = issueDao.printAttributes(id);
     Map<Integer, Object> getAttributeValues = new HashMap<>();
@@ -68,183 +78,219 @@ public class EditIssues extends javax.swing.JFrame {
     private Map<Component, Integer> componentIdMap = new HashMap<>();
     public static Map<Integer, Object> getAPIValues = new HashMap<>();
     public static String modifiedName = null;
+    ConnectionDAOImpl connectionDao = new ConnectionDAOImpl();
 
     public void EditForm() {
-        int x = 30;
-        int tx = 75;
-        int y = 10;
-        int labelWidth = 100;
-        int componentWidth = 500;
-        int height = 28;
-        int spacing = 7;
-        HttpURLConnection connection = null;
-        BufferedReader reader = null;
-        String text = null;
-        nametext.setText(IssuesDAOImpl.name);
-        issueDao.printAttributes(id);
-        try {
-            URL url = new URL(LoginFrame.apiUrl);
-            String api = url.getProtocol() + "://" + url.getHost() + "/";
-            String apiUrl = api + "server/api/global.php";
-            connection = (HttpURLConnection) new URL(apiUrl).openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            // Set headers
-            connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
-            connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
-            connection.setRequestProperty("Content-Type", "application/json");
-            String jsonInputString = "{}";
-            connection.setDoInput(true);
-            connection.setDoOutput(true);
-            connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                // Read the response
-                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String inputLine;
-                while ((inputLine = reader.readLine()) != null) {
-                    response.append(inputLine);
-                }
-                try {
-                    JSONObject jsonResponse = new JSONObject(response.toString());
-                    if (jsonResponse.has("result")) {
-                        JSONObject result = jsonResponse.getJSONObject("result");
-                        JSONArray typesArray = result.getJSONArray("types");
-                        for (int i = 0; i < typesArray.length(); i++) {
-                            JSONObject typeObject = typesArray.getJSONObject(i);
-                            int currentProjectId = typeObject.getInt("id");
-                            int typeId = HomeFrame.typeId;
-                            if (currentProjectId == typeId) {
-                                JSONArray attributesArray = typeObject.getJSONArray("attributes");
-                                for (int j = 0; j < attributesArray.length(); j++) {
-                                    JSONObject attributeObject = attributesArray.getJSONObject(j);
-                                    String attributeName = attributeObject.getString("name");
-                                    String attributeType = attributeObject.getString("type");
-                                    int attributeId = attributeObject.getInt("id");
-                                    boolean required = false;
-                                    if (attributeObject.has("required")) {
-                                        required = true;
-                                    }
-                                    // Create a label for the attribute using the "name" from the API response
-                                    JLabel label = new JLabel(attributeName + ":");
-                                    label.setBounds(tx, y, labelWidth, height);
-                                    jPanel3.add(label);
-                                    if ("USER".equals(attributeType)) {
-                                        DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
-                                        JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
-                                        comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                        y += height + spacing;
-                                        componentIdMap.put(comboBox, attributeId);
-                                        Integer projectId = HomeFrame.projectId;
-                                        List<Integer> members = global.getMembersByProjectId(projectId);
-                                        for (Integer memberId : members) {
-                                            comboBoxModel.addElement(global.getUserName(memberId));
+        SwingUtilities.invokeLater(() -> {
+            Logger logger = Logger.getLogger(getClass().getName());
+            long startTime = System.currentTimeMillis();
+            int x = 30;
+            int tx = 75;
+            int y = 10;
+            int labelWidth = 100;
+            int componentWidth = 500;
+            int height = 28;
+            int spacing = 7;
+            HttpURLConnection connection = null;
+            BufferedReader reader = null;
+            String text = null;
+            nametext.setText(IssuesDAOImpl.name);
+            typename.setText(IssuesDAOImpl.name);
+            attributeValues = issueDao.printAttributes(id);
+            List<JSONObject> resultList = global.getResultList(); 
+                    try {
+                        System.out.println("Result List : "+global.getResultList()); 
+                        for (JSONObject jsonResponse : resultList){
+                            System.out.println("Hello ");
+                        if (jsonResponse.has("result")) {
+                            JSONObject result = jsonResponse.getJSONObject("result");
+                            JSONArray typesArray = result.getJSONArray("types");
+                            for (int i = 0; i < typesArray.length(); i++) {
+                                JSONObject typeObject = typesArray.getJSONObject(i);
+                                int currentProjectId = typeObject.getInt("id");
+                                int typeId = HomeFrame.typeId;
+                                if (currentProjectId == typeId) {
+                                    JSONArray attributesArray = typeObject.getJSONArray("attributes");
+                                    Logger logger1 = Logger.getLogger(getClass().getName());
+                                    long startTime1 = System.currentTimeMillis();
+                                    logger.log(Level.INFO, "Execution time: " + (startTime1 - startTime) + " milliseconds");
+                                    for (int j = 0; j < attributesArray.length(); j++) {
+                                        JSONObject attributeObject = attributesArray.getJSONObject(j);
+                                        //System.out.println("Attributes : " + attributesArray);
+                                        String attributeName = attributeObject.getString("name");
+                                        String attributeType = attributeObject.getString("type");
+                                        int attributeId = attributeObject.getInt("id");
+                                        boolean required = false;
+                                        if (attributeObject.has("required")) {
+                                            required = true;
                                         }
-                                        for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
-                                            System.out.println("Entry key " + entry.getKey());
-                                            System.out.println("Attribute values " + entry.getValue());
-                                            if (entry.getKey() == attributeId) {
-                                                Object attributeValue = entry.getValue();
-                                                System.out.println("Entry Value " + attributeValue);
+                                        if (required) {
+                                            JLabel label = new JLabel("<html>" + attributeName + "<sup>*</sup>:</html>");
+                                            label.setBounds(tx, y, labelWidth, height);
+                                            jPanel3.add(label);
+                                        } else {
+                                            JLabel label = new JLabel(attributeName + ":");
+                                            label.setBounds(tx, y, labelWidth, height);
+                                            jPanel3.add(label);
+                                        } 
+                                        if ("USER".equals(attributeType)) {
+                                            DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
+                                            JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
+                                            comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                            y += height + spacing;
+                                            componentIdMap.put(comboBox, attributeId);
+                                            Integer projectId = HomeFrame.projectId;
+                                            List<Integer> members = global.getMembersByProjectId(projectId);
+                                            for (Integer memberId : members) {
+                                                comboBoxModel.addElement(userMap.get(memberId));
+                                            }
+                                            for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                                if (entry.getKey() == attributeId) {
+                                                    Object attributeValue = entry.getValue();
 
-                                                // Check if attributeValue is null or an empty string
-                                                if (attributeValue == null || attributeValue.toString().isEmpty()) {
-                                                    comboBox.setSelectedItem(null); // Deselect the combo box
-                                                } else {
-                                                    // Find the index of attributeValue in the combo box model
-                                                    int index = comboBoxModel.getIndexOf(attributeValue.toString());
-                                                    if (index != -1) {
-                                                        comboBox.setSelectedIndex(index);
+                                                    // Check if attributeValue is null or an empty string
+                                                    if (attributeValue == null || attributeValue.toString().isEmpty()) {
+                                                        comboBox.setSelectedItem(null); // Deselect the combo box
                                                     } else {
-                                                        // Handle the case where attributeValue doesn't exist in the model
-                                                        comboBox.setSelectedItem(null); // or choose a default selection
+                                                        // Find the index of attributeValue in the combo box model
+                                                        int index = comboBoxModel.getIndexOf(attributeValue.toString());
+                                                        if (index != -1) {
+                                                            comboBox.setSelectedIndex(index);
+                                                        } else {
+                                                            comboBox.setSelectedItem(null);
+                                                        }
                                                     }
                                                 }
                                             }
-                                        }
 
-                                        getAttributeValues.put(attributeId, comboBox.getSelectedItem());
-                                        jPanel3.add(comboBox);
-                                        System.out.println("Attribute Id " + attributeId);
-                                    } else if ("ENUM".equals(attributeType)) {
-                                        DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
-                                        JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
-                                        comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                        y += height + spacing;
-                                        componentIdMap.put(comboBox, attributeId);
-                                        if (attributeObject.has("items")) {
-                                            JSONArray itemsArray = attributeObject.getJSONArray("items");
-                                            for (int k = 0; k < itemsArray.length(); k++) {
-                                                comboBoxModel.addElement(itemsArray.getString(k));
-                                                System.out.println("Elements : " + itemsArray.getString(k));
+                                            getAttributeValues.put(attributeId, comboBox.getSelectedItem());
+                                            jPanel3.add(comboBox);
+                                        } else if ("ENUM".equals(attributeType)) {
+                                            DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
+                                            JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
+                                            comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                            y += height + spacing;
+                                            componentIdMap.put(comboBox, attributeId); 
+                                            if (attributeObject.has("items")) {
+                                                JSONArray itemsArray = attributeObject.getJSONArray("items");
+                                                for (int k = 0; k < itemsArray.length(); k++) {
+                                                    comboBoxModel.addElement(itemsArray.getString(k));
+                                                }
                                             }
-                                        }
-                                        for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
-                                            System.out.println("Value " + entry.getValue());
-                                            Integer keyValue = entry.getKey();
-                                            String value = (String) entry.getValue();
-
-                                            if (keyValue.equals(attributeId)) {
-                                                if (value != null && (value.length() > 1 || !value.isEmpty())) {
-                                                    System.out.println("Value length: " + value.length()); // Print the length of the value
-                                                    if (!value.isEmpty()) {
-                                                        System.out.println("-------checkingcccccccccccccccc : " + value);
-                                                        comboBox.setSelectedItem(value.toString());
-                                                        break;
-                                                    }
-                                                } else {
-                                                    if (attributeObject.has("default")) {
-                                                        System.out.println("-------checkingcccccccccccccccc -> " + value);
-                                                        String defaultValue = attributeObject.getString("default");
-                                                        comboBox.setSelectedItem(defaultValue);
-                                                        break;
+                                            for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                                Integer keyValue = entry.getKey();
+                                                String values = (String) entry.getValue();
+                                                String value = values.trim(); 
+                                                if (keyValue.equals(attributeId)) {
+                                                    if (value != null && (value.length() > 1 || !value.isEmpty())) {
+                                                        if (!value.isEmpty()) { 
+                                                            comboBox.setSelectedItem(value.toString());
+                                                            break;
+                                                        }
                                                     } else {
-                                                        System.out.println("-------checkingcccccccccccccccc = " + value);
-                                                        comboBox.setSelectedItem(null);
-                                                        break;
+                                                        if (attributeObject.has("default")) {
+                                                            String defaultValue = attributeObject.getString("default");
+                                                            comboBox.setSelectedItem(defaultValue);
+                                                            break;
+                                                        } else {
+                                                            comboBox.setSelectedItem(null);
+                                                            break;
+                                                        }
                                                     }
+
                                                 }
-
                                             }
-                                        }
 
-                                        System.out.println("Attribute Id " + attributeId);
-                                        getAttributeValues.put(attributeId, comboBox.getSelectedItem());
-                                        jPanel3.add(comboBox);
-                                    } else if ("NUMERIC".equals(attributeType)) {
-                                        double minValue = 0.0;
+                                            getAttributeValues.put(attributeId, comboBox.getSelectedItem());
+                                            jPanel3.add(comboBox);
+                                        } else if ("NUMERIC".equals(attributeType)) {
+                                            double minValue = 0.0;
 
-                                        if (attributeObject.has("min-value")) {
-                                            try {
+                                            if (attributeObject.has("min-value")) {
+                                                try {
 
-                                                String minValStr = attributeObject.getString("min-value");
-                                                minValue = Double.parseDouble(minValStr);
+                                                    String minValStr = attributeObject.getString("min-value");
+                                                    minValue = Double.parseDouble(minValStr);
 
-                                                if (minValue == (int) minValue) {
-                                                    int intValue = (int) minValue;
-                                                    minValue = intValue;
+                                                    if (minValue == (int) minValue) {
+                                                        int intValue = (int) minValue;
+                                                        minValue = intValue;
+                                                    }
+                                                } catch (NumberFormatException e) {
+                                                    e.printStackTrace();
                                                 }
-                                            } catch (NumberFormatException e) {
-                                                e.printStackTrace();
                                             }
-                                        }
 
-                                        System.out.println("Attribute Id " + attributeId);
-
-                                        if (attributeObject.has("max-value")) {
-                                            double maxValue = 0.0;
-                                            try {
-                                                String maxValStr = attributeObject.getString("max-value");
-                                                maxValue = Double.parseDouble(maxValStr);
-                                                if (maxValue == (int) maxValue) {
-                                                    int intValue = (int) maxValue;
-                                                    maxValue = intValue;
+                                            if (attributeObject.has("max-value")) {
+                                                double maxValue = 0.0;
+                                                try {
+                                                    String maxValStr = attributeObject.getString("max-value");
+                                                    maxValue = Double.parseDouble(maxValStr);
+                                                    if (maxValue == (int) maxValue) {
+                                                        int intValue = (int) maxValue;
+                                                        maxValue = intValue;
+                                                    }
+                                                } catch (NumberFormatException e) {
+                                                    e.printStackTrace();
                                                 }
-                                            } catch (NumberFormatException e) {
-                                                e.printStackTrace();
-                                            }
-                                            if (maxValue > 10) {
+                                                if (maxValue > 10) {
+                                                    JTextField textField = new JTextField();
+                                                    textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                                    y += height + spacing;
+                                                    componentIdMap.put(textField, attributeId);
+                                                    for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                                        if (entry.getKey() == attributeId) {
+                                                            if (entry.getValue() != null) {
+                                                                textField.setText(entry.getValue().toString());
+                                                            } else {
+                                                                if (attributeObject.has("default")) {
+                                                                    String defaultValue = attributeObject.getString("default");
+                                                                    textField.setText(defaultValue);
+                                                                } else {
+                                                                    textField.setText(null);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    getAttributeValues.put(attributeId, textField.getText());
+                                                    jPanel3.add(textField);
+
+                                                } else {
+                                                    DefaultComboBoxModel<Integer> comboBoxModel = new DefaultComboBoxModel<>();
+                                                    JComboBox<Integer> comboBox = new JComboBox<>(comboBoxModel);
+                                                    comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                                    y += height + spacing;
+                                                    componentIdMap.put(comboBox, attributeId);
+                                                    for (int num = (int) minValue; num <= (int) maxValue; num++) {
+                                                        comboBoxModel.addElement(num);
+                                                    }
+                                                    for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                                        if (entry.getKey() == attributeId) {
+                                                            if (entry.getValue() != null) {
+                                                                try {
+                                                                    int value = Integer.parseInt(entry.getValue().toString());
+                                                                    comboBox.setSelectedItem(value);
+                                                                    comboBox.repaint();
+                                                                } catch (NumberFormatException e) {
+                                                                    e.printStackTrace();
+                                                                }
+                                                                break;
+                                                            } else {
+                                                                if (attributeObject.has("default")) {
+                                                                    Object defaultValue = attributeObject.getInt("default"); // Assuming it's an integer
+                                                                    comboBox.setSelectedItem(defaultValue);
+                                                                    break;
+                                                                } else {
+                                                                    comboBox.setSelectedItem(null);
+                                                                    break;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    getAttributeValues.put(attributeId, comboBox.getSelectedItem());
+                                                    jPanel3.add(comboBox);
+                                                }
+                                            } else {
                                                 JTextField textField = new JTextField();
                                                 textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                                                 y += height + spacing;
@@ -256,7 +302,12 @@ public class EditIssues extends javax.swing.JFrame {
                                                         } else {
                                                             if (attributeObject.has("default")) {
                                                                 String defaultValue = attributeObject.getString("default");
-                                                                textField.setText(defaultValue);
+                                                                try {
+                                                                    int intValue = Integer.parseInt(defaultValue);
+                                                                    textField.setText(Integer.toString(intValue)); // Store as an integer and set as text
+                                                                } catch (NumberFormatException e) {
+                                                                    e.printStackTrace();
+                                                                }
                                                             } else {
                                                                 textField.setText(null);
                                                             }
@@ -265,38 +316,8 @@ public class EditIssues extends javax.swing.JFrame {
                                                 }
                                                 getAttributeValues.put(attributeId, textField.getText());
                                                 jPanel3.add(textField);
-                                                System.out.println("Attribute with type NUMERIC (max-value > 10) found: " + attributeObject.toString());
-                                            } else {
-                                                DefaultComboBoxModel<Integer> comboBoxModel = new DefaultComboBoxModel<>();
-                                                JComboBox<Integer> comboBox = new JComboBox<>(comboBoxModel);
-                                                comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                                y += height + spacing;
-                                                componentIdMap.put(comboBox, attributeId);
-                                                for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
-                                                    if (entry.getKey() == attributeId) {
-                                                        if (entry.getValue() != null) {
-                                                            comboBox.setSelectedItem(entry.getValue());
-                                                            break;
-                                                        } else {
-                                                            if (attributeObject.has("default")) {
-                                                                String defaultValue = attributeObject.getString("default");
-                                                                comboBox.setSelectedItem(defaultValue);
-                                                                break;
-                                                            } else {
-                                                                comboBox.setSelectedItem(null);
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                for (int num = (int) minValue; num <= (int) maxValue; num++) {
-                                                    comboBoxModel.addElement(num);
-                                                }
-                                                getAttributeValues.put(attributeId, comboBox.getSelectedItem());
-                                                jPanel3.add(comboBox);
-                                                System.out.println("Attribute with type NUMERIC (max-value <= 10) found: " + attributeObject.toString());
                                             }
-                                        } else {
+                                        } else if ("TEXT".equals(attributeType)) {
                                             JTextField textField = new JTextField();
                                             textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                                             y += height + spacing;
@@ -308,14 +329,7 @@ public class EditIssues extends javax.swing.JFrame {
                                                     } else {
                                                         if (attributeObject.has("default")) {
                                                             String defaultValue = attributeObject.getString("default");
-                                                            try {
-                                                                // Try to parse the defaultValue as an integer
-                                                                int intValue = Integer.parseInt(defaultValue);
-                                                                textField.setText(Integer.toString(intValue)); // Store as an integer and set as text
-                                                            } catch (NumberFormatException e) {
-                                                                // Handle the case where defaultValue is not a valid integer
-                                                                e.printStackTrace(); // Print an error message or handle as needed
-                                                            }
+                                                            textField.setText(defaultValue);
                                                         } else {
                                                             textField.setText(null);
                                                         }
@@ -324,84 +338,62 @@ public class EditIssues extends javax.swing.JFrame {
                                             }
                                             getAttributeValues.put(attributeId, textField.getText());
                                             jPanel3.add(textField);
-                                            System.out.println("Attribute with type NUMERIC (max-value not present) found: " + attributeObject.toString());
-                                        }
-                                    } else if ("TEXT".equals(attributeType)) {
-                                        JTextField textField = new JTextField();
-                                        textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                        y += height + spacing;
-                                        componentIdMap.put(textField, attributeId);
-                                        System.out.println("Attribute Id " + attributeId);
-                                        for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
-                                            if (entry.getKey() == attributeId) {
-                                                if (entry.getValue() != null) {
-                                                    textField.setText(entry.getValue().toString());
-                                                } else {
-                                                    if (attributeObject.has("default")) {
+                                        } else if ("DATETIME".equals(attributeType)) {
+                                            JDateChooser dateChooser = new JDateChooser();
+                                            dateChooser.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                            y += height + spacing;
+                                            componentIdMap.put(dateChooser, attributeId);
+
+                                            for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
+                                                if (entry.getKey() == attributeId) {
+                                                    String dateValue = entry.getValue() != null ? entry.getValue().toString().trim() : null;
+                                                    if (dateValue != null && !dateValue.isEmpty()) {
+                                                        try {
+                                                            Date selectedDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(dateValue);
+                                                            String formattedDate = new SimpleDateFormat("yyyy-MM-dd").format(selectedDate);
+                                                            dateChooser.setDate(new SimpleDateFormat("yyyy-MM-dd").parse(formattedDate));
+                                                        } catch (ParseException e) {
+                                                            e.printStackTrace();
+                                                        }
+                                                    } else if (attributeObject.has("default")) {
                                                         String defaultValue = attributeObject.getString("default");
-                                                        textField.setText(defaultValue);
-                                                    } else {
-                                                        textField.setText(null);
+                                                        try {
+                                                            Date defaultDate = new SimpleDateFormat("yyyy-MM-dd").parse(defaultValue);
+                                                            dateChooser.setDate(defaultDate);
+                                                        } catch (ParseException e) {
+                                                            e.printStackTrace();
+                                                        }
                                                     }
                                                 }
                                             }
+                                            getAttributeValues.put(attributeId, dateChooser.getDate());
+                                            jPanel3.add(dateChooser);
                                         }
-                                        getAttributeValues.put(attributeId, textField.getText());
-                                        jPanel3.add(textField);
-                                        System.out.println("Attribute with type TEXT found: " + attributeObject.toString());
-                                    } else if ("DATETIME".equals(attributeType)) {
-                                        JDateChooser dateChooser = new JDateChooser();
-                                        dateChooser.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                        y += height + spacing;
-                                        componentIdMap.put(dateChooser, attributeId);
 
-                                        System.out.println("Attribute Id " + attributeId);
-
-                                        for (Map.Entry<Integer, Object> entry : attributeValues.entrySet()) {
-                                            if (entry.getKey() == attributeId) {
-                                                String dateValue = entry.getValue() != null ? entry.getValue().toString().trim() : null;
-                                                System.out.println("Date " + dateValue);
-                                                if (dateValue != null && !dateValue.isEmpty()) {
-                                                    try {
-                                                        Date selectedDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(dateValue);
-                                                        String formattedDate = new SimpleDateFormat("yyyy-MM-dd").format(selectedDate);
-                                                        dateChooser.setDate(new SimpleDateFormat("yyyy-MM-dd").parse(formattedDate));
-                                                    } catch (ParseException e) {
-                                                        e.printStackTrace();
-                                                    }
-                                                } else if (attributeObject.has("default")) {
-                                                    String defaultValue = attributeObject.getString("default");
-                                                    try {
-                                                        Date defaultDate = new SimpleDateFormat("yyyy-MM-dd").parse(defaultValue);
-                                                        dateChooser.setDate(defaultDate);
-                                                    } catch (ParseException e) {
-                                                        e.printStackTrace();
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        getAttributeValues.put(attributeId, dateChooser.getDate());
-                                        jPanel3.add(dateChooser);
-                                        System.out.println("Attribute with type DATETIME found: " + attributeObject.toString());
                                     }
-
+                                    long endTime = System.currentTimeMillis();
+                                    logger.log(Level.INFO, "total Time Second : " + (endTime - startTime1) + " milliseconds");
+                                    long executionTime = endTime - startTime1;
+                                    logger.log(Level.INFO, "Execution time: " + executionTime + " milliseconds");
                                 }
                             }
+                        } else {
+                            logger.log(Level.SEVERE, "Error: 'result' not found in the JSON response.");
                         }
-                    } else {
-                        System.err.println("Error: 'result' not found in the JSON response.");
                     }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                System.err.println("Error: HTTP Response Code " + responseCode);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        jPanel3.revalidate();
-        jPanel3.repaint();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+//                } else {
+//                    System.err.println("Error: HTTP Response Code " + responseCode);
+//                } 
+            jPanel3.revalidate();
+            jPanel3.repaint();
+            long endTime = System.currentTimeMillis();
+            logger.log(Level.INFO, "End Time Last time: " + endTime + " milliseconds");
+            long executionTime = endTime - startTime;
+            logger.log(Level.INFO, "Execution time Last: " + executionTime + " milliseconds");
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -411,7 +403,6 @@ public class EditIssues extends javax.swing.JFrame {
         jPanel1 = new javax.swing.JPanel();
         name = new javax.swing.JLabel();
         jSeparator1 = new javax.swing.JSeparator();
-        jSeparator2 = new javax.swing.JSeparator();
         jTabbedPane1 = new javax.swing.JTabbedPane();
         jPanel2 = new javax.swing.JPanel();
         clmname = new javax.swing.JLabel();
@@ -462,10 +453,11 @@ public class EditIssues extends javax.swing.JFrame {
                     .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, 657, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addGroup(jPanel2Layout.createSequentialGroup()
-                            .addGap(34, 34, 34)
+                            .addGap(86, 86, 86)
                             .addComponent(clmname, javax.swing.GroupLayout.DEFAULT_SIZE, 74, Short.MAX_VALUE)
-                            .addGap(91, 91, 91)
-                            .addComponent(value, javax.swing.GroupLayout.DEFAULT_SIZE, 492, Short.MAX_VALUE))
+                            .addGap(38, 38, 38)
+                            .addComponent(value, javax.swing.GroupLayout.PREFERRED_SIZE, 357, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(136, 136, 136))
                         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                             .addContainerGap()
                             .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
@@ -519,7 +511,6 @@ public class EditIssues extends javax.swing.JFrame {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jSeparator1)
-            .addComponent(jSeparator2)
             .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 741, Short.MAX_VALUE)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
@@ -558,9 +549,7 @@ public class EditIssues extends javax.swing.JFrame {
                     .addComponent(nametext))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 351, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jSeparator2)
-                .addGap(14, 14, 14)
+                .addGap(22, 22, 22)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(2, 2, 2)
@@ -587,21 +576,134 @@ public class EditIssues extends javax.swing.JFrame {
     private void nametextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nametextActionPerformed
 
     }//GEN-LAST:event_nametextActionPerformed
+
+    private boolean isNumeric(String input) {
+        String alphabetRegex = ".*[a-zA-Z].*";
+        return input.matches(alphabetRegex);
+    }
+
     public void printComboBoxNames() {
         Component[] components = jPanel3.getComponents();
         for (Component component : components) {
+            
             if (component instanceof JComboBox) {
                 JComboBox<?> comboBox = (JComboBox<?>) component;
                 Integer comboBoxId = componentIdMap.get(comboBox);
                 Object comboBoxValue = comboBox.getSelectedItem();
-                filteredValues.put(comboBoxId, comboBoxValue);
-                //System.out.println("Updated Key : " + comboBoxId + " Updated Value :" + comboBoxValue);
+                String attributeName = null;
+                for (JSONObject type : types) {
+                    try {
+                        if (type.has("attributes")) {
+                            JSONArray typeAttributes = type.getJSONArray("attributes");
+                            for (int j = 0; j < typeAttributes.length(); j++) {
+                                JSONObject typeAttribute = typeAttributes.getJSONObject(j);
+                                int typeAttrId = typeAttribute.getInt("id");
+                                String typeAttrName = typeAttribute.optString("name", " ");
+                                if (typeAttrId == comboBoxId) {
+                                    attributeName = typeAttrName;
+                                }
+                            }
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (global.getRequired(comboBoxId)) {
+                    if (comboBoxValue != null) {
+                        filteredValues.put(comboBoxId, comboBoxValue);
+                    } else {
+                        JOptionPane.showMessageDialog(this, attributeName + " cannot be null.", "Error", JOptionPane.ERROR_MESSAGE);
+                        error = true;
+                    }
+                } else if (comboBoxValue == null) {
+
+                    if (global.getDefaultValue(comboBoxId) != null) {
+                        filteredValues.put(comboBoxId, comboBoxValue);
+                    }
+                } else {
+                    filteredValues.put(comboBoxId, comboBoxValue);
+                }
             } else if (component instanceof JTextField) {
                 JTextField textField = (JTextField) component;
                 Integer textFieldId = componentIdMap.get(textField);
-                String textFieldValue = textField.getText();
-                filteredValues.put(textFieldId, textFieldValue);
-                //System.out.println("Updated Key : " + textFieldId + "Updated Value :" + textFieldValue);
+                String textFieldValue = textField.getText().trim();
+                System.out.println(" TextField Value : " + textFieldValue);
+                String attributeName = null;
+                for (JSONObject type : types) {
+                    try {
+                        if (type.has("attributes")) {
+                            JSONArray typeAttributes = type.getJSONArray("attributes");
+                            for (int j = 0; j < typeAttributes.length(); j++) {
+                                JSONObject typeAttribute = typeAttributes.getJSONObject(j);
+                                int typeAttrId = typeAttribute.getInt("id");
+                                String typeAttrName = typeAttribute.optString("name", " ");
+                                if (typeAttrId == textFieldId) {
+                                    attributeName = typeAttrName;
+                                }
+                            }
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                if (global.getType(textFieldId).equals("NUMERIC")) {
+                    if (isNumeric(textFieldValue)) {
+                        JOptionPane.showMessageDialog(this, attributeName + " is a Numeric Type .", "Error", JOptionPane.ERROR_MESSAGE);
+                        error = true;
+                    } else {
+                        //JOptionPane.showMessageDialog(this, attributeName + " is a Numeric Type .", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+
+                if (global.getRequired(textFieldId)) {
+                    if (textFieldValue != null && !textFieldValue.isEmpty()) {
+                        Integer decimalValue = global.getDecimal(textFieldId);
+                        if (decimalValue != null && decimalValue > 0) {
+                            if (textFieldValue.contains(".")) {
+                                textFieldValue = textFieldValue.substring(0, textFieldValue.indexOf(".")) + ".";
+                            } else {
+                                textFieldValue += ".";
+                            }
+                            for (int i = 0; i < decimalValue; i++) {
+                                textFieldValue += "0";
+                            }
+                        }
+
+                        filteredValues.put(textFieldId, textFieldValue);
+                    } else if (textFieldValue == null || textFieldValue.trim().isEmpty()) {
+
+                        if (global.getDefaultValue(textFieldId) != null) {
+                            filteredValues.put(textFieldId, global.getDefaultValue(textFieldId));
+                        } else {
+                            JOptionPane.showMessageDialog(this, attributeName + " cannot be null.", "Error", JOptionPane.ERROR_MESSAGE);
+                            error = true;
+                        }
+
+                    } else {
+                        JOptionPane.showMessageDialog(this, attributeName + " cannot be null.", "Error", JOptionPane.ERROR_MESSAGE);
+                        error = true;
+                    }
+                } else if (textFieldValue == null && textFieldValue.trim().isEmpty()) {
+
+                    if (global.getDefaultValue(textFieldId) != null) {
+                        filteredValues.put(textFieldId, global.getDefaultValue(textFieldId));
+                    }
+                } else {
+                    Integer decimalValue = global.getDecimal(textFieldId);
+                    if (decimalValue != null && decimalValue > 0) {
+                        if (textFieldValue.contains(".")) {
+                            textFieldValue = textFieldValue.substring(0, textFieldValue.indexOf(".")) + ".";
+                        } else {
+                            textFieldValue += ".";
+                        }
+                        for (int i = 0; i < decimalValue; i++) {
+                            textFieldValue += "0";
+                        }
+                    }
+
+                    filteredValues.put(textFieldId, textFieldValue);
+                }
             } else if (component instanceof JDateChooser) {
                 JDateChooser dateChooser = (JDateChooser) component;
                 Integer dateChooserId = componentIdMap.get(dateChooser);
@@ -610,10 +712,9 @@ public class EditIssues extends javax.swing.JFrame {
                 if (dateChooserValue != null) {
                     SimpleDateFormat inputDateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
 
-                    Date parsedDate = null; // Initialize parsedDate as null
-
+                    Date parsedDate = null;
                     try {
-                        parsedDate = inputDateFormat.parse(dateChooserValue.toString()); // Use toString() to get the date as a string
+                        parsedDate = inputDateFormat.parse(dateChooserValue.toString());
                     } catch (ParseException e) {
                         e.printStackTrace();
                     }
@@ -622,17 +723,11 @@ public class EditIssues extends javax.swing.JFrame {
                         SimpleDateFormat outputDateFormat = new SimpleDateFormat("yyyy-MM-dd");
                         String formattedDateStr = outputDateFormat.format(parsedDate);
 
-                        // Make sure that formattedDateStr is in the correct format
-                        System.out.println("Formatted Date: " + formattedDateStr);
-
-                        filteredValues.put(dateChooserId, formattedDateStr); // Store as a string
+                        filteredValues.put(dateChooserId, formattedDateStr);
                     } else {
-                        // Handle the case where parsing failed (e.g., show an error message)
                         System.err.println("Error parsing date.");
                     }
                 } else {
-                    // Handle the case where dateChooserValue is null (e.g., show an error message or set a default value)
-                    // Example: filteredValues.put(dateChooserId, "default_value");
                     System.err.println("Date is null.");
                 }
             }
@@ -641,38 +736,44 @@ public class EditIssues extends javax.swing.JFrame {
     }
     private void okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okActionPerformed
         SwingUtilities.invokeLater(() -> {
-            printComboBoxNames();
-            home.refreshJTable();
-            for (Map.Entry<Integer, Object> entry : getAttributeValues.entrySet()) {
-                Integer key = entry.getKey();
-                Object value = entry.getValue();
-                if (value == null && filteredValues.containsKey(key)) {
-                    Object filteredValue = filteredValues.get(key);
-                    if (filteredValue != null) {
-                        System.out.println("Key: " + key + ", Value from filteredValues: " + filteredValue);
-                        getAPIValues.put(key, filteredValue);
+            String updatedName = nametext.getText().trim();
+            if (updatedName == null || updatedName.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Name cannot be null.", "Error", JOptionPane.ERROR_MESSAGE);
+            } else {
+                printComboBoxNames();
+                if (error) {
+
+                }else{
+                    
+                    for (Map.Entry<Integer, Object> entry : getAttributeValues.entrySet()) {
+                        Integer key = entry.getKey();
+                        Object value = entry.getValue();
+                        if (value == null && filteredValues.containsKey(key)) {
+                            Object filteredValue = filteredValues.get(key);
+                            if (filteredValue != null) {
+                                getAPIValues.put(key, filteredValue);
+                            }
+                        }
+                        if (value != null && filteredValues.containsKey(key)) {
+                            Object filteredValue = filteredValues.get(key);
+                            if (!value.equals(filteredValue)) {
+                                getAPIValues.put(key, filteredValue);
+                            }
+                        }
                     }
+                    oldName = nametext.getText().trim();
+                    issueDao.editIssue();
+                    getAPIValues.clear();
+                    home.refreshJTable();
+                   // dispose();
                 }
-                if (value != null && filteredValues.containsKey(key)) {
-                    Object filteredValue = filteredValues.get(key);
-                    if (!value.equals(filteredValue)) {
-                        System.out.println("Key: " + key + ", Value from filteredValues: " + filteredValue);
-                        getAPIValues.put(key, filteredValue);
-                    }
-                }
+                dispose();
             }
-            //printComboBoxNames();
-            oldName = nametext.getText();
-            issueDao.editIssue();
-            getAPIValues.clear();
-            home.refreshJTable();
-            dispose();
         });
     }//GEN-LAST:event_okActionPerformed
 
     private void cancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelActionPerformed
         dispose();
-        System.out.println("project id : " + HomeFrame.projectId);
     }//GEN-LAST:event_cancelActionPerformed
 
     public static void main(String args[]) {
@@ -682,6 +783,7 @@ public class EditIssues extends javax.swing.JFrame {
                 new EditIssues().setVisible(true);
             }
         });
+
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -693,7 +795,6 @@ public class EditIssues extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JSeparator jSeparator1;
-    private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JLabel name;

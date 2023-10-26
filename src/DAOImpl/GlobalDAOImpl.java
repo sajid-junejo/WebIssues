@@ -17,297 +17,379 @@ import webissuesFrame.LoginFrame;
 
 public class GlobalDAOImpl implements GlobalDAO {
 
+    private List<JSONObject> typesList;
+    private List<JSONObject> resultList;
+    private List<JSONObject> userList;
+
+    public GlobalDAOImpl() {
+        typesList = new ArrayList<>();
+        userList = new ArrayList<>();
+        resultList = new ArrayList<>();
+        fetchData();
+        //result();
+    }
+
+    public List<JSONObject> getResultList() {
+        return resultList;
+    }
+
+    public List<JSONObject> getTypesList() {
+        return typesList;
+    }
+
+    public List<JSONObject> getUsersList() {
+        return userList;
+    }
+    ConnectionDAOImpl issueDao = new ConnectionDAOImpl();
+
     @Override
     public String getUserName(int userId) {
-        HttpURLConnection connection = null;
-        BufferedReader reader = null;
-        String userName = null;
         try {
-            URL url = new URL(LoginFrame.apiUrl);
-            String api = url.getProtocol() + "://" + url.getHost() + "/";
-            String apiUrl = api + "server/api/global.php";
-            //String apiUrl = api + "server/api/global.php";
-            // Open a connection to the API endpoint using apiUrl
-            connection = (HttpURLConnection) new URL(apiUrl).openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            // Set headers
-            connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
-            connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
-            connection.setRequestProperty("Content-Type", "application/json");
-            String jsonInputString = "{}";
+            for (JSONObject jsonResponse : resultList) {
+                if (jsonResponse != null && jsonResponse.has("result")) {
+                    JSONObject result = jsonResponse.getJSONObject("result");
+                    JSONArray usersArray = result.getJSONArray("users");
 
-            connection.setDoInput(true);
-            connection.setDoOutput(true);
+                    for (int i = 0; i < usersArray.length(); i++) {
+                        JSONObject user = usersArray.getJSONObject(i);
+                        int id = user.getInt("id");
 
-            connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+                        if (id == userId) {
+                            return user.getString("name");
+                        }
+                    }
+                } else {
+                    System.err.println("Error: 'result' not found in the JSON response.");
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+ 
 
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                // Read the response
-                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String inputLine;
-                while ((inputLine = reader.readLine()) != null) {
-                    response.append(inputLine);
+    @Override
+    public void fetchData() {
+        String apiUrl = issueDao.buildApiUrl("global.php");
+        String jsonInputString = "{}";
+        HttpURLConnection connection = issueDao.establishConnection(apiUrl);
+        if (connection != null) {
+            try {
+                JSONObject jsonResponse = issueDao.makeRequestAndGetResponse(connection, jsonInputString);
+
+                if (jsonResponse != null && jsonResponse.has("result")) {
+                    resultList.clear();
+                    userList.clear();
+                    typesList.clear();
+                    JSONObject result = jsonResponse.getJSONObject("result");
+                    resultList.add(jsonResponse);
+                    JSONArray usersArray = result.getJSONArray("users");
+
+                    for (int i = 0; i < usersArray.length(); i++) {
+                        JSONObject userJSON = usersArray.getJSONObject(i);
+                        userList.add(userJSON);
+                    }
+                    if (result.has("types")) {
+                        JSONArray typesArray = result.getJSONArray("types");
+
+                        for (int i = 0; i < typesArray.length(); i++) {
+                            JSONObject type = typesArray.getJSONObject(i);
+                            typesList.add(type);
+                        }
+                    } else {
+                        System.err.println("Error: 'types' not found in the JSON response.");
+                    }
+                } else {
+                    System.err.println("Error: 'result' not found in the JSON response.");
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+        } else {
+            System.err.println("Failed to establish a connection.");
+        }
+    }
+
+    @Override
+    public boolean getRequired(int attributeId) {
+        try {
+            for (JSONObject jsonResponse : resultList) {
+                if (jsonResponse == null || !jsonResponse.has("result")) {
+                    System.err.println("Error: 'result' not found in the JSON response.");
+                    return false;
                 }
 
-                try {
-                    JSONObject jsonResponse = new JSONObject(response.toString());
-                    if (jsonResponse.has("result")) {
-                        JSONObject result = jsonResponse.getJSONObject("result");
-                        JSONArray usersArray = result.getJSONArray("users");
+                JSONObject result = jsonResponse.getJSONObject("result");
 
-                        // Iterate through the users array to find the matching ID
-                        for (int i = 0; i < usersArray.length(); i++) {
-                            JSONObject user = usersArray.getJSONObject(i);
-                            int id = user.getInt("id");
-                            if (id == userId) {
-                                userName = user.getString("name");
-                                break;
+                if (!result.has("types")) {
+                    System.err.println("Error: 'types' not found in the JSON response.");
+                    return false;
+                }
+
+                JSONArray typesArray = result.getJSONArray("types");
+
+                for (int i = 0; i < typesArray.length(); i++) {
+                    JSONObject type = typesArray.getJSONObject(i);
+
+                    if (type.has("attributes")) {
+                        JSONArray attributesArray = type.getJSONArray("attributes");
+
+                        for (int j = 0; j < attributesArray.length(); j++) {
+                            JSONObject attribute = attributesArray.getJSONObject(j);
+                            int id = attribute.getInt("id");
+
+                            if (id == attributeId && attribute.has("required")) {
+                                return attribute.getInt("required") == 1;
+                            } 
+                        }
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public Integer getDecimal(int attributeId) { 
+        try { 
+            for (JSONObject jsonResponse : resultList) {
+                if (jsonResponse != null && jsonResponse.has("result")) {
+                    JSONObject result = jsonResponse.getJSONObject("result");
+
+                    if (result.has("types")) {
+                        JSONArray typesArray = result.getJSONArray("types");
+
+                        for (int i = 0; i < typesArray.length(); i++) {
+                            JSONObject type = typesArray.getJSONObject(i);
+
+                            if (type.has("attributes")) {
+                                JSONArray attributesArray = type.getJSONArray("attributes");
+
+                                for (int j = 0; j < attributesArray.length(); j++) {
+                                    JSONObject attribute = attributesArray.getJSONObject(j);
+                                    int id = attribute.getInt("id");
+
+                                    if (id == attributeId) {
+                                        if (attribute.has("decimal")) {
+                                            return attribute.getInt("decimal");
+                                        } 
+                                    }
+                                }
                             }
                         }
                     } else {
-                        System.err.println("Error: 'result' not found in the JSON response.");
+                        System.err.println("Error: 'types' not found in the JSON response.");
                     }
-                } catch (JSONException e) {
-                    e.printStackTrace();
+                } else {
+                    System.err.println("Error: 'result' not found in the JSON response.");
                 }
-            } else {
-                System.err.println("Error: HTTP Response Code " + responseCode);
             }
-        } catch (IOException e) {
+        } catch (JSONException e) {
             e.printStackTrace();
         }
 
-        return userName;
-    }
-
-    public String getServerName() {
-        HttpURLConnection connection = null;
-        BufferedReader reader = null;
-        String serverName = null;
-        try {
-            URL url = new URL(LoginFrame.apiUrl);
-            String api = url.getProtocol() + "://" + url.getHost() + "/";
-            String apiUrl = api + "webissues-new/server/api/global.php";
-            //String apiUrl = api + server/api/global.php";
-            // Open a connection to the API endpoint using apiUrl
-            System.out.println("API URL "+apiUrl);
-            connection = (HttpURLConnection) new URL(apiUrl).openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            // Set headers
-            connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
-            connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
-            connection.setRequestProperty("Content-Type", "application/json");
-            String jsonInputString = "{}";
-
-            connection.setDoInput(true);
-            connection.setDoOutput(true);
-
-            connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
-
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                // Read the response
-                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String inputLine;
-                while ((inputLine = reader.readLine()) != null) {
-                    response.append(inputLine);
-                }
-
-                try {
-                    JSONObject jsonResponse = new JSONObject(response.toString());
-                    if (jsonResponse.has("result")) {
-                        JSONObject result = jsonResponse.getJSONObject("result");
-                        System.out.println("Result "+result);
-                        serverName = result.getString("serverName");
-                        System.out.println("Server Name "+serverName);
-                    } else {
-                        System.err.println("Error: 'result' not found in the JSON response.");
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                System.err.println("Error: HTTP Response Code " + responseCode);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return serverName;
+        return null; // Return null if the attribute is not found or does not have the "decimal" property
     }
 
     @Override
-    public String getAttributeName(int attributeId) {
-        HttpURLConnection connection = null;
-        BufferedReader reader = null;
-        String attributeName = null;
-
+    public String getType(int attributeId) {
         try {
-            URL url = new URL(LoginFrame.apiUrl);
-            String api = url.getProtocol() + "://" + url.getHost() + "/";
-            //String apiUrl = api + "server/api/global.php";
-            String apiUrl = api + "server/api/global.php";
-            // Open a connection to the API endpoint using apiUrl
-            connection = (HttpURLConnection) new URL(apiUrl).openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
+            for (JSONObject jsonResponse : resultList) {
+                if (jsonResponse != null && jsonResponse.has("result")) {
+                    JSONObject result = jsonResponse.getJSONObject("result");
 
-            // Set headers
-            connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
-            connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
-            connection.setRequestProperty("Content-Type", "application/json");
+                    if (result.has("types")) {
+                        JSONArray typesArray = result.getJSONArray("types");
 
-            // Construct the request body
-            String jsonInputString = "{}";
+                        for (int i = 0; i < typesArray.length(); i++) {
+                            JSONObject type = typesArray.getJSONObject(i);
 
-            connection.setDoInput(true);
-            connection.setDoOutput(true);
+                            if (type.has("attributes")) {
+                                JSONArray attributesArray = type.getJSONArray("attributes");
 
-            connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+                                for (int j = 0; j < attributesArray.length(); j++) {
+                                    JSONObject attribute = attributesArray.getJSONObject(j);
+                                    int id = attribute.getInt("id");
 
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                // Read the response
-                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String inputLine;
-                while ((inputLine = reader.readLine()) != null) {
-                    response.append(inputLine);
-                }
-
-                try {
-                    JSONObject jsonResponse = new JSONObject(response.toString());
-                    if (jsonResponse.has("result")) {
-                        JSONObject result = jsonResponse.getJSONObject("result");
-
-                        if (result.has("types")) {
-                            JSONArray typesArray = result.getJSONArray("types");
-
-                            // Iterate through the types array
-                            for (int i = 0; i < typesArray.length(); i++) {
-                                JSONObject type = typesArray.getJSONObject(i);
-
-                                if (type.has("attributes")) {
-                                    JSONArray attributesArray = type.getJSONArray("attributes");
-
-                                    // Iterate through the attributes array to find the matching ID
-                                    for (int j = 0; j < attributesArray.length(); j++) {
-                                        JSONObject attribute = attributesArray.getJSONObject(j);
-                                        int id = attribute.getInt("id");
-
-                                        if (id == attributeId) {
-                                            attributeName = attribute.getString("name");
-                                            return attributeName; // Return the name once found
+                                    if (id == attributeId) {
+                                        if (attribute.has("type")) {
+                                            return attribute.getString("type");
                                         }
                                     }
                                 }
                             }
-                            // If the attributeId was not found, attributeName remains null
-                        } else {
-                            System.err.println("Error: 'types' not found in the JSON response.");
                         }
                     } else {
-                        System.err.println("Error: 'result' not found in the JSON response.");
+                        System.err.println("Error: 'types' not found in the JSON response.");
                     }
-                } catch (JSONException e) {
-                    e.printStackTrace();
+                } else {
+                    System.err.println("Error: 'result' not found in the JSON response.");
                 }
-            } else {
-                System.err.println("Error: HTTP Response Code " + responseCode);
             }
-        } catch (IOException e) {
+        } catch (JSONException e) {
             e.printStackTrace();
-        } finally {
-            // Close the connection and reader
-            if (connection != null) {
-                connection.disconnect();
-            }
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
 
-        return attributeName; // Return null if attribute is not found
+        return null; // Return null if the attribute is not found or does not have the "decimal" property
     }
 
-    public List<Integer> getMembersByProjectId(int projectId) {
-        List<Integer> members = new ArrayList<>();
-        HttpURLConnection connection = null;
-        BufferedReader reader = null;
-        String text = null;
-
+    @Override
+    public Object getDefaultValue(int attributeId) {
         try {
-            URL url = new URL(LoginFrame.apiUrl);
-            String api = url.getProtocol() + "://" + url.getHost() + "/";
-            //String apiUrl = api + "server/api/global.php";
-            String apiUrl = api + "server/api/global.php";
-            connection = (HttpURLConnection) new URL(apiUrl).openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            // Set headers
-            connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
-            connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
-            connection.setRequestProperty("Content-Type", "application/json");
-            // Construct the request body
-            String jsonInputString = "{}";
+            //JSONObject jsonResponse = issueDao.makeRequestAndGetResponse(connection, jsonInputString);
+            for (JSONObject jsonResponse : resultList) {
+                if (jsonResponse != null && jsonResponse.has("result")) {
+                    JSONObject result = jsonResponse.getJSONObject("result");
 
-            connection.setDoInput(true);
-            connection.setDoOutput(true);
+                    if (result.has("types")) {
+                        JSONArray typesArray = result.getJSONArray("types");
 
-            connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+                        for (int i = 0; i < typesArray.length(); i++) {
+                            JSONObject type = typesArray.getJSONObject(i);
 
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                // Read the response
-                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String inputLine;
-                while ((inputLine = reader.readLine()) != null) {
-                    response.append(inputLine);
-                }
+                            if (type.has("attributes")) {
+                                JSONArray attributesArray = type.getJSONArray("attributes");
 
-                try {
-                    JSONObject jsonResponse = new JSONObject(response.toString());
-                    System.out.println("Response " + jsonResponse);
-                    if (jsonResponse.has("result")) {
-                        JSONObject result = jsonResponse.getJSONObject("result");
-                        System.out.println("Result " + result);
-                        JSONArray projectsArray = result.getJSONArray("projects");
-                        System.out.println("Projects Array " + projectsArray);
-                        for (int i = 0; i < projectsArray.length(); i++) {
-                            JSONObject projectJson = projectsArray.getJSONObject(i);
-                            int currentProjectId = projectJson.getInt("id");
+                                for (int j = 0; j < attributesArray.length(); j++) {
+                                    JSONObject attribute = attributesArray.getJSONObject(j);
+                                    int id = attribute.getInt("id");
 
-                            if (currentProjectId == projectId) {
-                                JSONArray membersArray = projectJson.getJSONArray("members");
-
-                                int membersArrayLength = membersArray.length();
-                                for (int j = 0; j < membersArrayLength; j++) {
-                                    members.add(membersArray.getInt(j));
+                                    if (id == attributeId) {
+                                        if (attribute.has("default")) {
+                                            return attribute.getString("default");
+                                        }
+                                    }
                                 }
-
-                                break;
                             }
                         }
+                    } else {
+                        System.err.println("Error: 'types' not found in the JSON response.");
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } else {
+                    System.err.println("Error: 'result' not found in the JSON response.");
                 }
-
             }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null; // Return null if the attribute is not found or does not have a default value
+    }
 
-        } catch (Exception e) {
+    @Override
+    public List<Integer> getMembersByProjectId(int projectId) {
+        List<Integer> members = new ArrayList<>();
+        try {
+            for (JSONObject jsonResponse : resultList) {
+                if (jsonResponse != null && jsonResponse.has("result")) {
+                    JSONObject result = jsonResponse.getJSONObject("result");
+                    JSONArray projectsArray = result.getJSONArray("projects");
 
+                    for (int i = 0; i < projectsArray.length(); i++) {
+                        JSONObject projectJson = projectsArray.getJSONObject(i);
+                        int currentProjectId = projectJson.getInt("id");
+
+                        if (currentProjectId == projectId) {
+                            JSONArray membersArray = projectJson.getJSONArray("members");
+
+                            for (int j = 0; j < membersArray.length(); j++) {
+                                members.add(membersArray.getInt(j));
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
         return members;
+    }
+
+    public Object getMinValue(int attributeId) {
+     try {
+            for (JSONObject jsonResponse : resultList) {
+                if (jsonResponse != null && jsonResponse.has("result")) {
+                    JSONObject result = jsonResponse.getJSONObject("result");
+
+                    if (result.has("types")) {
+                        JSONArray typesArray = result.getJSONArray("types");
+
+                        for (int i = 0; i < typesArray.length(); i++) {
+                            JSONObject type = typesArray.getJSONObject(i);
+
+                            if (type.has("attributes")) {
+                                JSONArray attributesArray = type.getJSONArray("attributes");
+
+                                for (int j = 0; j < attributesArray.length(); j++) {
+                                    JSONObject attribute = attributesArray.getJSONObject(j);
+                                    int id = attribute.getInt("id");
+
+                                    if (id == attributeId) {
+                                        if (attribute.has("min-value")) {
+                                            return attribute.getString("min-value");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        System.err.println("Error: 'types' not found in the JSON response.");
+                    }
+                } else {
+                    System.err.println("Error: 'result' not found in the JSON response.");
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+    
+    public Object getMaxValue(int attributeId) {
+     try {
+            for (JSONObject jsonResponse : resultList) {
+                if (jsonResponse != null && jsonResponse.has("result")) {
+                    JSONObject result = jsonResponse.getJSONObject("result");
+
+                    if (result.has("types")) {
+                        JSONArray typesArray = result.getJSONArray("types");
+
+                        for (int i = 0; i < typesArray.length(); i++) {
+                            JSONObject type = typesArray.getJSONObject(i);
+
+                            if (type.has("attributes")) {
+                                JSONArray attributesArray = type.getJSONArray("attributes");
+
+                                for (int j = 0; j < attributesArray.length(); j++) {
+                                    JSONObject attribute = attributesArray.getJSONObject(j);
+                                    int id = attribute.getInt("id"); 
+                                    if (id == attributeId) {
+                                        if (attribute.has("max-value")) {
+                                            return attribute.getString("max-value");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        System.err.println("Error: 'types' not found in the JSON response.");
+                    }
+                } else {
+                    System.err.println("Error: 'result' not found in the JSON response.");
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }

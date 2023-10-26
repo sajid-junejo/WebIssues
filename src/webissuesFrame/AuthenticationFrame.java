@@ -1,7 +1,5 @@
 package webissuesFrame;
 
-import DAO.UserDAO;
-import DAOImpl.UserDAOImpl;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.mysql.cj.log.Log;
 import java.awt.Image;
@@ -26,28 +24,28 @@ import pojos.Path;
 import pojos.Principal;
 import pojos.Sessions;
 import pojos.User;
-import pojos.SessionManager; // Replace with the actual package name
+import pojos.SessionManager;
 
 public class AuthenticationFrame extends javax.swing.JFrame {
 
     Sessions session = new Sessions();
     Path path = Path.getInstance();
-    
-        String address = LoginFrame.apiUrl;           
-    public AuthenticationFrame() {       
+    LoginFrame login;
+    String address = LoginFrame.apiUrl;   
+    public AuthenticationFrame() {
         initComponents();
-        hostname.setText("Hostname: "+LoginFrame.hostname);
+        hostname.setText("Hostname: " + LoginFrame.hostname);
         Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Login");
         this.setLocationRelativeTo(null);
         this.setResizable(false);
-         ImageIcon icon1 = new ImageIcon(this.getClass().getResource("/img/keys.png"));
+        ImageIcon icon1 = new ImageIcon(this.getClass().getResource("/img/keys.png"));
         jLabel5.setIcon(icon1);
-        
-         ImageIcon icon2 = new ImageIcon(this.getClass().getResource("/img/logo.png"));
+        login = new LoginFrame();
+        ImageIcon icon2 = new ImageIcon(this.getClass().getResource("/img/logo.png"));
         jLabel6.setIcon(icon2);
-    }
+    }  
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -211,142 +209,111 @@ public class AuthenticationFrame extends javax.swing.JFrame {
     private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jCheckBox1ActionPerformed
-   public void doAuthentication() {
-    String user = email.getText();
-    String pass = password.getText();
+    public void doAuthentication() {
+        String user = email.getText();
+        String pass = password.getText(); 
+        try {
+            String apiUrl = address;
+            URL url = new URL(apiUrl); 
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true); 
+            if (connection instanceof HttpsURLConnection) {
+                HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
+                httpsConnection.setHostnameVerifier((hostname, session) -> true);
+            } 
+            connection.setRequestProperty("Content-Type", "application/json"); 
+            String jsonInputString = "{\"login\":\"" + user + "\",\"password\":\"" + pass + "\"}";
 
-    try { 
-        String apiUrl = address; 
-        URL url = new URL(apiUrl);
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+            int responseCode = connection.getResponseCode();
 
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("POST");
-        connection.setDoOutput(true);
+            if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
+                if (responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
+                    String newUrl = connection.getHeaderField("Location");
+                    if (newUrl != null) {
+                        URL redirectedUrl = new URL(newUrl);
+                        connection.disconnect();
+                        connection = (HttpURLConnection) redirectedUrl.openConnection();
+                        connection.setRequestMethod("POST");
+                        connection.setDoOutput(true);
+                        connection.setRequestProperty("Content-Type", "application/json");
 
-        if (connection instanceof HttpsURLConnection) {
-            HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
-            httpsConnection.setHostnameVerifier((hostname, session) -> true);
-        }
+                        try (OutputStream os = connection.getOutputStream()) {
+                            byte[] input = jsonInputString.getBytes("utf-8");
+                            os.write(input, 0, input.length);
+                        }
 
-        // Set headers
-        connection.setRequestProperty("Content-Type", "application/json");
-
-        // Create JSON request body
-        String jsonInputString = "{\"login\":\"" + user + "\",\"password\":\"" + pass + "\"}";
-
-        try (OutputStream os = connection.getOutputStream()) {
-            byte[] input = jsonInputString.getBytes("utf-8");
-            os.write(input, 0, input.length);
-        }
-
-        // Get the response code
-        int responseCode = connection.getResponseCode(); 
-
-        if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
-            if (responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
-                // Extract the new URL from the response content
-                String newUrl = connection.getHeaderField("Location");
-                if (newUrl != null) {
-                    // Handle the redirection by making a request to the new URL
-                    URL redirectedUrl = new URL(newUrl);
-                    connection.disconnect(); // Disconnect from the current connection
-                    connection = (HttpURLConnection) redirectedUrl.openConnection();
-                    connection.setRequestMethod("POST");
-                    connection.setDoOutput(true);
-                    connection.setRequestProperty("Content-Type", "application/json");
-
-                    try (OutputStream os = connection.getOutputStream()) {
-                        byte[] input = jsonInputString.getBytes("utf-8");
-                        os.write(input, 0, input.length);
+                        responseCode = connection.getResponseCode();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Error: Redirected without a new URL", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
                     }
-
-                    responseCode = connection.getResponseCode(); // Get the new response code
-                } else {
-                    // Handle the case where no Location header is provided
-                    JOptionPane.showMessageDialog(this, "Error: Redirected without a new URL", "Error", JOptionPane.ERROR_MESSAGE);
-                    return; // Exit the method
                 }
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    String inputLine;
+                    StringBuilder response = new StringBuilder();
+
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    JSONObject jsonResponse = new JSONObject(response.toString());
+                    JSONObject result = jsonResponse.getJSONObject("result");
+                    SessionManager.getInstance().setUserId(result.getInt("userId"));
+                    SessionManager.getInstance().setCsrfToken(result.getString("csrfToken"));
+                    SessionManager.getInstance().setUserName(result.getString("userName"));
+                    SessionManager.getInstance().setUserAccess(result.getInt("userAccess"));
+                    String userName = SessionManager.getInstance().getUserName();
+                    String sessionCookie = connection.getHeaderField("Set-Cookie");
+                    if (sessionCookie != null) {
+                        SessionManager.getInstance().setCookie(sessionCookie);
+                    }
+                    connection.disconnect(); 
+                    dispose();
+                    login.dispose();
+                    HomeFrame home = new HomeFrame();
+                    home.setTitle("Welcome");
+                    home.setVisible(true);
+                    JOptionPane.showMessageDialog(this, "Successfully Logged in as " + userName);
+                    login.dispose(); 
+                    initializePrincipal();
+                } catch (JSONException e) { 
+                    JOptionPane.showMessageDialog(this, "Username or Password Wrong", "Error", JOptionPane.ERROR_MESSAGE);
+
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Error, Username or Password Wrong!", "Sajid", JOptionPane.ERROR_MESSAGE);
             }
-
-            // Continue processing the response as before
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                String inputLine;
-                StringBuilder response = new StringBuilder();
-
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
-
-                // Parse JSON response
-                JSONObject jsonResponse = new JSONObject(response.toString());
-                JSONObject result = jsonResponse.getJSONObject("result");
-
-                // Extract and set session data
-                SessionManager.getInstance().setUserId(result.getInt("userId"));
-                SessionManager.getInstance().setCsrfToken(result.getString("csrfToken"));
-                SessionManager.getInstance().setUserName(result.getString("userName"));
-                SessionManager.getInstance().setUserAccess(result.getInt("userAccess"));
-
-                String userName = SessionManager.getInstance().getUserName();
-
-                // Extract and store the session cookie
-                String sessionCookie = connection.getHeaderField("Set-Cookie");
-                if (sessionCookie != null) {
-                    SessionManager.getInstance().setCookie(sessionCookie);
-                }
-
-                // Close the connection
-                connection.disconnect();
-
-                // Handle successful authentication
-                LoginFrame login = new LoginFrame();
-                login.dispose();
-                dispose();
-                HomeFrame home = new HomeFrame();
-                home.setTitle("Welcome");
-                home.setVisible(true);
-                JOptionPane.showMessageDialog(this, "Successfully Logged in as " + userName);
-                initializePrincipal();
-            } catch (JSONException e) {
-                // Handle JSON parsing error
-                JOptionPane.showMessageDialog(this, "Username or Password Wrong", "Error", JOptionPane.ERROR_MESSAGE);
-                LoginFrame login = new LoginFrame();
-                login.dispose();
-            }
-        } else {
-            // Handle non-successful response
-            JOptionPane.showMessageDialog(this, "Error, Username or Password Wrong!", "Sajid", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-    } catch (Exception e) {
-        // Handle other exceptions
-        JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
-}
 
     private void okActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okActionPerformed
-       doAuthentication();
+        doAuthentication();  
     }//GEN-LAST:event_okActionPerformed
     public void initializePrincipal() {
         Principal principal = new Principal(SessionManager.getInstance().getUserId());
         Principal.setCurrent(principal);
     }
     private void cancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelActionPerformed
-         dispose();
+        dispose();
     }//GEN-LAST:event_cancelActionPerformed
 
     private void passwordKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_passwordKeyPressed
-         if(evt.getKeyCode() == KeyEvent.VK_ENTER)
-        {
-         doAuthentication();
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            doAuthentication();
         }
     }//GEN-LAST:event_passwordKeyPressed
 
     public static void main(String args[]) {
-       FlatLightLaf.setup();
-        /* Create and display the form */
+        FlatLightLaf.setup(); 
         java.awt.EventQueue.invokeLater(() -> {
             AuthenticationFrame frame = new AuthenticationFrame();
-            frame.setLocationRelativeTo(null); // Set the frame to appear in the center
+            frame.setLocationRelativeTo(null); 
             frame.setVisible(true);
         });
     }

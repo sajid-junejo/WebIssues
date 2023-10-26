@@ -44,7 +44,6 @@
         <DimensionLayout dim="0">
           <Group type="103" groupAlignment="0" attributes="0">
               <Component id="jSeparator1" alignment="0" max="32767" attributes="0"/>
-              <Component id="jSeparator2" alignment="0" max="32767" attributes="0"/>
               <Component id="jTabbedPane1" alignment="0" pref="741" max="32767" attributes="0"/>
               <Group type="102" attributes="0">
                   <EmptySpace min="-2" max="-2" attributes="0"/>
@@ -91,9 +90,7 @@
                   </Group>
                   <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
                   <Component id="jTabbedPane1" pref="351" max="32767" attributes="0"/>
-                  <EmptySpace min="-2" max="-2" attributes="0"/>
-                  <Component id="jSeparator2" max="32767" attributes="0"/>
-                  <EmptySpace min="-2" pref="14" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="22" max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Group type="102" alignment="0" attributes="0">
                           <EmptySpace min="2" pref="2" max="-2" attributes="0"/>
@@ -116,8 +113,6 @@
           </Properties>
         </Component>
         <Component class="javax.swing.JSeparator" name="jSeparator1">
-        </Component>
-        <Component class="javax.swing.JSeparator" name="jSeparator2">
         </Component>
         <Container class="javax.swing.JTabbedPane" name="jTabbedPane1">
 
@@ -153,10 +148,11 @@
                               <Component id="jSeparator3" min="-2" pref="657" max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Group type="102" alignment="0" attributes="0">
-                                      <EmptySpace min="-2" pref="34" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" pref="86" max="-2" attributes="0"/>
                                       <Component id="clmname" pref="74" max="32767" attributes="0"/>
-                                      <EmptySpace min="-2" pref="91" max="-2" attributes="0"/>
-                                      <Component id="value" pref="492" max="32767" attributes="0"/>
+                                      <EmptySpace min="-2" pref="38" max="-2" attributes="0"/>
+                                      <Component id="value" min="-2" pref="357" max="-2" attributes="0"/>
+                                      <EmptySpace min="-2" pref="136" max="-2" attributes="0"/>
                                   </Group>
                                   <Group type="102" alignment="1" attributes="0">
                                       <EmptySpace max="-2" attributes="0"/>

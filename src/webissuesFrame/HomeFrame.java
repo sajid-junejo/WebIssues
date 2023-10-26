@@ -1,9 +1,8 @@
 package webissuesFrame;
 
 import DAOImpl.FoldersDAOImpl;
-import dbConnection.DbConnection;
+import DAOImpl.GlobalDAOImpl;
 import java.awt.Image;
-import java.sql.*;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -21,20 +20,21 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.imageio.ImageIO;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
+import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -46,6 +46,7 @@ public class HomeFrame extends javax.swing.JFrame {
 
     FoldersDAOImpl folders = new FoldersDAOImpl();
     Folder folder = new Folder();
+    GlobalDAOImpl global = new GlobalDAOImpl();
     private final Map<String, Integer> projectIds = new HashMap<>();
     DefaultTreeModel model;
     private final IssuesDAOImpl issuesDAO = new IssuesDAOImpl();
@@ -58,9 +59,10 @@ public class HomeFrame extends javax.swing.JFrame {
     AddNewIssue issue;
     public static int typeId = 0;
     String extractedValue = null;
-    //public static int projectId = 0;
+    LoginFrame login = new LoginFrame();
     ImageIcon add;
     ImageIcon edit;
+    ImageIcon delete;
     int attributeY = 0;
     String issueName = "";
     int userID = SessionManager.getInstance().getUserId();
@@ -72,20 +74,24 @@ public class HomeFrame extends javax.swing.JFrame {
     public static String PATH = null;
     public static int FoldersID = 0;
     public static int IssueID = 0;
+    private String valueBetweenCommas;
+    private int selectedRowIndx = -1;
 
     public HomeFrame() {
         initComponents();
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         LoadImages();
+        System.out.println("Home Called");
         setUSer();
         jTable1.setDefaultEditor(Object.class, null);
-        jScrollPane2.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         int screenWidth = gd.getDisplayMode().getWidth();
         int screenHeight = gd.getDisplayMode().getHeight();
-        System.out.println("width " + screenWidth + "Height" + screenHeight);
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
         this.setExtendedState(HomeFrame.MAXIMIZED_BOTH);
         Load();
+        scroll.getVerticalScrollBar().setUnitIncrement(8);
+        login.disposeFrame();
         jLabel12.setEnabled(false);
         labels = new JLabel[0];
         Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
@@ -99,12 +105,9 @@ public class HomeFrame extends javax.swing.JFrame {
 
     public void setUSer() {
         String name = SessionManager.getInstance().getUserName();
-        System.out.println("Name length " + name.length());
         if (name.length() > 10) {
-            int width = (name.length() + 2) * 4; // Calculate the desired width
-            System.out.println("width " + width);
-            int height = username.getPreferredSize().height; // Keep the default height
-            System.out.println("Heghit " + height);
+            int width = (name.length() + 2) * 4;
+            int height = username.getPreferredSize().height;
             Dimension preferredSize = new Dimension(width, height);
             username.setPreferredSize(preferredSize);
             username.setText(name);
@@ -143,7 +146,7 @@ public class HomeFrame extends javax.swing.JFrame {
         add = new ImageIcon(this.getClass().getResource("/img/mail.png"));
 
         edit = new ImageIcon(this.getClass().getResource("/img/edit.png"));
-
+        delete = new ImageIcon(this.getClass().getResource("/img/delete.png"));
     }
 
     public void Load() {
@@ -158,13 +161,11 @@ public class HomeFrame extends javax.swing.JFrame {
                 for (Folder folder : folders) {
                     String folderName = folder.getFolderName();
                     String typeName = projectsDAO.getTypeName(folder.getTypeId());
-                    //System.out.println("type name "+ typeName);
                     String nodeValue = folderName + "      [" + typeName + "]";
                     projectIds.put(projectName, ProjectId);
                     DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(folderName);
                     childNode.setUserObject(nodeValue);
                     rootNode.add(childNode);
-                    //System.out.println("Type id "+folder.getTypeId());
                 }
 
             }
@@ -174,15 +175,6 @@ public class HomeFrame extends javax.swing.JFrame {
 
         model = new DefaultTreeModel(courses);
         jTree1.setModel(model);
-    }
-
-    private String[] getColumnNames(DefaultTableModel tableModel) {
-        int columnCount = tableModel.getColumnCount();
-        String[] columnNames = new String[columnCount];
-        for (int i = 0; i < columnCount; i++) {
-            columnNames[i] = tableModel.getColumnName(i);
-        }
-        return columnNames;
     }
 
     @SuppressWarnings("unchecked")
@@ -215,7 +207,7 @@ public class HomeFrame extends javax.swing.JFrame {
         jSplitPane1 = new javax.swing.JSplitPane();
         jScrollPane3 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
-        jScrollPane2 = new javax.swing.JScrollPane();
+        scroll = new javax.swing.JScrollPane();
         jPanel2 = new javax.swing.JPanel();
         username = new javax.swing.JLabel();
 
@@ -361,7 +353,7 @@ public class HomeFrame extends javax.swing.JFrame {
         jSplitPane2.setLeftComponent(jScrollPane1);
 
         jSplitPane1.setBackground(new java.awt.Color(255, 255, 255));
-        jSplitPane1.setDividerLocation(300);
+        jSplitPane1.setDividerLocation(400);
         jSplitPane1.setDividerSize(4);
         jSplitPane1.setOrientation(javax.swing.JSplitPane.VERTICAL_SPLIT);
 
@@ -419,17 +411,19 @@ public class HomeFrame extends javax.swing.JFrame {
 
         jSplitPane1.setLeftComponent(jScrollPane3);
 
-        jScrollPane2.setBackground(new java.awt.Color(255, 255, 255));
-        jScrollPane2.setBorder(javax.swing.BorderFactory.createEtchedBorder());
-        jScrollPane2.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        jScrollPane2.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        jScrollPane2.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
+        scroll.setBackground(new java.awt.Color(255, 255, 255));
+        scroll.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        scroll.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setAutoscrolls(true);
+        scroll.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        scroll.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
-                jScrollPane2MouseWheelMoved(evt);
+                scrollMouseWheelMoved(evt);
             }
         });
 
         jPanel2.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel2.setPreferredSize(new java.awt.Dimension(1180, 200));
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -439,12 +433,12 @@ public class HomeFrame extends javax.swing.JFrame {
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 223, Short.MAX_VALUE)
+            .addGap(0, 200, Short.MAX_VALUE)
         );
 
-        jScrollPane2.setViewportView(jPanel2);
+        scroll.setViewportView(jPanel2);
 
-        jSplitPane1.setRightComponent(jScrollPane2);
+        jSplitPane1.setRightComponent(scroll);
 
         jSplitPane2.setRightComponent(jSplitPane1);
 
@@ -458,7 +452,7 @@ public class HomeFrame extends javax.swing.JFrame {
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jSplitPane2)
+                    .addComponent(jSplitPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 1510, Short.MAX_VALUE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(28, 28, 28)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -495,7 +489,7 @@ public class HomeFrame extends javax.swing.JFrame {
                                 .addComponent(jLabel1)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 124, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(0, 464, Short.MAX_VALUE)))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
@@ -571,44 +565,41 @@ public class HomeFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     public void issueAttributes() {
-        int cx = 60;
-        int cy = 40;
-        int clabelWidth = 400;
-        int cheight = 16;
-        int clabelSpacing = 5;
+        SwingUtilities.invokeLater(() -> {
+            int cx = jPanel2.getWidth() / 6;
+            int cy = 40;
+            int clabelWidth = 400;
+            int cheight = 16;
+            int clabelSpacing = 5;
 
-        try {
-            Map<String, Object> attributesMap = issuesDAO.getAttributes(IssueID);
-            attributeY = cy;
-            for (Map.Entry<String, Object> entry : attributesMap.entrySet()) {
-                String attrName = entry.getKey();
-                Object attrValueObj = entry.getValue();
-                String attrValue = (attrValueObj != null) ? attrValueObj.toString() : "";
-
-                attributeLabel = new JLabel(attrName + "    :    " + attrValue);
-                attributeLabel.setBounds(cx + clabelWidth, attributeY, clabelWidth, cheight);
-                attributeLabel.setHorizontalAlignment(SwingConstants.LEFT);
-                jPanel2.add(attributeLabel);
-                attributeY += cheight + clabelSpacing;
+            try {
+                Map<String, Object> attributesMap = issuesDAO.getAttributes(IssueID);
+                attributeY = cy;
+                for (Map.Entry<String, Object> entry : attributesMap.entrySet()) {
+                    String attrName = entry.getKey();
+                    Object attrValueObj = entry.getValue();
+                    String attrValue = (attrValueObj != null) ? attrValueObj.toString() : "";
+                    attributeLabel = new JLabel(attrName + "    :    " + attrValue);
+                    attributeLabel.setBounds(cx + clabelWidth, attributeY, clabelWidth, cheight);
+                    attributeLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                    jPanel2.add(attributeLabel);
+                    attributeY += cheight + clabelSpacing;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        jPanel2.revalidate();
-        jPanel2.repaint();
-
+            jPanel2.revalidate();
+            jPanel2.repaint();
+        });
     }
 
     public void getCommentsAndFiles() {
-        Connection con = null;
-        PreparedStatement statement = null;
         JLabel changeLabel = null;
         JLabel attribute = null;
         String commentText = null;
         String fileName = null;
         String fileDescr = null;
         try {
-            con = DbConnection.getConnection();
             int hx = 30;
             int hy = 183;
             int hlabelWidth = 400;
@@ -659,14 +650,11 @@ public class HomeFrame extends javax.swing.JFrame {
     }
 
     public void getFiles() {
-        Connection con = null;
-        PreparedStatement statement = null;
         JLabel changeLabel = null;
         JLabel attribute = null;
         String fileName = null;
         String fileDescr = null;
         try {
-            con = DbConnection.getConnection();
             int hx = 30;
             int hy = 183;
             int hlabelWidth = 400;
@@ -684,13 +672,10 @@ public class HomeFrame extends javax.swing.JFrame {
     }
 
     public void getComment() {
-        Connection con = null;
-        PreparedStatement statement = null;
         JLabel changeLabel = null;
         JLabel attribute = null;
         String commentText = null;
         try {
-            con = DbConnection.getConnection();
             int hx = 30;
             int hy = 183;
             int hlabelWidth = 400;
@@ -708,94 +693,77 @@ public class HomeFrame extends javax.swing.JFrame {
     }
 
     public void issueDetails() {
-        int x = 30;
-        int y = 15;
-        int labelWidth = 900;
-        int height = 20;
-        int labelSpacing = 5;
-        DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
-        Object[] rowData = new Object[tableModel.getColumnCount()];
-        String description = issuesDAO.getDescription(IssueID);
-        JLabel descrLabel = null;
-        boolean flag = false;
-        String modified_name = null;
+        SwingUtilities.invokeLater(() -> {
+            int x = 30;
+            int y = 15;
+            int labelWidth = 900;
+            int height = 20;
+            int labelSpacing = 5;
+            DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
+            Object[] rowData = new Object[tableModel.getColumnCount()];
+            String description = issuesDAO.getDescription(IssueID);
+            JLabel descrLabel = null;
+            boolean flag = false;
+            String modified_name = null;
+            try {
+                Map<String, Object> issueDetailsMap = issuesDAO.getIssueDetails(IssueID);
+                attributeY = y;
 
-        try {
-            Map<String, Object> issueDetailsMap = issuesDAO.getIssueDetails(IssueID);
-            attributeY = y;
+                Set<String> keysToInclude = new LinkedHashSet<>(Arrays.asList("NAME", "ID", "TYPE", "LOCATION", "CREATED", "LAST MODIFIED"));
+                for (String attrName : keysToInclude) {
+                    Object attrValueObj = issueDetailsMap.get(attrName);
 
-            // Define a list of keys you want to include in labels
-            Set<String> keysToInclude = new LinkedHashSet<>(Arrays.asList("NAME", "ID", "TYPE", "LOCATION", "CREATED", "LAST MODIFIED"));
-            for (String attrName : keysToInclude) {
-                Object attrValueObj = issueDetailsMap.get(attrName);
+                    if (attrValueObj != null) {
+                        String labelText = attrName.equals("NAME") ? ("<html><b>" + attrValueObj.toString() + "</b></html>") : (attrName + " : " + attrValueObj.toString());
 
-                // Check if the key is in the list of keys to include
-                if (attrValueObj != null) {
-                    // Create a single JLabel for attribute name and value
-                    String labelText = attrName.equals("NAME") ? ("<html><b>" + attrValueObj.toString() + "</b></html>") : (attrName + " : " + attrValueObj.toString());
-
-                    JLabel attrLabel = new JLabel(labelText);
-                    attrLabel.setBounds(x, attributeY, labelWidth, height);
-                    jPanel2.add(attrLabel);
-                    attributeY += height + labelSpacing;
+                        JLabel attrLabel = new JLabel(labelText);
+                        attrLabel.setBounds(x, attributeY, labelWidth, height);
+                        jPanel2.add(attrLabel);
+                        attributeY += height + labelSpacing;
+                    }
                 }
-            }
-            attributeY += 15;
-            if (description != null && !description.isEmpty()) {
-                descrLabel = new JLabel("Description:");
-                descrLabel.setBounds(x, attributeY, labelWidth, height);
-                jPanel2.add(descrLabel);
-                attributeY += height + labelSpacing;
+                attributeY += 15;
+                if (description != null && !description.isEmpty()) {
+                    descrLabel = new JLabel("Description:");
+                    descrLabel.setBounds(x, attributeY, labelWidth, height);
+                    jPanel2.add(descrLabel);
+                    attributeY += height + labelSpacing;
 
-                // Replace \n with <br> to ensure proper line breaks in HTML
-                description = description.replace("\n", "<br>");
+                    //description = description.replace("\n", "<br>");
+                    JEditorPane descEditorPane = new JEditorPane();
+                    descEditorPane.setContentType("text/html");
+                    descEditorPane.setText("<html>" + description.replace("\n", "<br>") + "</html>");
+                    descEditorPane.setEditable(false);
 
-                // Use a JEditorPane to render HTML content
-                JEditorPane descEditorPane = new JEditorPane();
-                descEditorPane.setContentType("text/html"); // Set content type to HTML
-                descEditorPane.setText("<html>" + description + "</html>"); // Wrap with <html> tag
-                descEditorPane.setEditable(false);
-
-                // Add a HyperlinkListener to make links clickable
-                descEditorPane.addHyperlinkListener(new HyperlinkListener() {
-                    @Override
-                    public void hyperlinkUpdate(HyperlinkEvent e) {
-                        if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                            if (Desktop.isDesktopSupported()) {
-                                try {
-                                    Desktop.getDesktop().browse(e.getURL().toURI());
-                                } catch (IOException | java.net.URISyntaxException ex) {
-                                    ex.printStackTrace();
+                    descEditorPane.addHyperlinkListener(new HyperlinkListener() {
+                        @Override
+                        public void hyperlinkUpdate(HyperlinkEvent e) {
+                            if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                                if (Desktop.isDesktopSupported()) {
+                                    try {
+                                        Desktop.getDesktop().browse(e.getURL().toURI());
+                                    } catch (IOException | java.net.URISyntaxException ex) {
+                                        ex.printStackTrace();
+                                    }
                                 }
                             }
                         }
-                    }
-                });
-                descEditorPane.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                JScrollPane scrollPane = new JScrollPane(descEditorPane);
-                scrollPane.setBounds(x, attributeY, labelWidth, height * 4);
-                jPanel2.add(scrollPane);
+                    });
+                    descEditorPane.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                    JScrollPane scrollPane = new JScrollPane(descEditorPane);
+                    scrollPane.setBounds(x, attributeY, labelWidth, height * 4);
+                    jPanel2.add(scrollPane);
 
-                attributeY += height * 3 + labelSpacing;
+                    attributeY += height * 3 + labelSpacing;
 
-                // Create the button
-                JButton menuButton = new JButton("<span aria-hidden=\"true\" class=\"fa fa-ellipsis-v\"></span>");
-                menuButton.setToolTipText("Menu");
-                menuButton.setFocusable(false);
-                menuButton.setBounds(x + labelWidth - 30, 10, 30, 30); // Adjust the position as needed
-                menuButton.setBorderPainted(false);
-                menuButton.setContentAreaFilled(false);
-                menuButton.setOpaque(false);
-                menuButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                jPanel2.add(menuButton);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        System.out.println("Attribute Y in Details " + attributeY);
-        jPanel2.revalidate();
-        jPanel2.repaint();
+            jPanel2.revalidate();
+            jPanel2.repaint();
+        });
     }
 
     public void buttonsCreation() {
@@ -847,7 +815,7 @@ public class HomeFrame extends javax.swing.JFrame {
                 jPanel2.removeAll();
                 issueDetails();
                 issueAttributes();
-               // buttonsCreation();
+                // buttonsCreation();
                 getComment();
                 button1.setBackground(null);
                 button4.setBackground(null);
@@ -860,7 +828,7 @@ public class HomeFrame extends javax.swing.JFrame {
                 jPanel2.removeAll();
                 issueDetails();
                 issueAttributes();
-               // buttonsCreation();
+                // buttonsCreation();
                 getFiles();
                 button1.setBackground(null);
                 button2.setBackground(null);
@@ -882,90 +850,87 @@ public class HomeFrame extends javax.swing.JFrame {
         });
         jPanel2.revalidate();
         jPanel2.repaint();
-        jScrollPane2.revalidate();
-        jScrollPane2.repaint();
+        scroll.revalidate();
+        scroll.repaint();
     }
+
     public void history() {
-        int hx = 30;
-        int hy = attributeY + 25;
-        int hlabelWidth = 500;
-        int hheight = 16;
-        int hlabelSpacing = 5;
-        int labelY = hy;
-        System.out.println("Attribute Y in History" + attributeY);
-        JLabel label = new JLabel("<html><b>Issue History</b></html>");
-        label.setBounds(hx, labelY, hlabelWidth, hheight);
-        labelY += hheight + hlabelSpacing;
-        jPanel2.add(label);
-        issuesDAO.printAttributes(IssueID);
-        Map<String, String> history = issuesDAO.getHistory(IssueID);
-        for (Map.Entry<String, String> entry : history.entrySet()) {
-            String keyValue = entry.getKey();
-            String formattedEntry = entry.getValue();
-            String[] lines = formattedEntry.split("\n");
-            JLabel KeyLabel = new JLabel("<html><b>" + keyValue + "</b></html>");
-            KeyLabel.setBounds(hx, labelY, hlabelWidth, hheight);
-            jPanel2.add(KeyLabel);
+        SwingUtilities.invokeLater(() -> {
+            int hx = 30;
+            int hy = attributeY + 25;
+            int hlabelWidth = 500;
+            int hheight = 16;
+            int hlabelSpacing = 5;
+            int labelY = hy;
+            JLabel label = new JLabel("<html><b>Issue History</b></html>");
+            label.setBounds(hx, labelY, hlabelWidth, hheight);
             labelY += hheight + hlabelSpacing;
+            jPanel2.add(label);
+            issuesDAO.printAttributes(IssueID);
+            Map<String, String> history = issuesDAO.getHistory(IssueID);
+            for (Map.Entry<String, String> entry : history.entrySet()) {
+                String keyValue = entry.getKey();
+                String formattedEntry = entry.getValue();
+                String[] lines = formattedEntry.split("\n");
+                JLabel KeyLabel = new JLabel("<html><b>" + keyValue + "</b></html>");
+                KeyLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+                jPanel2.add(KeyLabel);
+                labelY += hheight + hlabelSpacing;
 
-            JEditorPane descTextArea = new JEditorPane();
-            descTextArea.setContentType("text/html");
-            descTextArea.setEditable(false);
-            StringBuilder htmlContent = new StringBuilder();
-            for (String line : lines) {
-                if (!line.trim().isEmpty()) {
-                    System.out.println("Line:" + line);
-                    if (line.trim().startsWith("Comment:")) {
-                        String comment = line.replaceFirst("Comment:", "").trim();
-                        htmlContent.append(comment);
-                    }
-                    else if (line.trim().startsWith("ATTACH")) {
-                        Pattern pattern = Pattern.compile("\\[([^\\]]+)\\]");
-                        Matcher matcher = pattern.matcher(line);
-                        if (matcher.find()) {
-                            extractedValue = matcher.group(1);
-                            extractedValue = extractedValue.replace("id:", "");
-                            System.out.println("Extracted Value: " + extractedValue); 
-                            String[] parts = line.split(":", 2);
-                            String labelText = parts[0]; // Text before the colon
-                            String hyperlinkText = parts[1].replaceAll("\\[([^\\]]+)\\]", "");  
-                            String htmlText = "<html><li>" + labelText + ": <a href='https://example.com'>" + hyperlinkText + "</a></li></html>";
-                            JLabel historyLabel = new JLabel(htmlText);
+                JEditorPane descTextArea = new JEditorPane();
+                descTextArea.setContentType("text/html");
+                descTextArea.setEditable(false);
+                StringBuilder htmlContent = new StringBuilder();
+                for (String line : lines) {
+                    if (!line.trim().isEmpty()) {
+                        if (line.trim().startsWith("Comment:")) {
+                            String comment = line.replaceFirst("Comment:", "").trim();
+                            htmlContent.append(comment);
+                        } else if (line.trim().startsWith("ATTACH")) {
+                            Pattern pattern = Pattern.compile("\\[([^\\]]+)\\]");
+                            Matcher matcher = pattern.matcher(line);
+                            if (matcher.find()) {
+                                extractedValue = matcher.group(1);
+                                extractedValue = extractedValue.replace("id:", "");
+                                String[] parts = line.split(":", 2);
+                                String labelText = parts[0]; // Text before the colon
+                                String hyperlinkText = parts[1].replaceAll("\\[([^\\]]+)\\]", "");
+                                String htmlText = "<html><li>" + labelText + ": <a href='https://example.com'>" + hyperlinkText + "</a></li></html>";
+                                JLabel historyLabel = new JLabel(htmlText);
+                                historyLabel.setBounds(hx, labelY, hlabelWidth, hheight);
+
+                                jPanel2.add(historyLabel);
+                                labelY += hheight + hlabelSpacing;
+                                historyLabel.addMouseListener(new MouseAdapter() {
+                                    public void mouseClicked(MouseEvent e) {
+                                        issuesDAO.getFile(extractedValue);
+                                    }
+                                });
+                            }
+                        } else {
+                            JLabel historyLabel = new JLabel("<html><li>" + line + "</li></html>");
                             historyLabel.setBounds(hx, labelY, hlabelWidth, hheight);
-
                             jPanel2.add(historyLabel);
                             labelY += hheight + hlabelSpacing;
-                            // Add a MouseListener to the label
-                            historyLabel.addMouseListener(new MouseAdapter() {
-                                public void mouseClicked(MouseEvent e) {
-                                    issuesDAO.getFile(extractedValue);
-                                }
-                            });
                         }
-                    } else {
-                        JLabel historyLabel = new JLabel("<html><li>" + line + "</li></html>");
-                        historyLabel.setBounds(hx, labelY, hlabelWidth, hheight);
-                        jPanel2.add(historyLabel);
-                        labelY += hheight + hlabelSpacing;
                     }
                 }
+                if (htmlContent.length() > 0) {
+                    descTextArea.setText("<html>" + htmlContent.toString() + "</html");
+                    JScrollPane scrollPane = new JScrollPane(descTextArea);
+                    scrollPane.setBounds(hx, labelY, hlabelWidth, hheight * 3);
+                    jPanel2.add(scrollPane);
+                    labelY += hheight * 3 + hlabelSpacing;
+                }
             }
-            if (htmlContent.length() > 0) {
-                descTextArea.setText("<html>" + htmlContent.toString() + "</html");
-                JScrollPane scrollPane = new JScrollPane(descTextArea);
-                scrollPane.setBounds(hx, labelY, hlabelWidth, hheight * 3);
-                jPanel2.add(scrollPane);
-                labelY += hheight * 3 + hlabelSpacing;
+
+            if (labelY > 230) {
+                jPanel2.setPreferredSize(new Dimension(jPanel2.getWidth(), labelY + 10));
             }
-        }
 
-        int currentHeight = jPanel2.getHeight();
-        if (labelY > currentHeight) {
-            jPanel2.setPreferredSize(new Dimension(jPanel2.getWidth(), labelY+10));
-        }
-
-        jPanel2.revalidate();
-        jPanel2.repaint();
+            jPanel2.revalidate();
+            jPanel2.repaint();
+        });
     }
 
     private class ButtonClickListener implements ActionListener {
@@ -981,12 +946,10 @@ public class HomeFrame extends javax.swing.JFrame {
                 if (labelsAdded) {
                     jPanel2.revalidate();
                     jPanel2.repaint();
-                    labelsAdded = false; // Reset the flag after removing the labels
+                    labelsAdded = false;
                 }
             } else if (currentButton.getText().equals("Only Attachements")) {
-                System.out.println("Button 3 is clicked!");
             } else if (currentButton.getText().equals("Comments & Attachements")) {
-                System.out.println("Button 4 is clicked!");
             }
             if (greenButton == currentButton) {
                 currentButton.setBackground(UIManager.getColor("Button.background"));
@@ -1000,9 +963,10 @@ public class HomeFrame extends javax.swing.JFrame {
             }
         }
     }
-
-    public void refreshJTable() {
+    
+    public void refreshJTableAfterChange() {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        int previousSelectedRow = jTable1.getSelectedRow();
         model.setRowCount(0);
         try {
             DefaultTableModel tableModel = issuesDAO.getTableData(FoldersID);
@@ -1013,6 +977,67 @@ public class HomeFrame extends javax.swing.JFrame {
 
         jTable1.revalidate();
         jTable1.repaint();
+        if (previousSelectedRow != -1 && previousSelectedRow < jTable1.getRowCount()) {
+            jTable1.setRowSelectionInterval(previousSelectedRow, previousSelectedRow);
+            int selectedRow = jTable1.getSelectedRow();
+            if (selectedRow != -1) {
+                int idColumnIndex = jTable1.getColumnModel().getColumnIndex("ID");
+                Object idValue = jTable1.getValueAt(selectedRow, idColumnIndex);
+
+                int idColumnIndez = jTable1.getColumnModel().getColumnIndex("Name");
+                Object idValues = jTable1.getValueAt(selectedRow, idColumnIndez);
+                if (idValue != null) {
+                    jPanel2.removeAll();
+                    String idString = idValue.toString().replaceAll("<.*?>|[^0-9]", "");
+                    IssueID = Integer.parseInt(idString);
+                    issuesDAO.getIssueResult(IssueID);
+                    issueAttributes();
+                    issueDetails();
+                    history();
+                }
+            }
+
+            jPanel2.repaint();
+            jPanel2.revalidate();
+        }
+    }
+    
+    public void refreshJTable() {
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        int previousSelectedRow = jTable1.getSelectedRow();
+        model.setRowCount(0);
+        try {
+            DefaultTableModel tableModel = issuesDAO.getTableData(FoldersID);
+            jTable1.setModel(tableModel);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        jTable1.revalidate();
+        jTable1.repaint();
+        if (previousSelectedRow != -1 && previousSelectedRow < jTable1.getRowCount()) {
+            jTable1.setRowSelectionInterval(previousSelectedRow, previousSelectedRow);
+            int selectedRow = jTable1.getSelectedRow();
+//            if (selectedRow != -1) {
+//                int idColumnIndex = jTable1.getColumnModel().getColumnIndex("ID");
+//                Object idValue = jTable1.getValueAt(selectedRow, idColumnIndex);
+//
+//                int idColumnIndez = jTable1.getColumnModel().getColumnIndex("Name");
+//                Object idValues = jTable1.getValueAt(selectedRow, idColumnIndez);
+//                if (idValue != null) {
+//                    jPanel2.removeAll();
+//                    String idString = idValue.toString().replaceAll("<.*?>|[^0-9]", "");
+//                    IssueID = Integer.parseInt(idString);
+//                    issuesDAO.getIssueResult(IssueID);
+//                    issueAttributes();
+//                    issueDetails();
+//                    history();
+//                }
+//            }
+//
+//            jPanel2.repaint();
+//            jPanel2.revalidate();
+        }
     }
     private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
 
@@ -1022,166 +1047,244 @@ public class HomeFrame extends javax.swing.JFrame {
         AddNewFolder viewFolder = new AddNewFolder();
         if (jLabel12.getText().equals("Add Issue")) {
             issue.setVisible(true);
-            issue.AddForm();
         } else if (jLabel12.getText().equals("Add Folder")) {
             viewFolder.setVisible(true);
         }
     }//GEN-LAST:event_jLabel12MouseClicked
 
     private void jTree1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTree1MouseClicked
+        Logger logger = Logger.getLogger(getClass().getName());
+        long startTime = System.currentTimeMillis();
         jLabel12.setText("Add Folder");
-        String valueBetweenCommas = null;
         jLabel12.setEnabled(true);
         jPanel3.setVisible(false);
-        jPanel2.setEnabled(false);
         DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer();
         headerRenderer.setHorizontalAlignment(JLabel.LEFT);
         jTable1.getTableHeader().setDefaultRenderer(headerRenderer);
         if (evt.getClickCount() != -1) {
             jPanel2.removeAll();
             jPanel2.repaint();
-            jPanel2.revalidate();
             int x = evt.getX();
             int y = evt.getY();
             TreePath path = jTree1.getPathForLocation(x, y);
-            if (path != null) {
-                String pathString = path.toString();
-                int firstCommaIndex = pathString.indexOf(",");
-                int lastCommaIndex = pathString.lastIndexOf(",");
-                if (firstCommaIndex != -1 && lastCommaIndex != -1 && lastCommaIndex > firstCommaIndex) {
-                    valueBetweenCommas = pathString.substring(firstCommaIndex + 1, lastCommaIndex).trim();
-                }
-            }
-            if (path != null) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-                //int typeId = getTypeIdFromNode(node);
-                projectName = node.toString();
-                if (typeId != -1) {
-                    Object userObject = node.getUserObject();
-                    if (userObject instanceof String) {
-                        String nodeValue = (String) userObject;
-                        int openingBracketIndex = nodeValue.lastIndexOf('[');
-                        int closingBracketIndex = nodeValue.lastIndexOf(']');
-                        if (openingBracketIndex != -1 && closingBracketIndex != -1) {
-                            folderName = nodeValue.substring(0, openingBracketIndex).trim();
-                            projectId = projectIds.get(valueBetweenCommas);
-                            System.out.println("Folder Name " + folderName);
-                            List<Folder> folders = projectsDAO.getFoldersForProject(projectId);
-                            PATH = valueBetweenCommas + " - " + folderName;
-                            for (Folder folder : folders) {
-                                if (folder.getFolderName().equals(folderName)) {
-                                    FoldersID = folder.getFolderId();
-                                    System.out.println("Folder Id " + FoldersID);
-                                    typeId = folder.getTypeId();
-                                    break;
-                                }
-                            }
-                            System.out.println("Type id in JTree " + typeId);
-                        } else {
-                            folderName = nodeValue.trim();
-                            projectsDAO.setFolderName(folderName);
-                        }
-                        try {
-                            DefaultTableModel tableModel = null;
-                            tableModel = issuesDAO.getTableData(FoldersID);
-                            jTable1.setModel(tableModel);
-                        } catch (Exception e) {
-                        }
-                    }
 
-                }
+            if (path != null) {
+                handleTreePath(path);
             }
         }
+        long endTime = System.currentTimeMillis();
+        long executionTime = endTime - startTime;
+        logger.log(Level.INFO, "Execution time Last: " + executionTime + " milliseconds");
     }//GEN-LAST:event_jTree1MouseClicked
 
-    private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
-        jLabel12.setEnabled(true);
-        jLabel12.setText("Add Issue");
-        //System.out.println("folder name in the table mouse clicked "+folderName);
-        if (SwingUtilities.isRightMouseButton(evt)) {
-            selectedRowIndex = jTable1.getSelectedRow();
-            JPopupMenu popupMenu = new JPopupMenu();
-            JMenuItem updateItem = new JMenuItem("Edit Attributes");
-            JMenuItem insertItem = new JMenuItem("Add Issue");
-            issue = new AddNewIssue();
-            ImageIcon insertIcon = edit;
-            ImageIcon addIssue = add;
-            updateItem.setIcon(insertIcon);
-            insertItem.setIcon(addIssue);
-            updateItem.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    //int selectedRowIndex = jTable1.getSelectedRow();
-                    DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
-                    Object[] rowData = new Object[tableModel.getColumnCount()];
-                    for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                        rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
-                    }
-                    EditIssues edit = new EditIssues();
-                    edit.setVisible(true);
-                    edit.EditForm();
-                    edit.setDefaultCloseOperation(edit.DISPOSE_ON_CLOSE);
+    private void handleTreePath(TreePath path) {
+        String pathString = path.toString();
+        int firstCommaIndex = pathString.indexOf(",");
+        int lastCommaIndex = pathString.lastIndexOf(",");
 
-                    issue.AddForm();
-                    //frame.setr
-                }
-            });
+        if (firstCommaIndex != -1 && lastCommaIndex != -1 && lastCommaIndex > firstCommaIndex) {
+            valueBetweenCommas = pathString.substring(firstCommaIndex + 1, lastCommaIndex).trim();
+        }
 
-            insertItem.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    issue.setVisible(true);
-                    issue.setDefaultCloseOperation(issue.DISPOSE_ON_CLOSE);
-                }
-            });
-            popupMenu.add(insertItem);
-            popupMenu.add(updateItem);
-            if (userAccess == 2) {
-                JMenuItem deleteItem = new JMenuItem("Delete Issue");
-                ImageIcon deletedIssue = new ImageIcon("C:\\Users\\sajid.ali\\Desktop\\Webissues\\src\\img\\delete.png");
-                deleteItem.setIcon(deletedIssue);
-                deleteItem.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        int option = JOptionPane.showConfirmDialog(
-                                null,
-                                "Are you sure you want to delete " + issueName,
-                                "Confirmation",
-                                JOptionPane.YES_NO_OPTION);
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+        projectName = node.toString();
 
-                        if (option == JOptionPane.YES_OPTION) {
-                            issuesDAO.deleteIssue(IssueID);
-                            refreshJTable();
-                            jPanel2.removeAll();
-                            jPanel2.repaint();
-                            jPanel2.revalidate();
-                        } else if (option == JOptionPane.NO_OPTION) {
-                            System.out.println("User clicked NO.");
-                        }
-                    }
-                });
-                popupMenu.add(deleteItem);
-            }
-            popupMenu.show(jTable1, evt.getX(), evt.getY());
-        } else if (SwingUtilities.isLeftMouseButton(evt)) {
-            jPanel2.removeAll();
-            int selectedRow = jTable1.getSelectedRow();
-            if (selectedRow != -1) {
-                int idColumnIndex = jTable1.getColumnModel().getColumnIndex("ID");
-                Object idValue = jTable1.getValueAt(selectedRow, idColumnIndex);
-                if (idValue != null) {
-                    String idString = idValue.toString();
-                    idString = idString.replaceAll("\\<.*?\\>|[^0-9]", "");
-                    System.out.println("ISSUE ID " + IssueID);
-                    IssueID = Integer.parseInt(idString);
-                    issueAttributes();
-                    //buttonsCreation();
-                    issueDetails();
-                    history();
-                }
+        if (typeId != -1) {
+            Object userObject = node.getUserObject();
+            if (userObject instanceof String) {
+                handleStringUserObject((String) userObject);
             }
         }
+    }
+
+    private void handleStringUserObject(String nodeValue) {
+        int openingBracketIndex = nodeValue.lastIndexOf('[');
+        int closingBracketIndex = nodeValue.lastIndexOf(']');
+
+        if (openingBracketIndex != -1 && closingBracketIndex != -1) {
+            handleBracketedNodeValue(nodeValue, openingBracketIndex, closingBracketIndex);
+        } else {
+            folderName = nodeValue.trim();
+            projectsDAO.setFolderName(folderName);
+        }
+
+        try {
+            handleTableDataLoad();
+        } catch (Exception e) {
+        }
+    }
+
+    private void handleBracketedNodeValue(String nodeValue, int openingBracketIndex, int closingBracketIndex) {
+        folderName = nodeValue.substring(0, openingBracketIndex).trim();
+        projectId = projectIds.get(valueBetweenCommas);
+        List<Folder> folders = projectsDAO.getFoldersForProject(projectId);
+        PATH = valueBetweenCommas + " - " + folderName;
+
+        for (Folder folder : folders) {
+            if (folder.getFolderName().equals(folderName)) {
+                FoldersID = folder.getFolderId();
+                typeId = folder.getTypeId();
+                break;
+            }
+        }
+    }
+
+    private void handleTableDataLoad() {
+        System.out.println("Table Called " + FoldersID);
+        DefaultTableModel tableModel = null;
+        tableModel = issuesDAO.getTableData(FoldersID);
+        jTable1.setModel(tableModel);
+    }
+
+
+    private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
+        SwingUtilities.invokeLater(() -> {
+            Logger logger = Logger.getLogger(getClass().getName());
+            long startTime = System.currentTimeMillis();
+            scroll.getVerticalScrollBar().setValue(0);
+            jPanel2.revalidate();
+            jLabel12.setEnabled(true);
+            jLabel12.setText("Add Issue");
+
+            int clickedRow = jTable1.rowAtPoint(evt.getPoint());
+            
+            if (SwingUtilities.isRightMouseButton(evt)) {
+                selectedRowIndx = clickedRow;
+                JPopupMenu popupMenu = createPopupMenu();
+                popupMenu.show(jTable1, evt.getX(), evt.getY());
+            } else if (SwingUtilities.isLeftMouseButton(evt)) {
+                selectedRowIndx = clickedRow;
+                handleLeftClick();
+            }
+            refreshJTable();
+
+            if (selectedRowIndx != -1 && selectedRowIndx < jTable1.getRowCount()) {
+                jTable1.setRowSelectionInterval(selectedRowIndx, selectedRowIndx);
+            }
+            long endTime = System.currentTimeMillis();
+            long executionTime = endTime - startTime;
+            logger.log(Level.INFO, "Execution time: " + executionTime + " milliseconds");
+        });
     }//GEN-LAST:event_jTable1MouseClicked
+
+    private JPopupMenu createPopupMenu() {
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem updateItem = new JMenuItem("Edit Attributes");
+        JMenuItem insertItem = new JMenuItem("Add Issue");
+        ImageIcon insertIcon = edit;
+        ImageIcon addIssue = add;
+        updateItem.setIcon(insertIcon);
+        insertItem.setIcon(addIssue);
+        updateItem.addActionListener(e -> openEditAttributes());
+        insertItem.addActionListener(e -> openAddIssue());
+        popupMenu.add(insertItem);
+        popupMenu.add(updateItem);
+        if (userAccess == 2) {
+            JMenuItem deleteItem = createDeleteMenuItem();
+            popupMenu.add(deleteItem);
+        }
+        return popupMenu;
+    }
+
+    private JPopupMenu createPopupMenuForScrollPane() {
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem markRead = new JMenuItem("Mark All As Read");
+        JMenuItem markUnread = new JMenuItem("Mark All As Unread");
+        JMenuItem insertItem = new JMenuItem("Add Issue");
+        ImageIcon insertIcon = edit;
+        ImageIcon addIssue = add;
+        markRead.setIcon(insertIcon);
+        insertItem.setIcon(addIssue);
+        //markRead.addActionListener(e -> openEditAttributes());
+        insertItem.addActionListener(e -> openAddIssue());
+        popupMenu.add(insertItem);
+        popupMenu.add(markRead);
+        return popupMenu;
+    }
+
+    private void openEditAttributes() {
+        SwingUtilities.invokeLater(() -> {
+            DefaultTableModel tableModel = (DefaultTableModel) jTable1.getModel();
+            Object[] rowData = new Object[tableModel.getColumnCount()];
+            for (int i = 0; i < tableModel.getColumnCount(); i++) {
+                rowData[i] = tableModel.getValueAt(selectedRowIndex, i);
+            }
+            EditIssues edit = new EditIssues();
+            edit.setVisible(true);
+            edit.EditForm();
+            edit.setDefaultCloseOperation(edit.DISPOSE_ON_CLOSE);
+            edit.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosed(WindowEvent e) {
+                    refreshJTableAfterChange();
+                }
+            });
+        });
+    }
+
+    private void openAddIssue() {
+        issue = new AddNewIssue();
+        issue.setVisible(true);
+        issue.setDefaultCloseOperation(issue.DISPOSE_ON_CLOSE);
+        issue.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                refreshJTableAfterChange();
+            }
+        });
+
+    }
+
+    private JMenuItem createDeleteMenuItem() {
+        JMenuItem deleteItem = new JMenuItem("Delete Issue");
+        ImageIcon deletedIssue = delete;
+        deleteItem.setIcon(deletedIssue);
+
+        deleteItem.addActionListener(e -> handleDeleteIssue());
+
+        return deleteItem;
+    }
+
+    private void handleDeleteIssue() {
+        int option = JOptionPane.showConfirmDialog(
+                null,
+                "Are you sure you want to delete " + issueName,
+                "Confirmation",
+                JOptionPane.YES_NO_OPTION);
+
+        if (option == JOptionPane.YES_OPTION) {
+            issuesDAO.deleteIssue(IssueID);
+            refreshJTable();
+            jPanel2.removeAll();
+            jPanel2.repaint();
+            jPanel2.revalidate();
+        }
+    }
+
+    private void handleLeftClick() {
+        Logger logger = Logger.getLogger(getClass().getName());
+        long startTime = System.currentTimeMillis();
+        jPanel2.removeAll();
+        int selectedRow = jTable1.getSelectedRow();
+        if (selectedRow != -1) {
+            int idColumnIndex = jTable1.getColumnModel().getColumnIndex("ID");
+            Object idValue = jTable1.getValueAt(selectedRow, idColumnIndex);
+
+            int idColumnIndez = jTable1.getColumnModel().getColumnIndex("Name");
+            Object idValues = jTable1.getValueAt(selectedRow, idColumnIndez);
+            if (idValue != null) {
+                String idString = idValue.toString().replaceAll("<.*?>|[^0-9]", "");
+                IssueID = Integer.parseInt(idString);
+                issuesDAO.getIssueResult(IssueID);
+                issueAttributes();
+                issueDetails();
+                history();
+            }
+        }
+        long endTime = System.currentTimeMillis();
+        long executionTime = endTime - startTime;
+        logger.log(Level.INFO, "Execution time HomeFrame " + executionTime + " milliseconds");
+    }
 
     private void jTable1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTable1KeyPressed
         // TODO add your handling code here:
@@ -1202,20 +1305,28 @@ public class HomeFrame extends javax.swing.JFrame {
         if (jLabel12.getText().equals("Add Issue")) {
         } else if (jLabel12.getText().equals("Add Folder")) {
         }
+        if (SwingUtilities.isRightMouseButton(evt)) {
+            selectedRowIndx = jTable1.getSelectedRow();
+            JPopupMenu popupMenu = createPopupMenuForScrollPane();
+            popupMenu.show(jScrollPane3, evt.getX(), evt.getY());
+        } else if (SwingUtilities.isLeftMouseButton(evt)) {
+            selectedRowIndx = jTable1.getSelectedRow();
+            handleLeftClick();
+        }
     }//GEN-LAST:event_jScrollPane3MouseClicked
 
     private void jScrollPane3KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jScrollPane3KeyPressed
         // TODO add your handling code here:
     }//GEN-LAST:event_jScrollPane3KeyPressed
 
-    private void jScrollPane2MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_jScrollPane2MouseWheelMoved
+    private void scrollMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_scrollMouseWheelMoved
         // TODO add your handling code here:
         int notches = evt.getWheelRotation();
         evt.consume(); // Consume the original event to prevent default scrolling
-        JScrollBar verticalScrollBar = jScrollPane2.getVerticalScrollBar();
+        JScrollBar verticalScrollBar = scroll.getVerticalScrollBar();
         int newValue = verticalScrollBar.getValue() + (notches * verticalScrollBar.getUnitIncrement() * 20);
         verticalScrollBar.setValue(newValue);
-    }//GEN-LAST:event_jScrollPane2MouseWheelMoved
+    }//GEN-LAST:event_scrollMouseWheelMoved
 
     private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
         // TODO add your handling code here:
@@ -1225,8 +1336,6 @@ public class HomeFrame extends javax.swing.JFrame {
 
         int x = evt.getX();
         int y = evt.getY();
-        System.out.println(" this is x " + x);
-        System.out.println(" this is y " + y);
 
     }//GEN-LAST:event_jPanel1MouseClicked
 
@@ -1271,7 +1380,6 @@ public class HomeFrame extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
@@ -1281,6 +1389,7 @@ public class HomeFrame extends javax.swing.JFrame {
     private javax.swing.JSplitPane jSplitPane2;
     private javax.swing.JTable jTable1;
     private javax.swing.JTree jTree1;
+    private javax.swing.JScrollPane scroll;
     private javax.swing.JLabel username;
     // End of variables declaration//GEN-END:variables
 }

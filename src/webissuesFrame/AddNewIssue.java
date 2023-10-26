@@ -1,17 +1,12 @@
 package webissuesFrame;
 
+import DAOImpl.ConnectionDAOImpl;
 import DAOImpl.GlobalDAOImpl;
 import DAOImpl.IssuesDAOImpl;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.toedter.calendar.JDateChooser;
 import java.awt.Component;
 import java.awt.Image;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -19,14 +14,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
-import javax.swing.InputVerifier;
 import javax.swing.JComboBox;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,9 +30,15 @@ import pojos.SessionManager;
 
 public class AddNewIssue extends javax.swing.JFrame {
 
+    private Map<String, String> attrValues = new HashMap<>();
+    IssuesDAOImpl issueDao = new IssuesDAOImpl();
+    GlobalDAOImpl global = new GlobalDAOImpl();
+    private Map<Integer, String> userMap = new HashMap<>();
+    List<JSONObject> types = issueDao.typesList;
+
     public AddNewIssue() {
         initComponents();
-        AddForm();
+        global.fetchData();
         typename.setText(HomeFrame.folderName);
         Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
@@ -46,7 +48,14 @@ public class AddNewIssue extends javax.swing.JFrame {
         this.setIconImage(icon);
         ImageIcon icon1 = new ImageIcon(this.getClass().getResource("/img/information.png"));
         info.setIcon(icon1);
+        for (JSONObject user : usersList) {
+            int id = user.optInt("id");
+            String name = user.optString("name");
+            userMap.put(id, name);
+        }
+        AddForm();
     }
+    List<JSONObject> usersList = global.getUsersList();
     HomeFrame home = new HomeFrame();
     String locationValue = "";
     int issueId = 0;
@@ -54,11 +63,10 @@ public class AddNewIssue extends javax.swing.JFrame {
     int typeId = 0;
     int attrId = 0;
     String attrDef = null;
+    boolean error = false;
     int userID = SessionManager.getInstance().getUserId();
     int userAccess = SessionManager.getInstance().getUserAccess();
-    private Map<String, String> attrValues = new HashMap<>();
-    IssuesDAOImpl issueDao = new IssuesDAOImpl();
-    GlobalDAOImpl global = new GlobalDAOImpl();
+    ConnectionDAOImpl connectionDao = new ConnectionDAOImpl();
     int id = HomeFrame.IssueID;
     Map<Integer, Object> attributeValues = issueDao.printAttributes(id);
     Map<Integer, Object> getAttributeValues = new HashMap<>();
@@ -68,7 +76,9 @@ public class AddNewIssue extends javax.swing.JFrame {
     public static String getDescription = null;
 
     public void AddForm() {
-        System.out.println("Running ");
+        SwingUtilities.invokeLater(() -> {
+        Logger logger = Logger.getLogger(getClass().getName());
+        long startTime = System.currentTimeMillis();
         int x = 1;
         int tx = 20;
         int y = 10;
@@ -76,315 +86,226 @@ public class AddNewIssue extends javax.swing.JFrame {
         int componentWidth = 500;
         int height = 28;
         int spacing = 7;
-        HttpURLConnection connection = null;
-        BufferedReader reader = null;
         String text = null;
-        System.out.println("Add Issue Form");
         issueDao.printAttributes(id);
+        List<JSONObject> resultList = global.getResultList();
         try {
-            URL url = new URL(LoginFrame.apiUrl);
-            String api = url.getProtocol() + "://" + url.getHost() + "/";
-            String apiUrl = api + "server/api/global.php";
-            connection = (HttpURLConnection) new URL(apiUrl).openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            // Set headers
-            connection.setRequestProperty("X-Csrf-Token", SessionManager.getInstance().getCsrfToken());
-            connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
-            connection.setRequestProperty("Content-Type", "application/json");
-            String jsonInputString = "{}";
-            connection.setDoInput(true);
-            connection.setDoOutput(true);
-            connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
-            int responseCode = connection.getResponseCode();
-            System.out.println("Response Code " + responseCode);
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String inputLine;
-                while ((inputLine = reader.readLine()) != null) {
-                    response.append(inputLine);
-                }
-                try {
-                    JSONObject jsonResponse = new JSONObject(response.toString());
-                    System.out.println("JSON response " + jsonResponse);
-                    if (jsonResponse.has("result")) {
-                        JSONObject result = jsonResponse.getJSONObject("result");
-                        JSONArray typesArray = result.getJSONArray("types");
-                        for (int i = 0; i < typesArray.length(); i++) {
-                            JSONObject typeObject = typesArray.getJSONObject(i);
-                            int currentProjectId = typeObject.getInt("id");
-                            int typeId = HomeFrame.typeId;
-                            if (currentProjectId == typeId) {
-                                JSONArray attributesArray = typeObject.getJSONArray("attributes");
-                                System.out.println("Attributes Array " + attributesArray);
-                                for (int j = 0; j < attributesArray.length(); j++) {
-                                    JSONObject attributeObject = attributesArray.getJSONObject(j);
-                                    String attributeName = attributeObject.getString("name");
-                                    String attributeType = attributeObject.getString("type");
-                                    boolean required = false;
-                                    if (attributeObject.has("required")) {
-                                        required = true;
+            for (JSONObject jsonResponse : resultList) {
+                if (jsonResponse.has("result")) {
+                    JSONObject result = jsonResponse.getJSONObject("result");
+                    JSONArray typesArray = result.getJSONArray("types");
+                    for (int i = 0; i < typesArray.length(); i++) {
+                        JSONObject typeObject = typesArray.getJSONObject(i);
+                        int currentProjectId = typeObject.getInt("id");
+                        int typeId = HomeFrame.typeId;
+                        if (currentProjectId == typeId) {
+                            JSONArray attributesArray = typeObject.getJSONArray("attributes");
+                            for (int j = 0; j < attributesArray.length(); j++) {
+                                Logger logger1 = Logger.getLogger(getClass().getName());
+                                long startTime1 = System.currentTimeMillis();
+                                JSONObject attributeObject = attributesArray.getJSONObject(j);
+                                String attributeName = attributeObject.getString("name");
+                                String attributeType = attributeObject.getString("type");
+                                boolean required = false;
+                                if (attributeObject.has("required")) {
+                                    required = true;
+                                }
+                                int attributeId = attributeObject.getInt("id");
+                                if (required) {
+                                    JLabel label = new JLabel("<html>" + attributeName + "<sup>*</sup>:</html>");
+                                    label.setBounds(tx, y, labelWidth, height);
+                                    jPanel5.add(label);
+                                } else {
+                                    JLabel label = new JLabel(attributeName + ":");
+                                    label.setBounds(tx, y, labelWidth, height);
+                                    jPanel5.add(label);
+                                }
+
+                                if ("USER".equals(attributeType)) {
+                                    DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
+                                    JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
+                                    comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                    y += height + spacing;
+                                    componentIdMap.put(comboBox, attributeId);
+                                    Integer projectId = HomeFrame.projectId;
+                                    List<Integer> members = global.getMembersByProjectId(projectId);
+                                    for (Integer memberId : members) {
+                                        comboBoxModel.addElement(userMap.get(memberId));
                                     }
-                                    int attributeId = attributeObject.getInt("id");
-                                    // Create a label for the attribute using the "name" from the API response
-                                    if (required) {
-                                        JLabel label = new JLabel("<html>" + attributeName + "<sup>*</sup>:</html>");
-                                        label.setBounds(tx, y, labelWidth, height);
-                                        jPanel5.add(label);
+                                    if (attributeObject.has("default")) {
+                                        String defaultValue = attributeObject.getString("default");
+                                        comboBox.setSelectedItem(defaultValue);
                                     } else {
-                                        JLabel label = new JLabel(attributeName + ":");
-                                        label.setBounds(tx, y, labelWidth, height);
-                                        jPanel5.add(label);
+                                        comboBox.setSelectedItem(null);
                                     }
+                                    getAttributeValues.put(attributeId, comboBox.getSelectedItem());
+                                    jPanel5.add(comboBox);
+                                } else if ("ENUM".equals(attributeType)) {
+                                    DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
+                                    JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
+                                    comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                    y += height + spacing;
+                                    componentIdMap.put(comboBox, attributeId);
+                                    if (attributeObject.has("items")) {
+                                        JSONArray itemsArray = attributeObject.getJSONArray("items");
+                                        for (int k = 0; k < itemsArray.length(); k++) {
+                                            comboBoxModel.addElement(itemsArray.getString(k));
+                                        }
+                                    }
+                                    if (attributeObject.has("default")) {
+                                        String defaultValue = attributeObject.getString("default");
+                                        comboBox.setSelectedItem(defaultValue);
+                                    } else {
+                                        comboBox.setSelectedItem(null);
+                                    }
+                                    getAttributeValues.put(attributeId, comboBox.getSelectedItem());
+                                    jPanel5.add(comboBox);
+                                } else if ("NUMERIC".equals(attributeType)) {
+                                    double minValue = 0.0;
+                                    if (attributeObject.has("min-value")) {
+                                        try {
+                                            String minValStr = attributeObject.getString("min-value");
+                                            minValue = Double.parseDouble(minValStr);
 
-                                    if ("USER".equals(attributeType)) {
-                                        DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
-                                        JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
-                                        comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                        y += height + spacing;
-                                        componentIdMap.put(comboBox, attributeId);
-                                        Integer projectId = HomeFrame.projectId;
-                                        List<Integer> members = global.getMembersByProjectId(projectId);
-                                        for (Integer memberId : members) {
-                                            comboBoxModel.addElement(global.getUserName(memberId));
-                                        }
-                                        if (attributeObject.has("default")) {
-                                            String defaultValue = attributeObject.getString("default");
-                                            comboBox.setSelectedItem(defaultValue);
-                                        } else {
-                                            comboBox.setSelectedItem(null);
-                                        }
-                                        getAttributeValues.put(attributeId, comboBox.getSelectedItem());
-                                        jPanel5.add(comboBox);
-                                        System.out.println("Attribute Id " + attributeId);
-                                    } else if ("ENUM".equals(attributeType)) {
-                                        DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
-                                        JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
-                                        comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                        y += height + spacing;
-                                        componentIdMap.put(comboBox, attributeId);
-                                        if (attributeObject.has("items")) {
-                                            JSONArray itemsArray = attributeObject.getJSONArray("items");
-                                            for (int k = 0; k < itemsArray.length(); k++) {
-                                                comboBoxModel.addElement(itemsArray.getString(k));
+                                            if (minValue == (int) minValue) {
+                                                int intValue = (int) minValue;
+                                                minValue = intValue;
                                             }
+                                        } catch (NumberFormatException e) {
+                                            e.printStackTrace();
                                         }
-                                        if (attributeObject.has("default")) {
-                                            String defaultValue = attributeObject.getString("default");
-                                            comboBox.setSelectedItem(defaultValue);
-                                        } else {
-                                            comboBox.setSelectedItem(null);
-                                        }
-                                        System.out.println("Attribute Id " + attributeId);
-                                        getAttributeValues.put(attributeId, comboBox.getSelectedItem());
-                                        jPanel5.add(comboBox);
-                                    } else if ("NUMERIC".equals(attributeType)) {
-                                        double minValue = 0.0;
-                                        if (attributeObject.has("min-value")) {
-                                            try {
-                                                String minValStr = attributeObject.getString("min-value");
-                                                minValue = Double.parseDouble(minValStr);
+                                    }
+                                    if (attributeObject.has("max-value")) {
+                                        double maxValue = 0.0;
+                                        try {
+                                            String maxValStr = attributeObject.getString("max-value");
+                                            maxValue = Double.parseDouble(maxValStr);
 
-                                                if (minValue == (int) minValue) {
-                                                    int intValue = (int) minValue;
-                                                    minValue = intValue;
-                                                }
-                                            } catch (NumberFormatException e) {
-                                                e.printStackTrace();
+                                            if (maxValue == (int) maxValue) {
+                                                int intValue = (int) maxValue;
+                                                maxValue = intValue;
                                             }
+                                        } catch (NumberFormatException e) {
+                                            e.printStackTrace();
                                         }
 
-                                        System.out.println("Attribute Id " + attributeId);
-
-                                        if (attributeObject.has("max-value")) {
-                                            double maxValue = 0.0; // Default value for maxValue if not specified
-
-                                            try {
-                                                // Parse the "max-value" as a double
-                                                String maxValStr = attributeObject.getString("max-value");
-                                                maxValue = Double.parseDouble(maxValStr);
-
-                                                // Check if maxValue is actually an integer (e.g., 10.00)
-                                                if (maxValue == (int) maxValue) {
-                                                    // It's an integer, so convert it to an integer
-                                                    int intValue = (int) maxValue;
-                                                    maxValue = intValue;
-                                                }
-                                            } catch (NumberFormatException e) {
-                                                e.printStackTrace();
-                                            }
-
-                                            if (maxValue > 10) {
-                                                JTextField textField = new JTextField();
-                                                textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                                y += height + spacing;
-                                                componentIdMap.put(textField, attributeId);
-
-                                                if (required) {
-                                                    textField.setInputVerifier(new InputVerifier() {
-                                                        @Override
-                                                        public boolean verify(JComponent input) {
-                                                            JTextField textField = (JTextField) input;
-                                                            String text = textField.getText();
-                                                            if (text == null || text.isEmpty()) {
-                                                                JOptionPane.showMessageDialog(null, "This field is required.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                                                                return false;
-                                                            }
-                                                            return true;
-                                                        }
-                                                    });
-                                                }
-
-                                                if (attributeObject.has("default")) {
-                                                    String defaultValue = attributeObject.getString("default");
-                                                    try {
-                                                        // Try to parse the defaultValue as an integer
-                                                        int intValue = Integer.parseInt(defaultValue);
-                                                        textField.setText(Integer.toString(intValue)); // Store as an integer and set as text
-                                                    } catch (NumberFormatException e) {
-                                                        // Handle the case where defaultValue is not a valid integer
-                                                        e.printStackTrace(); // Print an error message or handle as needed
-                                                    }
-                                                }
-                                                if (attributeObject.has("decimal")) {
-                                                    int decimalPlaces = attributeObject.getInt("decimal");
-
-                                                    if (decimalPlaces > 0) {
-                                                        String currentText = textField.getText();
-                                                        int indexOfDecimal = currentText.indexOf(".");
-
-                                                        // If there's no decimal point, append it along with the necessary number of zeros
-                                                        if (indexOfDecimal == -1) {
-                                                            currentText += ".";
-                                                            for(int m = 0; m < decimalPlaces; m++) {
-                                                                currentText += "0";
-                                                            }
-                                                        } else {
-                                                            // If there's a decimal point, check how many decimal places are currently present
-                                                            int currentDecimalCount = currentText.length() - indexOfDecimal - 1;
-
-                                                            // If the current number of decimal places is less than required, append zeros
-                                                            for (int n = currentDecimalCount; n < decimalPlaces; n++) {
-                                                                currentText += "0";
-                                                            }
-                                                        }
-
-                                                        // Set the modified text back to the textField
-                                                        textField.setText(currentText);
-                                                    }
-                                                }
-
-                                                getAttributeValues.put(attributeId, textField.getText());
-
-                                                jPanel5.add(textField);
-                                                System.out.println("Attribute with type NUMERIC (max-value > 10) found: " + attributeObject.toString());
-                                            } else {
-                                                DefaultComboBoxModel<Integer> comboBoxModel = new DefaultComboBoxModel<>();
-                                                JComboBox<Integer> comboBox = new JComboBox<>(comboBoxModel);
-                                                comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                                y += height + spacing;
-                                                componentIdMap.put(comboBox, attributeId);
-
-                                                for (int num = (int) minValue; num <= (int) maxValue; num++) {
-                                                    comboBoxModel.addElement(num);
-                                                }
-
-                                                if (attributeObject.has("default")) {
-                                                    String defaultValueStr = attributeObject.getString("default");
-                                                    Integer defaultValue = Integer.parseInt(defaultValueStr); // Convert the default value to Integer
-                                                    comboBox.setSelectedItem(defaultValue);
-                                                } else {
-                                                    comboBox.setSelectedItem(null);
-                                                }
-                                                getAttributeValues.put(attributeId, comboBox.getSelectedItem());
-                                                jPanel5.add(comboBox);
-                                                System.out.println("Attribute with type NUMERIC (max-value <= 10) found: " + attributeObject.toString());
-                                            }
-                                        } else {
+                                        if (maxValue > 10) {
                                             JTextField textField = new JTextField();
                                             textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
                                             y += height + spacing;
+                                            componentIdMap.put(textField, attributeId);
 
-                                            if (required) {
-                                                textField.setInputVerifier(new InputVerifier() {
-                                                    @Override
-                                                    public boolean verify(JComponent input) {
-                                                        JTextField textField = (JTextField) input;
-                                                        String text = textField.getText();
-                                                        if (text == null || text.isEmpty()) {
-                                                            JOptionPane.showMessageDialog(null, "This field is required.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                                                            return false;
-                                                        }
-                                                        return true;
-                                                    }
-                                                });
-                                            }
                                             if (attributeObject.has("default")) {
                                                 String defaultValue = attributeObject.getString("default");
                                                 try {
-                                                    // Try to parse the defaultValue as an integer
                                                     int intValue = Integer.parseInt(defaultValue);
-                                                    textField.setText(Integer.toString(intValue)); // Store as an integer and set as text
+                                                    textField.setText(Integer.toString(intValue));
                                                 } catch (NumberFormatException e) {
-                                                    // Handle the case where defaultValue is not a valid integer
-                                                    e.printStackTrace(); // Print an error message or handle as needed
-                                                }
-                                            }
-                                            componentIdMap.put(textField, attributeId);
-                                            getAttributeValues.put(attributeId, textField.getText());
-                                            jPanel5.add(textField);
-                                        }
-                                    } else if ("TEXT".equals(attributeType)) {
-                                        JTextField textField = new JTextField();
-                                        textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                        y += height + spacing;
-                                        componentIdMap.put(textField, attributeId);
-                                        getAttributeValues.put(attributeId, textField.getText());
-                                        jPanel5.add(textField);
-                                    } else if ("DATETIME".equals(attributeType)) {
-                                        JDateChooser dateChooser = new JDateChooser();
-                                        dateChooser.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
-                                        y += height + spacing;
-                                        componentIdMap.put(dateChooser, attributeId);
 
-                                        if (attributeObject.has("default")) {
-                                            String defaultDateStr = attributeObject.getString("default");
-                                            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-
-                                            if (defaultDateStr.equals("[Today]")) {
-                                                dateChooser.setDate(new Date());
-                                            } else {
-                                                try {
-                                                    Date defaultDate = dateFormat.parse(defaultDateStr);
-                                                    dateChooser.setDate(defaultDate);
-                                                } catch (ParseException e) {
                                                     e.printStackTrace();
                                                 }
                                             }
-                                        }
 
-                                        getAttributeValues.put(attributeId, dateChooser.getDate());
-                                        jPanel5.add(dateChooser);
+                                            getAttributeValues.put(attributeId, textField.getText());
+
+                                            jPanel5.add(textField);
+                                            //System.out.println("Attribute with type NUMERIC (max-value > 10) found: " + attributeObject.toString());
+                                        } else {
+                                            DefaultComboBoxModel<Integer> comboBoxModel = new DefaultComboBoxModel<>();
+                                            JComboBox<Integer> comboBox = new JComboBox<>(comboBoxModel);
+                                            comboBox.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                            y += height + spacing;
+                                            componentIdMap.put(comboBox, attributeId);
+
+                                            for (int num = (int) minValue; num <= (int) maxValue; num++) {
+                                                comboBoxModel.addElement(num);
+                                            }
+
+                                            if (attributeObject.has("default")) {
+                                                String defaultValueStr = attributeObject.getString("default");
+                                                Integer defaultValue = Integer.parseInt(defaultValueStr);
+                                                comboBox.setSelectedItem(defaultValue);
+                                            } else {
+                                                comboBox.setSelectedItem(null);
+                                            }
+                                            getAttributeValues.put(attributeId, comboBox.getSelectedItem());
+                                            jPanel5.add(comboBox);
+                                            // System.out.println("Attribute with type NUMERIC (max-value <= 10) found: " + attributeObject.toString());
+                                        }
+                                    } else {
+                                        JTextField textField = new JTextField();
+                                        textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                        y += height + spacing;
+                                        if (attributeObject.has("default")) {
+                                            String defaultValue = attributeObject.getString("default");
+                                            try {
+                                                // Try to parse the defaultValue as an integer
+                                                int intValue = Integer.parseInt(defaultValue);
+                                                textField.setText(Integer.toString(intValue)); // Store as an integer and set as text
+                                            } catch (NumberFormatException e) {
+                                                e.printStackTrace(); // Print an error message or handle as needed
+                                            }
+                                        }
+                                        componentIdMap.put(textField, attributeId);
+                                        getAttributeValues.put(attributeId, textField.getText());
+                                        jPanel5.add(textField);
+                                    }
+                                } else if ("TEXT".equals(attributeType)) {
+                                    JTextField textField = new JTextField();
+                                    textField.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                    y += height + spacing;
+                                    componentIdMap.put(textField, attributeId);
+                                    getAttributeValues.put(attributeId, textField.getText());
+                                    jPanel5.add(textField);
+                                } else if ("DATETIME".equals(attributeType)) {
+                                    JDateChooser dateChooser = new JDateChooser();
+                                    dateChooser.setBounds(tx + labelWidth + spacing, y, componentWidth, height);
+                                    y += height + spacing;
+                                    componentIdMap.put(dateChooser, attributeId);
+
+                                    if (attributeObject.has("default")) {
+                                        String defaultDateStr = attributeObject.getString("default");
+                                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+                                        if (defaultDateStr.equals("[Today]")) {
+                                            dateChooser.setDate(new Date());
+                                        } else {
+                                            try {
+                                                Date defaultDate = dateFormat.parse(defaultDateStr);
+                                                dateChooser.setDate(defaultDate);
+                                            } catch (ParseException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
                                     }
 
+                                    getAttributeValues.put(attributeId, dateChooser.getDate());
+                                    jPanel5.add(dateChooser);
                                 }
+                                long endTime = System.currentTimeMillis();
+                                long executionTime = endTime - startTime;
+                                logger.log(Level.INFO, "Execution time: Inside " + executionTime + " milliseconds");
                             }
                         }
-                    } else {
-                        System.err.println("Error: 'result' not found in the JSON response.");
                     }
-                } catch (JSONException e) {
-                    e.printStackTrace();
+                } else {
+                    System.err.println("Error: 'result' not found in the JSON response.");
                 }
-            } else {
-                System.err.println("Error: HTTP Response Code " + responseCode);
             }
-        } catch (IOException e) {
+        } catch (JSONException e) {
             e.printStackTrace();
-        }
+        } 
         jPanel5.revalidate();
         jPanel5.repaint();
+        long endTime = System.currentTimeMillis();
+        long executionTime = endTime - startTime;
+        logger.log(Level.INFO, "Execution time: Outside" + executionTime + " milliseconds");
+        });
+    }
+
+    private boolean isNumeric(String input) {
+        String alphabetRegex = ".*[a-zA-Z].*";
+        return input.matches(alphabetRegex);
     }
 
     public void printComboBoxNames() {
@@ -394,26 +315,164 @@ public class AddNewIssue extends javax.swing.JFrame {
                 JComboBox<?> comboBox = (JComboBox<?>) component;
                 Integer comboBoxId = componentIdMap.get(comboBox);
                 Object comboBoxValue = comboBox.getSelectedItem();
-                filteredValues.put(comboBoxId, comboBoxValue);
-                System.out.println("Updated Key : " + comboBoxId + " Updated Value :" + comboBoxValue);
+                String attributeName = null;
+                for (JSONObject type : types) {
+                    try {
+                        if (type.has("attributes")) {
+                            JSONArray typeAttributes = type.getJSONArray("attributes");
+                            for (int j = 0; j < typeAttributes.length(); j++) {
+                                JSONObject typeAttribute = typeAttributes.getJSONObject(j);
+                                int typeAttrId = typeAttribute.getInt("id");
+                                String typeAttrName = typeAttribute.optString("name", " ");
+                                if (typeAttrId == comboBoxId) {
+                                    attributeName = typeAttrName;
+                                }
+                            }
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (global.getRequired(comboBoxId)) {
+                    if (comboBoxValue != null) {
+                        filteredValues.put(comboBoxId, comboBoxValue);
+                    } else {
+                        JOptionPane.showMessageDialog(this, attributeName + " cannot be null.", "Error", JOptionPane.ERROR_MESSAGE);
+                        error = true;
+                    }
+                } else if (comboBoxValue == null) {
+
+                    if (global.getDefaultValue(comboBoxId) != null) {
+                        filteredValues.put(comboBoxId, comboBoxValue);
+                    }
+                } else {
+                    filteredValues.put(comboBoxId, comboBoxValue);
+                }
             } else if (component instanceof JTextField) {
                 JTextField textField = (JTextField) component;
                 Integer textFieldId = componentIdMap.get(textField);
-                String textFieldValue = textField.getText();
-                filteredValues.put(textFieldId, textFieldValue);
-                System.out.println("Updated Key : " + textFieldId + "Updated Value :" + textFieldValue);
+                String textFieldValue = textField.getText().trim();
+                String attributeName = null;
+                Object minValue = global.getMinValue(textFieldId);
+                Object maxValue = global.getMaxValue(textFieldId);
+//                if (minValue != null && maxValue != null) {
+//                    if (minValue instanceof Integer && maxValue instanceof Integer) { 
+//                        int min = (int) minValue;
+//                        int max = (int) maxValue;
+//                        int value = Integer.parseInt(textFieldValue);
+//
+//                        if (value >= min && value <= max) {
+//                            System.out.println(" Value is in the range ");
+//                        }
+//                    } else if (minValue instanceof Double && maxValue instanceof Double) {
+//                        // Both min and max are doubles.
+//                        double min = (double) minValue;
+//                        double max = (double) maxValue;
+//                        double value = Double.parseDouble(textFieldValue);
+//
+//                        if (value >= min && value <= max) {
+//                            // The value is within the specified range.
+//                            attributeName = "Your Attribute Name";  
+//                        }
+//                    }
+//                }
+                System.out.println("Min : " + minValue + " Max : " + maxValue);
+                for (JSONObject type : types) {
+                    try {
+                        if (type.has("attributes")) {
+                            JSONArray typeAttributes = type.getJSONArray("attributes");
+                            for (int j = 0; j < typeAttributes.length(); j++) {
+                                JSONObject typeAttribute = typeAttributes.getJSONObject(j);
+                                int typeAttrId = typeAttribute.getInt("id");
+                                String typeAttrName = typeAttribute.optString("name", " ");
+                                if (typeAttrId == textFieldId) {
+                                    attributeName = typeAttrName;
+                                }
+                            }
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (global.getType(textFieldId).equals("NUMERIC")) {
+                    if (isNumeric(textFieldValue)) {
+                        JOptionPane.showMessageDialog(this, attributeName + " is a Numeric Type .", "Error", JOptionPane.ERROR_MESSAGE);
+                        error = true;
+                    } else {
+                        //JOptionPane.showMessageDialog(this, attributeName + " is a Numeric Type .", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+                if (global.getRequired(textFieldId)) {
+                    if (textFieldValue != null && !textFieldValue.isEmpty()) {
+                        Integer decimalValue = global.getDecimal(textFieldId);
+                        if (decimalValue != null && decimalValue > 0) {
+                            textFieldValue += ".";
+                            for (int i = 0; i < decimalValue; i++) {
+                                textFieldValue += "0";
+                            }
+                        }
+                        filteredValues.put(textFieldId, textFieldValue);
+                    } else if (textFieldValue == null || textFieldValue.isEmpty()) {
+
+                        if (global.getDefaultValue(textFieldId) != null) {
+                            filteredValues.put(textFieldId, global.getDefaultValue(textFieldId));
+                        } else {
+                            JOptionPane.showMessageDialog(this, attributeName + " cannot be null.", "Error", JOptionPane.ERROR_MESSAGE);
+                            error = true;
+                        }
+
+                    } else {
+                        JOptionPane.showMessageDialog(this, attributeName + " cannot be null.", "Error", JOptionPane.ERROR_MESSAGE);
+                        error = true;
+                    }
+                } else if (textFieldValue == null && textFieldValue.isEmpty()) {
+
+                    if (global.getDefaultValue(textFieldId) != null) {
+                        filteredValues.put(textFieldId, global.getDefaultValue(textFieldId));
+                    }
+                } else {
+                    Integer decimalValue = global.getDecimal(textFieldId);
+                    if (decimalValue != null && decimalValue > 0) {
+                        textFieldValue += ".";
+                        for (int i = 0; i < decimalValue; i++) {
+                            textFieldValue += "0";
+                        }
+                    }
+                    if (minValue != null) {
+                        System.out.println("Min Value " + minValue);
+                    }
+                    filteredValues.put(textFieldId, textFieldValue);
+                }
+
             } else if (component instanceof JDateChooser) {
                 JDateChooser dateChooser = (JDateChooser) component;
                 Integer dateChooserId = componentIdMap.get(dateChooser);
                 Date dateChooserValue = dateChooser.getDate();
-
+                String attributeName = null;
+                for (JSONObject type : types) {
+                    try {
+                        if (type.has("attributes")) {
+                            JSONArray typeAttributes = type.getJSONArray("attributes");
+                            for (int j = 0; j < typeAttributes.length(); j++) {
+                                JSONObject typeAttribute = typeAttributes.getJSONObject(j);
+                                int typeAttrId = typeAttribute.getInt("id");
+                                String typeAttrName = typeAttribute.optString("name", " ");
+                                if (typeAttrId == dateChooserId) {
+                                    attributeName = typeAttrName;
+                                }
+                            }
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
                 if (dateChooserValue != null) {
                     SimpleDateFormat inputDateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
 
-                    Date parsedDate = null; // Initialize parsedDate as null
+                    Date parsedDate = null;
 
                     try {
-                        parsedDate = inputDateFormat.parse(dateChooserValue.toString()); // Use toString() to get the date as a string
+                        parsedDate = inputDateFormat.parse(dateChooserValue.toString());
                     } catch (ParseException e) {
                         e.printStackTrace();
                     }
@@ -421,9 +480,6 @@ public class AddNewIssue extends javax.swing.JFrame {
                     if (parsedDate != null) {
                         SimpleDateFormat outputDateFormat = new SimpleDateFormat("yyyy-MM-dd");
                         String formattedDateStr = outputDateFormat.format(parsedDate);
-
-                        // Make sure that formattedDateStr is in the correct format
-                        System.out.println("Formatted Date: " + formattedDateStr);
 
                         filteredValues.put(dateChooserId, formattedDateStr); // Store as a string
                     } else {
@@ -436,6 +492,7 @@ public class AddNewIssue extends javax.swing.JFrame {
             }
 
         }
+        
     }
 
     @SuppressWarnings("unchecked")
@@ -484,6 +541,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         });
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel1.setBorder(javax.swing.BorderFactory.createEtchedBorder());
 
         jLabel1.setText("Create a new Issue in folder:");
 
@@ -501,7 +559,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 255, Short.MAX_VALUE)
+            .addGap(0, 273, Short.MAX_VALUE)
         );
 
         clmname.setText("Name");
@@ -514,16 +572,18 @@ public class AddNewIssue extends javax.swing.JFrame {
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addContainerGap(19, Short.MAX_VALUE)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                            .addComponent(clmname, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGap(76, 76, 76)
-                            .addComponent(value11, javax.swing.GroupLayout.PREFERRED_SIZE, 326, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGap(214, 214, 214))
-                        .addComponent(jSeparator3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 663, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(19, 19, 19)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jSeparator3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 663, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(42, 42, 42)
+                        .addComponent(clmname, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(value11, javax.swing.GroupLayout.PREFERRED_SIZE, 326, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(214, 214, 214)))
                 .addGap(34, 34, 34))
         );
         jPanel2Layout.setVerticalGroup(
@@ -536,8 +596,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(21, 21, 21))
+                .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, 273, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         jTabbedPane1.addTab("Attributes ", jPanel2);
@@ -554,7 +613,7 @@ public class AddNewIssue extends javax.swing.JFrame {
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 248, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 270, Short.MAX_VALUE)
         );
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
@@ -607,26 +666,24 @@ public class AddNewIssue extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(newissue)
-                        .addContainerGap())
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jTabbedPane1)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel1)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(typename, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(0, 0, Short.MAX_VALUE)))
-                        .addContainerGap())
-                    .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(info)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jButton1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButton2)
-                        .addGap(25, 25, 25))))
+                        .addGap(25, 25, 25))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(newissue, javax.swing.GroupLayout.PREFERRED_SIZE, 658, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel1)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(typename, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(jPanel1Layout.createSequentialGroup()
                     .addGap(337, 337, 337)
@@ -644,8 +701,8 @@ public class AddNewIssue extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(newissue, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 40, Short.MAX_VALUE)
-                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 318, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 340, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -653,7 +710,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                     .addComponent(info, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jButton1)
                     .addComponent(jButton2))
-                .addGap(60, 60, 60))
+                .addContainerGap())
             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(jPanel1Layout.createSequentialGroup()
                     .addGap(249, 249, 249)
@@ -665,35 +722,34 @@ public class AddNewIssue extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 471, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        name = newissue.getText();
-        System.out.println("Name " + name);
+        name = newissue.getText().trim();
         if (name == null || name.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Name cannot be null.", "Error", JOptionPane.ERROR_MESSAGE);
         } else {
             printComboBoxNames();
-            for (Map.Entry<Integer, Object> entry : filteredValues.entrySet()) {
-                Integer key = entry.getKey();
-                Object value = entry.getValue();
-                System.out.println("Key Added " + key + " Value : " + value);
+            if (error) {
+                //dispose();
+            } else {
+                for (Map.Entry<Integer, Object> entry : filteredValues.entrySet()) {
+                    Integer key = entry.getKey();
+                    Object value = entry.getValue();
+                }
+                getDescription = description.getText().trim();
+                issueDao.addIssue();
+                filteredValues.clear(); 
+                dispose();
             }
-            System.out.println(" Description : " + description.getText());
-            getDescription = description.getText().trim();
-            System.out.println("Description : " + getDescription);
-            issueDao.addIssue();
-            filteredValues.clear();
-            home.refreshJTable();
-            dispose();
         }
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -702,8 +758,7 @@ public class AddNewIssue extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
-        // TODO add your handling code here:
-        System.out.println("window is closed ");
+        // TODO add your handling code here: 
     }//GEN-LAST:event_formWindowClosed
 
     public static void main(String args[]) {
