@@ -1,8 +1,9 @@
 package webissuesFrame;
- 
-import com.formdev.flatlaf.FlatLightLaf; 
+
+import com.formdev.flatlaf.FlatLightLaf;
+import java.awt.Component;
 import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout; 
+import java.awt.GridBagLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
@@ -19,9 +20,12 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.prefs.Preferences;
 import javax.net.ssl.HttpsURLConnection;
-import javax.swing.ImageIcon; 
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -32,17 +36,23 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import org.json.JSONException;
-import org.json.JSONObject; 
+import org.json.JSONObject;
 import pojos.Principal;
 import pojos.SessionManager;
 
 public class LoginFrame extends javax.swing.JFrame {
 
+    JCheckBox rememberPasswordCheckBox;
+    JTextField emailField;
+    JPasswordField passwordField;
     public static String apiUrl;
     public static String hostname;
     String user = null;
-    char[] passwordChars = null; 
+    char[] passwordChars = null;
+    private Preferences prefs;
+
     public LoginFrame() {
+        prefs = Preferences.userNodeForPackage(getClass());
         initComponents();
         jTable1.setDefaultEditor(Object.class, null);
         DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer();
@@ -56,6 +66,7 @@ public class LoginFrame extends javax.swing.JFrame {
         this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         this.setIconImage(icon);
         this.setTitle("Webissues 2.0.2");
+        //displayLoginForm();
     }
 
     @SuppressWarnings("unchecked")
@@ -201,7 +212,7 @@ public class LoginFrame extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
     public void disposeFrame() {
-        this.dispose(); 
+        this.dispose();
     }
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
 
@@ -215,6 +226,7 @@ public class LoginFrame extends javax.swing.JFrame {
 
     private void submitMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_submitMouseClicked
         makeConnection();
+
     }//GEN-LAST:event_submitMouseClicked
     public void makeConnection() {
         String inputAddress = address.getText();
@@ -288,98 +300,137 @@ public class LoginFrame extends javax.swing.JFrame {
         }
     }
 
-  private void showAuthenticationPanel() {
-//    Logger logger = Logger.getLogger(getClass().getName());
-//            long startTime = System.currentTimeMillis();
-    JPanel authenticationPanel = new JPanel(new GridBagLayout());
+    public void displayLoginForm() {
+        String username = prefs.get("username", "");
+        String password = prefs.get("password", "");
+        System.out.println("USEr  " + username + " Password : " + password);
+        if (!username.isEmpty() && !password.isEmpty()) {
+            emailField.setText(username);
+            passwordField.setText(password);
+            rememberPasswordCheckBox.setSelected(true);
+        }
 
-    JLabel urlLabel = new JLabel("Hostname: "+hostname);
-    JLabel hostnameLabel = new JLabel("Server name: Genetech WI");
-    JLabel loginLabel = new JLabel("Login");
-    JLabel passwordLabel = new JLabel("Password");
+        this.setVisible(true);
+    }
 
-    JTextField emailField = new JTextField(20);
-    JPasswordField passwordField = new JPasswordField(20);
-    emailField.requestFocusInWindow();
-    
-    JCheckBox rememberPasswordCheckBox = new JCheckBox("Remember Password");
+    private void showAuthenticationPanel() {
+        JPanel authenticationPanel = new JPanel(new GridBagLayout());
+        JLabel urlLabel = new JLabel("Hostname: " + hostname);
+        JLabel hostnameLabel = new JLabel("Server name: Genetech WI");
+        JLabel loginLabel = new JLabel("Login");
+        JLabel passwordLabel = new JLabel("Password");
+        emailField = new JTextField(20);
+        passwordField = new JPasswordField(20);
+        emailField.requestFocusInWindow();
 
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.insets = new Insets(5, 5, 5, 5);
+        rememberPasswordCheckBox = new JCheckBox("Remember Password");
 
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    gbc.gridwidth = 2;
-    gbc.anchor = GridBagConstraints.WEST;
-    authenticationPanel.add(urlLabel, gbc);
+        String username = prefs.get("username", "");
+        String password = prefs.get("password", "");
+        System.out.println("USEr  " + username + " Password : " + password);
+        if (!username.isEmpty() && !password.isEmpty()) {
+            emailField.setText(username);
+            passwordField.setText(password);
+            rememberPasswordCheckBox.setSelected(true);
+            
+            SwingUtilities.invokeLater(() -> {
+                JDialog dialog = (JDialog) SwingUtilities.getWindowAncestor(authenticationPanel);
+                Component[] components = dialog.getComponents();
+                for (Component component : components) {
+                    if (component instanceof JButton) {
+                        JButton button = (JButton) component;
+                        if (button.getText().equals("OK")) {
+                            button.doClick();
+                            break;
+                        }
+                    }
+                }
+            });
+        }
 
-    gbc.gridx = 0;
-    gbc.gridy = 1;
-    gbc.gridwidth = 2;
-    authenticationPanel.add(hostnameLabel, gbc);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
 
-    gbc.gridx = 0;
-    gbc.gridy = 2;
-    gbc.gridwidth = 1;
-    authenticationPanel.add(loginLabel, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.WEST;
+        authenticationPanel.add(urlLabel, gbc);
 
-    gbc.gridx = 1;
-    authenticationPanel.add(emailField, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 2;
+        authenticationPanel.add(hostnameLabel, gbc);
 
-    gbc.gridx = 0;
-    gbc.gridy = 3;
-    authenticationPanel.add(passwordLabel, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 1;
+        authenticationPanel.add(loginLabel, gbc);
 
-    gbc.gridx = 1;
-    authenticationPanel.add(passwordField, gbc);
+        gbc.gridx = 1;
+        authenticationPanel.add(emailField, gbc);
 
-    // Create a nested panel for rememberPasswordCheckBox
-    JPanel checkBoxPanel = new JPanel(new GridBagLayout());
-    GridBagConstraints checkBoxGbc = new GridBagConstraints();
-    checkBoxGbc.gridx = 0;
-    checkBoxGbc.gridy = 0;
-    checkBoxGbc.anchor = GridBagConstraints.WEST;
-    checkBoxPanel.add(rememberPasswordCheckBox, checkBoxGbc);
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        authenticationPanel.add(passwordLabel, gbc);
 
-    gbc.gridx = 1;
-    gbc.gridy = 4;
-    authenticationPanel.add(checkBoxPanel, gbc);
+        gbc.gridx = 1;
+        authenticationPanel.add(passwordField, gbc);
 
-    user = emailField.getText();
-    passwordChars = passwordField.getPassword();
-    passwordField.addActionListener(new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-             Logger logger = Logger.getLogger(getClass().getName());
-            long startTime = System.currentTimeMillis();
+        JPanel checkBoxPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints checkBoxGbc = new GridBagConstraints();
+        checkBoxGbc.gridx = 0;
+        checkBoxGbc.gridy = 0;
+        checkBoxGbc.anchor = GridBagConstraints.WEST;
+        checkBoxPanel.add(rememberPasswordCheckBox, checkBoxGbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 4;
+        authenticationPanel.add(checkBoxPanel, gbc);
+
+        user = emailField.getText();
+        passwordChars = passwordField.getPassword();
+        passwordField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Logger logger = Logger.getLogger(getClass().getName());
+                long startTime = System.currentTimeMillis();
+
+                user = emailField.getText();
+                passwordChars = passwordField.getPassword();
+                doLogin();
+                if (rememberPasswordCheckBox.isSelected()) {
+                    prefs.put("username", emailField.getText());
+                    prefs.put("password", String.valueOf(passwordField.getPassword()));
+                } else {
+                    prefs.remove("username");
+                    prefs.remove("password");
+                }
+                long endTime = System.currentTimeMillis();
+                long executionTime = endTime - startTime;
+                logger.log(Level.INFO, "Execution time: " + executionTime + " milliseconds");
+            }
+        });
+
+        int results = JOptionPane.showConfirmDialog(this, authenticationPanel, "Login", JOptionPane.OK_CANCEL_OPTION);
+
+        if (results == JOptionPane.OK_OPTION) {
             user = emailField.getText();
             passwordChars = passwordField.getPassword();
             doLogin();
-            long endTime = System.currentTimeMillis();
-            long executionTime = endTime - startTime;
-            logger.log(Level.INFO, "Execution time: " + executionTime + " milliseconds");
+            if (rememberPasswordCheckBox.isSelected()) {
+                prefs.put("username", emailField.getText());
+                prefs.put("password", String.valueOf(passwordField.getPassword()));
+            } else {
+                prefs.remove("username");
+                prefs.remove("password");
+            }
         }
-    });
-
-    int results = JOptionPane.showConfirmDialog(this, authenticationPanel, "Login", JOptionPane.OK_CANCEL_OPTION);
-
-    if (results == JOptionPane.OK_OPTION) {
-        user = emailField.getText();
-        passwordChars = passwordField.getPassword();
-        doLogin();
     }
- //   long endTime = System.currentTimeMillis();
-//            long executionTime = endTime - startTime;
-//            logger.log(Level.INFO, "Execution time: " + executionTime + " milliseconds");
-}
 
-    public void doLogin() {
-        System.out.println("User " + user);
-        System.out.println("Password " + passwordChars);
-        String pass = new String(passwordChars);
-
-        try {
-
+    public void doLogin() { 
+        String pass = new String(passwordChars); 
+        try { 
             URL url = new URL(apiUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");

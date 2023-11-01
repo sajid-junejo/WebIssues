@@ -15,9 +15,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Map; 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
@@ -81,9 +79,7 @@ public class EditIssues extends javax.swing.JFrame {
     ConnectionDAOImpl connectionDao = new ConnectionDAOImpl();
 
     public void EditForm() {
-        SwingUtilities.invokeLater(() -> {
-            Logger logger = Logger.getLogger(getClass().getName());
-            long startTime = System.currentTimeMillis();
+        SwingUtilities.invokeLater(() -> { 
             int x = 30;
             int tx = 75;
             int y = 10;
@@ -110,10 +106,7 @@ public class EditIssues extends javax.swing.JFrame {
                                 int currentProjectId = typeObject.getInt("id");
                                 int typeId = HomeFrame.typeId;
                                 if (currentProjectId == typeId) {
-                                    JSONArray attributesArray = typeObject.getJSONArray("attributes");
-                                    Logger logger1 = Logger.getLogger(getClass().getName());
-                                    long startTime1 = System.currentTimeMillis();
-                                    logger.log(Level.INFO, "Execution time: " + (startTime1 - startTime) + " milliseconds");
+                                    JSONArray attributesArray = typeObject.getJSONArray("attributes"); 
                                     for (int j = 0; j < attributesArray.length(); j++) {
                                         JSONObject attributeObject = attributesArray.getJSONObject(j);
                                         //System.out.println("Attributes : " + attributesArray);
@@ -371,14 +364,10 @@ public class EditIssues extends javax.swing.JFrame {
                                         }
 
                                     }
-                                    long endTime = System.currentTimeMillis();
-                                    logger.log(Level.INFO, "total Time Second : " + (endTime - startTime1) + " milliseconds");
-                                    long executionTime = endTime - startTime1;
-                                    logger.log(Level.INFO, "Execution time: " + executionTime + " milliseconds");
                                 }
                             }
                         } else {
-                            logger.log(Level.SEVERE, "Error: 'result' not found in the JSON response.");
+                            //logger.log(Level.SEVERE, "Error: 'result' not found in the JSON response.");
                         }
                     }
                     } catch (JSONException e) {
@@ -388,11 +377,7 @@ public class EditIssues extends javax.swing.JFrame {
 //                    System.err.println("Error: HTTP Response Code " + responseCode);
 //                } 
             jPanel3.revalidate();
-            jPanel3.repaint();
-            long endTime = System.currentTimeMillis();
-            logger.log(Level.INFO, "End Time Last time: " + endTime + " milliseconds");
-            long executionTime = endTime - startTime;
-            logger.log(Level.INFO, "Execution time Last: " + executionTime + " milliseconds");
+            jPanel3.repaint(); 
         });
     }
 

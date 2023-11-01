@@ -21,23 +21,21 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.WindowEvent; 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
-import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+import pojos.Files;
 import pojos.Folder;
 import pojos.Project;
 import pojos.SessionManager;
@@ -46,6 +44,8 @@ public class HomeFrame extends javax.swing.JFrame {
 
     FoldersDAOImpl folders = new FoldersDAOImpl();
     Folder folder = new Folder();
+    Files file = new Files();
+    public static String fileName = null; 
     GlobalDAOImpl global = new GlobalDAOImpl();
     private final Map<String, Integer> projectIds = new HashMap<>();
     DefaultTreeModel model;
@@ -858,7 +858,7 @@ public class HomeFrame extends javax.swing.JFrame {
         SwingUtilities.invokeLater(() -> {
             int hx = 30;
             int hy = attributeY + 25;
-            int hlabelWidth = 500;
+            int hlabelWidth = 550;
             int hheight = 16;
             int hlabelSpacing = 5;
             int labelY = hy;
@@ -893,12 +893,14 @@ public class HomeFrame extends javax.swing.JFrame {
                                 extractedValue = matcher.group(1);
                                 extractedValue = extractedValue.replace("id:", "");
                                 String[] parts = line.split(":", 2);
-                                String labelText = parts[0]; // Text before the colon
+                                String labelText = parts[0]; 
                                 String hyperlinkText = parts[1].replaceAll("\\[([^\\]]+)\\]", "");
+                                hyperlinkText = hyperlinkText.replaceAll("[{}]", ""); 
+                                file.setFileName(hyperlinkText);
+                                fileName = hyperlinkText;
                                 String htmlText = "<html><li>" + labelText + ": <a href='https://example.com'>" + hyperlinkText + "</a></li></html>";
                                 JLabel historyLabel = new JLabel(htmlText);
-                                historyLabel.setBounds(hx, labelY, hlabelWidth, hheight);
-
+                                historyLabel.setBounds(hx, labelY, hlabelWidth, hheight); 
                                 jPanel2.add(historyLabel);
                                 labelY += hheight + hlabelSpacing;
                                 historyLabel.addMouseListener(new MouseAdapter() {
@@ -927,14 +929,11 @@ public class HomeFrame extends javax.swing.JFrame {
             if (labelY > 230) {
                 jPanel2.setPreferredSize(new Dimension(jPanel2.getWidth(), labelY + 10));
             }
-
             jPanel2.revalidate();
             jPanel2.repaint();
         });
     }
-
     private class ButtonClickListener implements ActionListener {
-
         private boolean labelsAdded = false;
         private JButton greenButton = null;
 
@@ -963,7 +962,7 @@ public class HomeFrame extends javax.swing.JFrame {
             }
         }
     }
-    
+
     public void refreshJTableAfterChange() {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         int previousSelectedRow = jTable1.getSelectedRow();
@@ -1001,7 +1000,7 @@ public class HomeFrame extends javax.swing.JFrame {
             jPanel2.revalidate();
         }
     }
-    
+
     public void refreshJTable() {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         int previousSelectedRow = jTable1.getSelectedRow();
@@ -1017,26 +1016,6 @@ public class HomeFrame extends javax.swing.JFrame {
         jTable1.repaint();
         if (previousSelectedRow != -1 && previousSelectedRow < jTable1.getRowCount()) {
             jTable1.setRowSelectionInterval(previousSelectedRow, previousSelectedRow);
-            int selectedRow = jTable1.getSelectedRow();
-//            if (selectedRow != -1) {
-//                int idColumnIndex = jTable1.getColumnModel().getColumnIndex("ID");
-//                Object idValue = jTable1.getValueAt(selectedRow, idColumnIndex);
-//
-//                int idColumnIndez = jTable1.getColumnModel().getColumnIndex("Name");
-//                Object idValues = jTable1.getValueAt(selectedRow, idColumnIndez);
-//                if (idValue != null) {
-//                    jPanel2.removeAll();
-//                    String idString = idValue.toString().replaceAll("<.*?>|[^0-9]", "");
-//                    IssueID = Integer.parseInt(idString);
-//                    issuesDAO.getIssueResult(IssueID);
-//                    issueAttributes();
-//                    issueDetails();
-//                    history();
-//                }
-//            }
-//
-//            jPanel2.repaint();
-//            jPanel2.revalidate();
         }
     }
     private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
@@ -1053,8 +1032,6 @@ public class HomeFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jLabel12MouseClicked
 
     private void jTree1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTree1MouseClicked
-        Logger logger = Logger.getLogger(getClass().getName());
-        long startTime = System.currentTimeMillis();
         jLabel12.setText("Add Folder");
         jLabel12.setEnabled(true);
         jPanel3.setVisible(false);
@@ -1072,9 +1049,6 @@ public class HomeFrame extends javax.swing.JFrame {
                 handleTreePath(path);
             }
         }
-        long endTime = System.currentTimeMillis();
-        long executionTime = endTime - startTime;
-        logger.log(Level.INFO, "Execution time Last: " + executionTime + " milliseconds");
     }//GEN-LAST:event_jTree1MouseClicked
 
     private void handleTreePath(TreePath path) {
@@ -1130,7 +1104,6 @@ public class HomeFrame extends javax.swing.JFrame {
     }
 
     private void handleTableDataLoad() {
-        System.out.println("Table Called " + FoldersID);
         DefaultTableModel tableModel = null;
         tableModel = issuesDAO.getTableData(FoldersID);
         jTable1.setModel(tableModel);
@@ -1139,15 +1112,13 @@ public class HomeFrame extends javax.swing.JFrame {
 
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
         SwingUtilities.invokeLater(() -> {
-            Logger logger = Logger.getLogger(getClass().getName());
-            long startTime = System.currentTimeMillis();
             scroll.getVerticalScrollBar().setValue(0);
             jPanel2.revalidate();
             jLabel12.setEnabled(true);
             jLabel12.setText("Add Issue");
 
             int clickedRow = jTable1.rowAtPoint(evt.getPoint());
-            
+
             if (SwingUtilities.isRightMouseButton(evt)) {
                 selectedRowIndx = clickedRow;
                 JPopupMenu popupMenu = createPopupMenu();
@@ -1161,9 +1132,6 @@ public class HomeFrame extends javax.swing.JFrame {
             if (selectedRowIndx != -1 && selectedRowIndx < jTable1.getRowCount()) {
                 jTable1.setRowSelectionInterval(selectedRowIndx, selectedRowIndx);
             }
-            long endTime = System.currentTimeMillis();
-            long executionTime = endTime - startTime;
-            logger.log(Level.INFO, "Execution time: " + executionTime + " milliseconds");
         });
     }//GEN-LAST:event_jTable1MouseClicked
 
@@ -1262,8 +1230,6 @@ public class HomeFrame extends javax.swing.JFrame {
     }
 
     private void handleLeftClick() {
-        Logger logger = Logger.getLogger(getClass().getName());
-        long startTime = System.currentTimeMillis();
         jPanel2.removeAll();
         int selectedRow = jTable1.getSelectedRow();
         if (selectedRow != -1) {
@@ -1281,9 +1247,6 @@ public class HomeFrame extends javax.swing.JFrame {
                 history();
             }
         }
-        long endTime = System.currentTimeMillis();
-        long executionTime = endTime - startTime;
-        logger.log(Level.INFO, "Execution time HomeFrame " + executionTime + " milliseconds");
     }
 
     private void jTable1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTable1KeyPressed

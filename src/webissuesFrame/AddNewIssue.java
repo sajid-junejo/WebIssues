@@ -13,9 +13,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Map; 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
@@ -76,9 +74,7 @@ public class AddNewIssue extends javax.swing.JFrame {
     public static String getDescription = null;
 
     public void AddForm() {
-        SwingUtilities.invokeLater(() -> {
-        Logger logger = Logger.getLogger(getClass().getName());
-        long startTime = System.currentTimeMillis();
+        SwingUtilities.invokeLater(() -> { 
         int x = 1;
         int tx = 20;
         int y = 10;
@@ -100,9 +96,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                         int typeId = HomeFrame.typeId;
                         if (currentProjectId == typeId) {
                             JSONArray attributesArray = typeObject.getJSONArray("attributes");
-                            for (int j = 0; j < attributesArray.length(); j++) {
-                                Logger logger1 = Logger.getLogger(getClass().getName());
-                                long startTime1 = System.currentTimeMillis();
+                            for (int j = 0; j < attributesArray.length(); j++) { 
                                 JSONObject attributeObject = attributesArray.getJSONObject(j);
                                 String attributeName = attributeObject.getString("name");
                                 String attributeType = attributeObject.getString("type");
@@ -281,10 +275,7 @@ public class AddNewIssue extends javax.swing.JFrame {
 
                                     getAttributeValues.put(attributeId, dateChooser.getDate());
                                     jPanel5.add(dateChooser);
-                                }
-                                long endTime = System.currentTimeMillis();
-                                long executionTime = endTime - startTime;
-                                logger.log(Level.INFO, "Execution time: Inside " + executionTime + " milliseconds");
+                                } 
                             }
                         }
                     }
@@ -296,10 +287,7 @@ public class AddNewIssue extends javax.swing.JFrame {
             e.printStackTrace();
         } 
         jPanel5.revalidate();
-        jPanel5.repaint();
-        long endTime = System.currentTimeMillis();
-        long executionTime = endTime - startTime;
-        logger.log(Level.INFO, "Execution time: Outside" + executionTime + " milliseconds");
+        jPanel5.repaint(); 
         });
     }
 
@@ -516,7 +504,6 @@ public class AddNewIssue extends javax.swing.JFrame {
         info = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
-        issuename = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         newissue = new javax.swing.JTextField();
         typename = new javax.swing.JLabel();
@@ -533,7 +520,6 @@ public class AddNewIssue extends javax.swing.JFrame {
         );
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setPreferredSize(new java.awt.Dimension(741, 517));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosed(java.awt.event.WindowEvent evt) {
                 formWindowClosed(evt);
@@ -651,8 +637,6 @@ public class AddNewIssue extends javax.swing.JFrame {
             }
         });
 
-        issuename.setText("Name:");
-
         jLabel2.setText("Name:");
 
         typename.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
@@ -684,11 +668,6 @@ public class AddNewIssue extends javax.swing.JFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(typename, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)))
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(jPanel1Layout.createSequentialGroup()
-                    .addGap(337, 337, 337)
-                    .addComponent(issuename, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE)
-                    .addGap(338, 338, 338)))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -711,11 +690,6 @@ public class AddNewIssue extends javax.swing.JFrame {
                     .addComponent(jButton1)
                     .addComponent(jButton2))
                 .addContainerGap())
-            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(jPanel1Layout.createSequentialGroup()
-                    .addGap(249, 249, 249)
-                    .addComponent(issuename, javax.swing.GroupLayout.DEFAULT_SIZE, 21, Short.MAX_VALUE)
-                    .addGap(250, 250, 250)))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -774,7 +748,6 @@ public class AddNewIssue extends javax.swing.JFrame {
     private javax.swing.JLabel clmname;
     private javax.swing.JTextPane description;
     private javax.swing.JLabel info;
-    private javax.swing.JLabel issuename;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;

@@ -1,6 +1,8 @@
 package DAOImpl;
 
 import DAO.IssuesDAO;
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,9 +18,21 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.*;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -29,20 +43,26 @@ import javax.swing.table.DefaultTableModel;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import pojos.Files;
 import webissuesFrame.HomeFrame;
 import webissuesFrame.LoginFrame;
 import pojos.Issues;
 import pojos.SessionManager;
 import webissuesFrame.AddNewIssue;
 import webissuesFrame.EditIssues;
+import webissuesFrame.ShowImage;
 
 public class IssuesDAOImpl implements IssuesDAO {
 
+    Files file = new Files();
+    String FileName = null;
     public static String name = "";
     GlobalDAOImpl global = new GlobalDAOImpl();
     private Map<Integer, String> userMap = new HashMap<>();
     public List<JSONObject> resultList;
     public Map<Integer, Object> AttributesMap;
+    public static byte[] transferData = null;
+
     public IssuesDAOImpl() {
         resultList = new ArrayList<>();
         AttributesMap = new HashMap<>();
@@ -65,7 +85,7 @@ public class IssuesDAOImpl implements IssuesDAO {
     public DefaultTableModel getTableData(int folderId) {
         DefaultTableModel tableModel = new DefaultTableModel();
         String apiUrl = connectionDao.buildApiUrl("issues/list.php");
-        String jsonInputString = "{\"folderId\": " + folderId + ", \"limit\": " + 50 + "}";
+        String jsonInputString = "{\"folderId\": " + folderId + ", \"limit\": " + 5000 + "}";
 
         HttpURLConnection connection = connectionDao.establishConnection(apiUrl);
 
@@ -122,17 +142,17 @@ public class IssuesDAOImpl implements IssuesDAO {
     }
 
     public Map<Integer, Object> printAttributes(int issueId) {
-        Map<Integer, Object> attributes = new HashMap<>(); 
+        Map<Integer, Object> attributes = new HashMap<>();
         try {
-            for (JSONObject result : resultList) { 
+            for (JSONObject result : resultList) {
                 if (result.has("result")) {
                     JSONObject resultObject = result.getJSONObject("result");
 
                     if (resultObject.has("details")) {
                         JSONObject details = resultObject.getJSONObject("details");
-                        int id = details.getInt("id"); 
+                        int id = details.getInt("id");
                         if (id == issueId) {
-                            JSONArray attributesArray = resultObject.getJSONArray("attributes"); 
+                            JSONArray attributesArray = resultObject.getJSONArray("attributes");
                             for (int i = 0; i < attributesArray.length(); i++) {
                                 JSONObject attribute = attributesArray.getJSONObject(i);
                                 int attrId = attribute.getInt("id");
@@ -140,7 +160,7 @@ public class IssuesDAOImpl implements IssuesDAO {
                                 //System.out.println("ID :"+attrId+ " Value : "+attributeValue);
                                 attributes.put(attrId, attributeValue);
                                 AttributesMap.put(attrId, attributeValue);
-                            } 
+                            }
                         } else {
                             System.err.println("Error: Issue with the specified ID not found in the JSON response.");
                         }
@@ -157,7 +177,7 @@ public class IssuesDAOImpl implements IssuesDAO {
 
         return attributes;
     }
-     
+
     @Override
     public Map<String, Object> getAttributes(int issueId) {
         Map<String, Object> attributesMap = new LinkedHashMap<>();
@@ -183,15 +203,15 @@ public class IssuesDAOImpl implements IssuesDAO {
                                             int typeAttrId = typeAttribute.getInt("id");
                                             String typeAttrName = typeAttribute.optString("name", " ");
                                             if (typeAttrId == attrId) {
-                                                attributeName = typeAttrName; 
-                                                      
+                                                attributeName = typeAttrName;
+
                                             }
-                                        } 
+                                        }
                                     }
                                 }
                                 attributesMap.put(attributeName, attributeValue);
                             }
-                            return attributesMap;  
+                            return attributesMap;
                         }
                     } else {
                         System.err.println("Error: 'details' not found in the JSON response.");
@@ -260,135 +280,131 @@ public class IssuesDAOImpl implements IssuesDAO {
     }
 
     @Override
-   public Map<String, String> getHistory(int issueId) {
-    Map<String, String> historyMap = new LinkedHashMap<>();
+    public Map<String, String> getHistory(int issueId) {
+        Map<String, String> historyMap = new LinkedHashMap<>();
 
-    Map<Integer, String> userMap = new HashMap<>();
-    for (JSONObject user : usersList) {
-        int id = user.optInt("id");
-        String name = user.optString("name");
-        userMap.put(id, name);
-    }
+        Map<Integer, String> userMap = new HashMap<>();
+        for (JSONObject user : usersList) {
+            int id = user.optInt("id");
+            String name = user.optString("name");
+            userMap.put(id, name);
+        }
 
-    try {
-        for (JSONObject result : resultList) {
-            if (result.has("result")) {
-                JSONObject resultObject = result.getJSONObject("result");
+        try {
+            for (JSONObject result : resultList) {
+                if (result.has("result")) {
+                    JSONObject resultObject = result.getJSONObject("result");
 
-                int detailsId = resultObject.getJSONObject("details").optInt("id");
+                    int detailsId = resultObject.getJSONObject("details").optInt("id");
 
-                if (resultObject.has("history")) {
-                    JSONArray historyArray = resultObject.getJSONArray("history");
+                    if (resultObject.has("history")) {
+                        JSONArray historyArray = resultObject.getJSONArray("history");
 
-                    for (int i = 0; i < historyArray.length(); i++) {
-                        JSONObject historyEntry = historyArray.getJSONObject(i);
+                        for (int i = 0; i < historyArray.length(); i++) {
+                            JSONObject historyEntry = historyArray.getJSONObject(i);
 
-                        if (detailsId == issueId) {
-                            String createdDate = formatDateTime(historyEntry.optLong("createdDate"));
-                            int createdBy = historyEntry.optInt("createdBy");
-                            String createdByUser = userMap.get(createdBy);
+                            if (detailsId == issueId) {
+                                String createdDate = formatDateTime(historyEntry.optLong("createdDate"));
+                                int createdBy = historyEntry.optInt("createdBy");
+                                String createdByUser = userMap.get(createdBy);
 
-                            String newValue = historyEntry.optString("new");
-                            String oldValue = historyEntry.optString("old");
-                            String text = historyEntry.optString("text");
-                            String name = historyEntry.optString("name");
-                            String attributeId = historyEntry.optString("attributeId");
-
-                            int atrID = attributeId.isEmpty() ? 0 : Integer.parseInt(attributeId);
-                            String attributeName = null;
-
-                            for (JSONObject type : typesList) {
-                                if (type.has("attributes")) {
-                                    JSONArray typeAttributes = type.getJSONArray("attributes");
-                                    for (int j = 0; j < typeAttributes.length(); j++) {
-                                        JSONObject typeAttribute = typeAttributes.getJSONObject(j);
-                                        int typeAttrId = typeAttribute.optInt("id");
-                                        String typeAttrName = typeAttribute.optString("name", " ");
-                                        if (typeAttrId == atrID) {
-                                            attributeName = typeAttrName;
+                                String newValue = historyEntry.optString("new");
+                                String oldValue = historyEntry.optString("old");
+                                String text = historyEntry.optString("text");
+                                String name = historyEntry.optString("name");
+                                String attributeId = historyEntry.optString("attributeId");
+                                int id = historyEntry.optInt("id");
+                                int atrID = attributeId.isEmpty() ? 0 : Integer.parseInt(attributeId);
+                                String attributeName = null;
+                                for (JSONObject type : typesList) {
+                                    if (type.has("attributes")) {
+                                        JSONArray typeAttributes = type.getJSONArray("attributes");
+                                        for (int j = 0; j < typeAttributes.length(); j++) {
+                                            JSONObject typeAttribute = typeAttributes.getJSONObject(j);
+                                            int typeAttrId = typeAttribute.optInt("id");
+                                            String typeAttrName = typeAttribute.optString("name", " ");
+                                            if (typeAttrId == atrID) {
+                                                attributeName = typeAttrName;
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            if (attributeName == null) {
-                                if (attributeId.isEmpty() && text.isEmpty() && name.isEmpty()) {
-                                    attributeName = "NAME";
-                                } else if (attributeId.isEmpty()) {
-                                    attributeName = "Comment";
-                                } else {
-                                    attributeName = "UNKNOWN ATTRIBUTE";
+                                if (attributeName == null) {
+                                    if (attributeId.isEmpty() && text.isEmpty() && name.isEmpty()) {
+                                        attributeName = "NAME";
+                                    } else if (attributeId.isEmpty()) {
+                                        attributeName = "Comment";
+                                    } else {
+                                        attributeName = "UNKNOWN ATTRIBUTE";
+                                    }
                                 }
-                            }
-
-                            if (!name.isEmpty()) {
-                                attributeName = "ATTACHMENT";
-                            }
-
-                            String currentKey = createdDate + " — " + createdByUser;
-                            String currentEntry = historyMap.get(currentKey);
-
-                            if (currentEntry == null) {
-                                currentEntry = "";
-                            }
-
-                            if (!newValue.equals(oldValue) || (attributeName.equals("Comment") && detailsId == issueId)) {
-                                if (!currentEntry.isEmpty()) {
-                                    currentEntry += "\n";
+                                if (!name.isEmpty()) {
+                                    attributeName = "ATTACHMENT";
                                 }
+
+                                String currentKey = createdDate + " — " + createdByUser;
+                                String currentEntry = historyMap.get(currentKey);
+
+                                if (currentEntry == null) {
+                                    currentEntry = "";
+                                }
+
+                                if (!newValue.equals(oldValue) || (attributeName.equals("Comment") && detailsId == issueId)) {
+                                    if (!currentEntry.isEmpty()) {
+                                        currentEntry += "\n";
+                                    }
+                                }
+                                currentEntry += "   " + attributeName + ": "
+                                        + (attributeName.equals("Comment") ? text.replace("\n", " ")
+                                                : (attributeName.equals("ATTACHMENT") ? "{" + name + "}[id:" + id + "]"
+                                                        : (oldValue + " → " + newValue)));
+
+                                historyMap.put(currentKey, currentEntry);
                             }
-
-                            currentEntry += "   " + attributeName + ": "
-                                + (attributeName.equals("Comment") ? text.replace("\n", " ")
-                                    : (attributeName.equals("ATTACHMENT") ? "{" + name + "}[id:" + atrID + "]"
-                                        : (oldValue + " → " + newValue)));
-
-                            historyMap.put(currentKey, currentEntry);
                         }
+                    } else {
+                        System.err.println("Error: 'history' not found in the JSON response.");
                     }
                 } else {
-                    System.err.println("Error: 'history' not found in the JSON response.");
+                    System.err.println("Error: 'result' not found in the JSON response.");
                 }
-            } else {
-                System.err.println("Error: 'result' not found in the JSON response.");
             }
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
-    } catch (JSONException e) {
-        e.printStackTrace();
+        return historyMap;
     }
-    return historyMap;
-}
 
     @Override
-   public String getDescription(int issueID) {
-    String text = null;
-    try{
-    for (JSONObject result : resultList) {
-        if (result.has("result")) {
-            JSONObject resultObject = result.getJSONObject("result");
-            if (resultObject.has("description") && resultObject.get("description") instanceof JSONObject) {
-                JSONObject description = resultObject.getJSONObject("description");
+    public String getDescription(int issueID) {
+        String text = null;
+        try {
+            for (JSONObject result : resultList) {
+                if (result.has("result")) {
+                    JSONObject resultObject = result.getJSONObject("result");
+                    if (resultObject.has("description") && resultObject.get("description") instanceof JSONObject) {
+                        JSONObject description = resultObject.getJSONObject("description");
 
-                if (description.has("text")) {
-                    text = description.getString("text");
+                        if (description.has("text")) {
+                            text = description.getString("text");
+                        } else {
+                            // Handle the case where 'text' is not found in the 'description' object.
+                            System.err.println("Error: 'text' not found in the 'description' object.");
+                        }
+                    } else {
+                        // Handle the case where 'description' is not found in the 'result' object.
+                    }
                 } else {
-                    // Handle the case where 'text' is not found in the 'description' object.
-                    System.err.println("Error: 'text' not found in the 'description' object.");
+                    // Handle the case where 'result' is not found in the JSON response.
+                    System.err.println("Error: 'result' not found in the JSON response.");
                 }
-            } else {
-                // Handle the case where 'description' is not found in the 'result' object.
             }
-        } else {
-            // Handle the case where 'result' is not found in the JSON response.
-            System.err.println("Error: 'result' not found in the JSON response.");
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
+        return text;
     }
-    } catch (JSONException e) {
-        e.printStackTrace();
-    }
-    return text;
-}
-
 
     @Override
     public String deleteIssue(int issueId) {
@@ -525,7 +541,7 @@ public class IssuesDAOImpl implements IssuesDAO {
                 for (Map.Entry<Integer, Object> entry : AddNewIssue.filteredValues.entrySet()) {
                     Integer key = entry.getKey();
                     Object value = entry.getValue();
-                    System.out.println(" Key : "+key+" Value : "+value);
+                    System.out.println(" Key : " + key + " Value : " + value);
                     if (value instanceof Number) {
                         value = value.toString();
                     }
@@ -600,47 +616,6 @@ public class IssuesDAOImpl implements IssuesDAO {
         }
     }
 
-    public void getFile(String id) {
-        try {
-            URL url = new URL(LoginFrame.apiUrl);
-            String api = url.getProtocol() + "://" + url.getHost() + "/";
-            String apiUrl = api + "webissues/client/file.php?id=" + id;
-
-            // Open a connection to the API
-            HttpURLConnection connection = (HttpURLConnection) new URL(apiUrl).openConnection();
-            connection.setRequestMethod("GET");
-            connection.setRequestProperty("Accept", "image/jpeg");
-
-            // Get the response code
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                try (InputStream inputStream = connection.getInputStream()) {
-                    byte[] imageData;
-                    try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-                        byte[] buffer = new byte[1024];
-                        int bytesRead;
-                        while ((bytesRead = inputStream.read(buffer)) != -1) {
-                            byteArrayOutputStream.write(buffer, 0, bytesRead);
-                        }
-                        imageData = byteArrayOutputStream.toByteArray();
-                    }
-
-                    SwingUtilities.invokeLater(() -> {
-                        displayImage(imageData);
-                    });
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                System.err.println("HTTP Error Response: " + responseCode);
-            }
-
-            connection.disconnect();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void getIssueResult(int issueId) {
         String apiUrl = connectionDao.buildApiUrl("issues/load.php");
         try {
@@ -656,10 +631,10 @@ public class IssuesDAOImpl implements IssuesDAO {
                         + "\"unread\": false,"
                         + "\"html\": true"
                         + "}";
-                JSONObject jsonResponse = connectionDao.makeRequestAndGetResponse(connection, jsonInputString);  
+                JSONObject jsonResponse = connectionDao.makeRequestAndGetResponse(connection, jsonInputString);
                 if (jsonResponse != null) {
                     resultList.clear();
-                    resultList.add(jsonResponse);  
+                    resultList.add(jsonResponse);
                 } else {
                     System.err.println("Error: 'result' not found in the JSON response.");
                 }
@@ -668,28 +643,147 @@ public class IssuesDAOImpl implements IssuesDAO {
             e.printStackTrace();
         }
     }
-   
-    private void displayImage(byte[] imageData) {
-        ImageIcon imageIcon = new ImageIcon(imageData);
-        Image image = imageIcon.getImage();
 
-        if (image != null) {
-            JFrame frame = new JFrame("Image Display");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    public void getFile(String id) {
+        try {
+            URL url = new URL(LoginFrame.apiUrl);
+            String api = url.getProtocol() + "://" + url.getHost() + "/";
+            String apiUrl = api;
+            if (apiUrl.startsWith("https")) {
+                apiUrl = apiUrl + "client/file.php?id=" + id;
+            } else {
+                apiUrl = apiUrl + "webissues/client/file.php?id=" + id;
+            }  
+            HttpURLConnection connection = (HttpURLConnection) new URL(apiUrl).openConnection();
+            connection.setRequestMethod("GET");
+            System.out.println("api " + apiUrl);
+            connection.setRequestProperty("Cookie", SessionManager.getInstance().getCookie());
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
-            JPanel panel = new JPanel();
-            JLabel imageLabel = new JLabel(new ImageIcon(image));
-            panel.add(imageLabel);
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                try (InputStream inputStream = connection.getInputStream()) {
+                    byte[] imageData;
+                    try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+                        byte[] buffer = new byte[16384];
+                        int bytesRead;
+                        while ((bytesRead = inputStream.read(buffer)) != -1) {
+                            byteArrayOutputStream.write(buffer, 0, bytesRead);
+                        }
+                        imageData = byteArrayOutputStream.toByteArray();
+//                        transferData = imageData;
+//                        ShowImage img = new ShowImage();
+//                        img.setVisible(true);
+                        SwingUtilities.invokeLater(() -> {
+                            displayImage(imageData);
+                        });
+                    }
 
-            JScrollPane scrollPane = new JScrollPane(panel);
-            panel.setPreferredSize(new Dimension(800, 600));
-            scrollPane.setPreferredSize(new Dimension(800, 600));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                System.err.println("HTTP Error Response: " + responseCode);
+            }
 
-            frame.add(scrollPane);
-            frame.pack();
-            frame.setVisible(true);
+            connection.disconnect();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void displayImage(byte[] imageData) {
+        if (imageData != null && imageData.length > 0) {
+            try {
+                if (ImageIO.read(new ByteArrayInputStream(imageData)) != null) {
+                    ImageIcon imageIcon = new ImageIcon(ImageIO.read(new ByteArrayInputStream(imageData)));
+
+                    FileName = HomeFrame.fileName;
+                    if (imageIcon.getIconWidth() > 0) {
+                        JFrame frame = new JFrame(FileName);
+                        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                        GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+                        int screenIndex = 0;
+                        if (screenIndex >= 0 && screenIndex < screens.length) {
+                            GraphicsConfiguration gc = screens[screenIndex].getDefaultConfiguration();
+                            int screenWidth = gc.getBounds().width;
+                            int screenHeight = gc.getBounds().height;
+                            int frameWidth = 800;
+                            int frameHeight = 600;
+                            int x = (screenWidth - frameWidth) / 2;
+                            int y = (screenHeight - frameHeight) / 2;
+                            System.out.println("X " + x + " Y " + y);
+                            frame.setLocation(x, y);
+                        } else {
+
+                            frame.setLocationRelativeTo(null);
+                        }
+
+                        JPanel panel = new JPanel(new BorderLayout());
+
+                        JLabel imageLabel = new JLabel(imageIcon);
+                        panel.add(imageLabel, BorderLayout.CENTER);
+
+                        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+
+                        JButton saveButton = new JButton("SAVE"); 
+                        saveButton.setBackground(Color.decode("#337ab7"));
+                        //saveButton.setForeground(Color.decode("#fff"));
+                        saveButton.addActionListener(new ActionListener() {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                try {
+                                    String downloadsFolder = System.getProperty("user.home") + File.separator + "Downloads";
+                                    String filePath = downloadsFolder + File.separator + FileName;
+                                    FileOutputStream fileOutput = new FileOutputStream(filePath);
+                                    fileOutput.write(imageData);
+                                    fileOutput.close();
+                                    System.out.println("Image saved!");
+                                    frame.dispose();
+                                } catch (IOException ex) {
+                                    ex.printStackTrace();
+                                }
+                            }
+                        });
+ 
+                        JButton cancelButton = new JButton("CANCEL");
+                        cancelButton.addActionListener(new ActionListener() {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                frame.dispose();
+                            }
+                        });
+
+                        buttonPanel.add(saveButton);
+                        buttonPanel.add(cancelButton);
+                        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+                        JScrollPane scrollPane = new JScrollPane(panel);
+                        frame.add(scrollPane);
+                        GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+                        int screenWidth = gd.getDisplayMode().getWidth(); 
+ 
+                        if (screenWidth > 1400) {
+                            frame.setPreferredSize(new Dimension(1500, 800));
+                            frame.pack();
+                            frame.setVisible(true);
+                        }else{
+                            frame.setPreferredSize(new Dimension(800, 600));
+                        frame.pack();
+                        frame.setVisible(true);
+                        }
+
+                    } else {
+                        System.err.println("Failed to load the image.");
+                    }
+                } else {
+                    System.err.println("Image format not supported or image is corrupted.");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } else {
-            System.err.println("Failed to load the image.");
+            System.err.println("Image data is empty or null.");
         }
     }
 }

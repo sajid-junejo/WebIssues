@@ -1,19 +1,12 @@
 package DAOImpl;
 
 import DAO.GlobalDAO;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import pojos.SessionManager;
-import webissuesFrame.LoginFrame;
 
 public class GlobalDAOImpl implements GlobalDAO {
 
