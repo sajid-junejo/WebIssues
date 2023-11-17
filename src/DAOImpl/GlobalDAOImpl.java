@@ -304,7 +304,27 @@ public class GlobalDAOImpl implements GlobalDAO {
         }
         return members;
     }
-
+    public int getAccess(int projectId){
+        int access = 0;
+        try {
+            for (JSONObject jsonResponse : resultList) {
+                if (jsonResponse != null && jsonResponse.has("result")) {
+                    JSONObject result = jsonResponse.getJSONObject("result");
+                    JSONArray projectsArray = result.getJSONArray("projects"); 
+                    for (int i = 0; i < projectsArray.length(); i++) {
+                        JSONObject projectJson = projectsArray.getJSONObject(i);
+                        int currentProjectId = projectJson.getInt("id");                         
+                        if (currentProjectId == projectId) {
+                            access = projectJson.getInt("access"); 
+                        }
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return access;
+    }
     public Object getMinValue(int attributeId) {
      try {
             for (JSONObject jsonResponse : resultList) {

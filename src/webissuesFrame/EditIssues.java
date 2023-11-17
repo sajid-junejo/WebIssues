@@ -1,14 +1,11 @@
 package webissuesFrame;
- 
-import DAOImpl.ConnectionDAOImpl;
+  
 import DAOImpl.GlobalDAOImpl;
 import DAOImpl.IssuesDAOImpl;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.toedter.calendar.JDateChooser;
 import java.awt.Component;
-import java.awt.Image;
-import java.io.BufferedReader;  
-import java.net.HttpURLConnection; 
+import java.awt.Image;  
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -22,21 +19,14 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
-import org.jdesktop.swingx.JXDatePicker;
+import javax.swing.SwingUtilities; 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
-import pojos.Issues;
-import pojos.SessionManager; 
+import org.json.JSONObject;  
 
 public class EditIssues extends javax.swing.JFrame {
-
-    JXDatePicker datetime = new JXDatePicker();
-    HomeFrame home = new HomeFrame();
-    private JLabel[] labels;
-    private JTextField[] textFields;
-    private JComboBox[] combobox;
+ 
+    HomeFrame home = new HomeFrame(); 
     public static String oldName = null;
     GlobalDAOImpl global = new GlobalDAOImpl();
     IssuesDAOImpl issueDao = new IssuesDAOImpl();
@@ -52,9 +42,9 @@ public class EditIssues extends javax.swing.JFrame {
         Image icon = new ImageIcon(this.getClass().getResource("/img/webissueslogo.png")).getImage();
         this.setIconImage(icon);
         this.setTitle("Edit Attributes");
-        labels = new JLabel[0];
-        textFields = new JTextField[0];
-        combobox = new JComboBox[0]; 
+        //labels = new JLabel[0];
+        //textFields = new JTextField[0];
+        //combobox = new JComboBox[0]; 
         this.setResizable(false);
         this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         ImageIcon icon1 = new ImageIcon(this.getClass().getResource("/img/information.png"));
@@ -65,18 +55,14 @@ public class EditIssues extends javax.swing.JFrame {
             userMap.put(id, name);
         }
     }
-    List<JSONObject> usersList = global.getUsersList();
-    String csrfToken = SessionManager.getInstance().getCsrfToken();
-    int userID = SessionManager.getInstance().getUserId();
-    Issues issue = new Issues();
+    List<JSONObject> usersList = global.getUsersList();  
     int id = HomeFrame.IssueID;
     Map<Integer, Object> attributeValues = issueDao.printAttributes(id);
     Map<Integer, Object> getAttributeValues = new HashMap<>();
     Map<Integer, Object> filteredValues = new HashMap<>();
     private Map<Component, Integer> componentIdMap = new HashMap<>();
     public static Map<Integer, Object> getAPIValues = new HashMap<>();
-    public static String modifiedName = null;
-    ConnectionDAOImpl connectionDao = new ConnectionDAOImpl();
+    public static String modifiedName = null; 
 
     public void EditForm() {
         SwingUtilities.invokeLater(() -> { 
@@ -86,16 +72,13 @@ public class EditIssues extends javax.swing.JFrame {
             int labelWidth = 100;
             int componentWidth = 500;
             int height = 28;
-            int spacing = 7;
-            HttpURLConnection connection = null;
-            BufferedReader reader = null;
+            int spacing = 7; 
             String text = null;
             nametext.setText(IssuesDAOImpl.name);
             typename.setText(IssuesDAOImpl.name);
             attributeValues = issueDao.printAttributes(id);
             List<JSONObject> resultList = global.getResultList(); 
-                    try {
-                        System.out.println("Result List : "+global.getResultList()); 
+                    try { 
                         for (JSONObject jsonResponse : resultList){
                             System.out.println("Hello ");
                         if (jsonResponse.has("result")) {

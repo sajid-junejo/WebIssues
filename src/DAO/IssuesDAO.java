@@ -1,11 +1,5 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package DAO;
-
-import java.util.List;
+ 
 import java.util.Map;
 import javax.swing.table.DefaultTableModel;
 public interface IssuesDAO {
@@ -15,4 +9,12 @@ public interface IssuesDAO {
     Map<String, String> getHistory(int issueId);
     String getDescription(int IssueID);
     String deleteIssue(int issueId);
+    String markRead(int folderId);
+    String unMark(int folderId);
+    void unMarkIssue(int issueId);
+    void editIssue();
+    void addIssue();
+    void getIssueResult(int issueId);
+    void getFile(String id);
+    void displayImage(byte[] imageData);
 }

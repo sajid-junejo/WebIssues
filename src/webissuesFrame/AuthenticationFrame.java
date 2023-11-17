@@ -1,21 +1,14 @@
 package webissuesFrame;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import com.mysql.cj.log.Log;
 import java.awt.Image;
 import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.URL;
 import org.json.JSONObject;
-import java.net.URLEncoder;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import javax.net.ssl.HttpsURLConnection;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
@@ -23,7 +16,6 @@ import org.json.JSONException;
 import pojos.Path;
 import pojos.Principal;
 import pojos.Sessions;
-import pojos.User;
 import pojos.SessionManager;
 
 public class AuthenticationFrame extends javax.swing.JFrame {

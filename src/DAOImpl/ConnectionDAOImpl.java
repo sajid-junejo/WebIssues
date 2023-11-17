@@ -1,12 +1,8 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package DAOImpl;
 
 import DAO.ConnectionDAO;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -42,34 +38,34 @@ public class ConnectionDAOImpl implements ConnectionDAO{
     }
 
     @Override
-    public JSONObject makeRequestAndGetResponse(HttpURLConnection connection, String jsonInputString) throws JSONException{
-          try {
-            connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
-            int responseCode = connection.getResponseCode();
+   public JSONObject makeRequestAndGetResponse(HttpURLConnection connection, String jsonInputString) throws JSONException {
+    try {
+        connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+        int responseCode = connection.getResponseCode();
 
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String inputLine;
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder response = new StringBuilder();
+            String inputLine;
 
-                while ((inputLine = reader.readLine()) != null) {
-                    response.append(inputLine);
-                }
-
-                return new JSONObject(response.toString());
-            } else {
-                System.err.println("Error: HTTP Response Code " + responseCode);
+            while ((inputLine = reader.readLine()) != null) {
+                response.append(inputLine);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
+
+            return new JSONObject(response.toString());
+        } else {
+            System.err.println("Error: HTTP Response Code " + responseCode);
+           
         }
-
-        throw new JSONException("Failed to parse JSON response");
+    } catch (IOException | JSONException e) {
+    } finally {
+        if (connection != null) {
+            connection.disconnect();
+        }
     }
+
+    throw new JSONException("Failed to parse JSON response");
+}
 
     @Override
     public HttpURLConnection establishConnection(String apiUrl) {

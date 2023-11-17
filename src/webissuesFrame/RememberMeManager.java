@@ -8,27 +8,21 @@ package webissuesFrame;
 import java.util.prefs.Preferences;
 
 public class RememberMeManager {
-    private static final String USERNAME_KEY = "username";
-    private static final String AUTH_TOKEN_KEY = "authToken";
-
-    public static void saveCredentials(String username, String authToken) {
-        Preferences prefs = Preferences.userNodeForPackage(RememberMeManager.class);
-
-        prefs.put(USERNAME_KEY, username);
-        prefs.put(AUTH_TOKEN_KEY, authToken);
-    }
-
-    public static String[] getSavedCredentials() {
-        Preferences prefs = Preferences.userNodeForPackage(RememberMeManager.class);
-
-        String username = prefs.get(USERNAME_KEY, null);
-        String authToken = prefs.get(AUTH_TOKEN_KEY, null);
-
-        if (username != null && authToken != null) {
-            return new String[]{username, authToken};
-        } else {
-            return null;
+    
+    public static void main(String[] args) {
+        Loader l = new Loader();
+        l.setVisible(true);
+        try {
+            for(int i=0;i<=100;i++){
+                Thread.sleep(40);
+                l.percnt.setText(Integer.toString(i)+"%");
+                if(i==100){
+                    l.dispose();
+                }
+            }
+        } catch (Exception e) {
         }
     }
+    
 }
 

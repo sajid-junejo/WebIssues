@@ -1,6 +1,5 @@
 package webissuesFrame;
-
-import DAOImpl.ConnectionDAOImpl;
+ 
 import DAOImpl.GlobalDAOImpl;
 import DAOImpl.IssuesDAOImpl;
 import com.formdev.flatlaf.FlatLightLaf;
@@ -23,12 +22,10 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
-import pojos.SessionManager;
+import org.json.JSONObject; 
 
 public class AddNewIssue extends javax.swing.JFrame {
-
-    private Map<String, String> attrValues = new HashMap<>();
+ 
     IssuesDAOImpl issueDao = new IssuesDAOImpl();
     GlobalDAOImpl global = new GlobalDAOImpl();
     private Map<Integer, String> userMap = new HashMap<>();
@@ -53,20 +50,9 @@ public class AddNewIssue extends javax.swing.JFrame {
         }
         AddForm();
     }
-    List<JSONObject> usersList = global.getUsersList();
-    HomeFrame home = new HomeFrame();
-    String locationValue = "";
-    int issueId = 0;
-    int folderId = 0;
-    int typeId = 0;
-    int attrId = 0;
-    String attrDef = null;
-    boolean error = false;
-    int userID = SessionManager.getInstance().getUserId();
-    int userAccess = SessionManager.getInstance().getUserAccess();
-    ConnectionDAOImpl connectionDao = new ConnectionDAOImpl();
-    int id = HomeFrame.IssueID;
-    Map<Integer, Object> attributeValues = issueDao.printAttributes(id);
+    List<JSONObject> usersList = global.getUsersList();  
+    boolean error = false; 
+    int id = HomeFrame.IssueID; 
     Map<Integer, Object> getAttributeValues = new HashMap<>();
     public static Map<Integer, Object> filteredValues = new HashMap<>();
     private Map<Component, Integer> componentIdMap = new HashMap<>();
@@ -82,7 +68,6 @@ public class AddNewIssue extends javax.swing.JFrame {
         int componentWidth = 500;
         int height = 28;
         int spacing = 7;
-        String text = null;
         issueDao.printAttributes(id);
         List<JSONObject> resultList = global.getResultList();
         try {
@@ -237,7 +222,7 @@ public class AddNewIssue extends javax.swing.JFrame {
                                                 int intValue = Integer.parseInt(defaultValue);
                                                 textField.setText(Integer.toString(intValue)); // Store as an integer and set as text
                                             } catch (NumberFormatException e) {
-                                                e.printStackTrace(); // Print an error message or handle as needed
+                                                e.printStackTrace(); 
                                             }
                                         }
                                         componentIdMap.put(textField, attributeId);

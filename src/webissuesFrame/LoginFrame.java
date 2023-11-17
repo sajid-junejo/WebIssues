@@ -33,6 +33,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import org.json.JSONException;
@@ -41,7 +42,6 @@ import pojos.Principal;
 import pojos.SessionManager;
 
 public class LoginFrame extends javax.swing.JFrame {
-
     JCheckBox rememberPasswordCheckBox;
     JTextField emailField;
     JPasswordField passwordField;
@@ -215,13 +215,33 @@ public class LoginFrame extends javax.swing.JFrame {
         this.dispose();
     }
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
+ DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+    int selectedRow = jTable1.getSelectedRow();
+    address.setText(model.getValueAt(selectedRow, 1).toString());
 
-        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-        int selectedRow = jTable1.getSelectedRow();
-        address.setText(model.getValueAt(selectedRow, 1).toString());
-        if (evt.getClickCount() == 2) {
-            makeConnection();
-        }
+    if (evt.getClickCount() == 2) {
+        Loader l = new Loader();
+        l.setVisible(true);
+
+        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                for (int i = 0; i <= 100; i++) {
+                    Thread.sleep(15);
+                    l.percnt.setText(Integer.toString(i) + "%");
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                l.dispose();
+                makeConnection();
+            }
+        };
+
+        worker.execute();
+    }
     }//GEN-LAST:event_jTable1MouseClicked
 
     private void submitMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_submitMouseClicked
@@ -300,19 +320,6 @@ public class LoginFrame extends javax.swing.JFrame {
         }
     }
 
-    public void displayLoginForm() {
-        String username = prefs.get("username", "");
-        String password = prefs.get("password", "");
-        System.out.println("USEr  " + username + " Password : " + password);
-        if (!username.isEmpty() && !password.isEmpty()) {
-            emailField.setText(username);
-            passwordField.setText(password);
-            rememberPasswordCheckBox.setSelected(true);
-        }
-
-        this.setVisible(true);
-    }
-
     private void showAuthenticationPanel() {
         JPanel authenticationPanel = new JPanel(new GridBagLayout());
         JLabel urlLabel = new JLabel("Hostname: " + hostname);
@@ -326,8 +333,7 @@ public class LoginFrame extends javax.swing.JFrame {
         rememberPasswordCheckBox = new JCheckBox("Remember Password");
 
         String username = prefs.get("username", "");
-        String password = prefs.get("password", "");
-        System.out.println("USEr  " + username + " Password : " + password);
+        String password = prefs.get("password", ""); 
         if (!username.isEmpty() && !password.isEmpty()) {
             emailField.setText(username);
             passwordField.setText(password);
@@ -464,7 +470,7 @@ public class LoginFrame extends javax.swing.JFrame {
                             os.write(input, 0, input.length);
                         }
 
-                        responseCode = connection.getResponseCode();
+                        //responseCode = connection.getResponseCode();
                     } else {
                         JOptionPane.showMessageDialog(this, "Error: Redirected without a new URL", "Error", JOptionPane.ERROR_MESSAGE);
                         return;

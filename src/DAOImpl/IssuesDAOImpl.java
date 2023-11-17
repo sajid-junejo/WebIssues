@@ -22,10 +22,8 @@ import java.awt.FlowLayout;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
-import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -43,18 +41,14 @@ import javax.swing.table.DefaultTableModel;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import pojos.Files;
 import webissuesFrame.HomeFrame;
 import webissuesFrame.LoginFrame;
-import pojos.Issues;
 import pojos.SessionManager;
 import webissuesFrame.AddNewIssue;
 import webissuesFrame.EditIssues;
-import webissuesFrame.ShowImage;
 
 public class IssuesDAOImpl implements IssuesDAO {
 
-    Files file = new Files();
     String FileName = null;
     public static String name = "";
     GlobalDAOImpl global = new GlobalDAOImpl();
@@ -77,7 +71,6 @@ public class IssuesDAOImpl implements IssuesDAO {
 
     ConnectionDAOImpl connectionDao = new ConnectionDAOImpl();
     ProjectsDAOImpl projectsDao = new ProjectsDAOImpl();
-    Issues issue = new Issues();
     public List<JSONObject> typesList = global.getTypesList();
     List<JSONObject> usersList = global.getUsersList();
 
@@ -89,7 +82,7 @@ public class IssuesDAOImpl implements IssuesDAO {
 
         HttpURLConnection connection = connectionDao.establishConnection(apiUrl);
 
-        if (connection != null) {
+        if (connection != null && folderId != 0) {
             try {
                 JSONObject jsonResponse = connectionDao.makeRequestAndGetResponse(connection, jsonInputString);
 
@@ -254,8 +247,8 @@ public class IssuesDAOImpl implements IssuesDAO {
                             String typename = projectsDao.getTypeName(typeId);
                             String modifiedByUser = userMap.get(modifiedBy);
 
-                            Object createdDetails = createdDate + " - " + createdByUser;
-                            Object modifiedDetails = modifiedDate + " - " + modifiedByUser;
+                            Object createdDetails = createdDate + " — " + createdByUser;
+                            Object modifiedDetails = modifiedDate + " — " + modifiedByUser;
 
                             issueDetailsMap.put("ID", id);
                             issueDetailsMap.put("NAME", name);
@@ -299,7 +292,7 @@ public class IssuesDAOImpl implements IssuesDAO {
 
                     if (resultObject.has("history")) {
                         JSONArray historyArray = resultObject.getJSONArray("history");
-
+                        //System.out.println("History Array : " + historyArray);
                         for (int i = 0; i < historyArray.length(); i++) {
                             JSONObject historyEntry = historyArray.getJSONObject(i);
 
@@ -307,7 +300,6 @@ public class IssuesDAOImpl implements IssuesDAO {
                                 String createdDate = formatDateTime(historyEntry.optLong("createdDate"));
                                 int createdBy = historyEntry.optInt("createdBy");
                                 String createdByUser = userMap.get(createdBy);
-
                                 String newValue = historyEntry.optString("new");
                                 String oldValue = historyEntry.optString("old");
                                 String text = historyEntry.optString("text");
@@ -355,11 +347,19 @@ public class IssuesDAOImpl implements IssuesDAO {
                                         currentEntry += "\n";
                                     }
                                 }
-                                currentEntry += "   " + attributeName + ": "
-                                        + (attributeName.equals("Comment") ? text.replace("\n", " ")
-                                                : (attributeName.equals("ATTACHMENT") ? "{" + name + "}[id:" + id + "]"
-                                                        : (oldValue + " → " + newValue)));
+//                                currentEntry += "   " + attributeName + ": "
+//                                        + (attributeName.equals("Comment") ? text.replace("\n", " ")
+//                                        : (attributeName.equals("ATTACHMENT") ? "{" + name + "}[id:" + id + "]"
+//                                        : (oldValue + " → " + newValue)));
+                                if (attributeName.equals("Comment")) {
+                                    currentEntry += "   " + attributeName + ": " + text.replace("\n", " ") + "[id:" + id + "]";
+                                } else if (attributeName.equals("ATTACHMENT")) {
+                                    currentEntry += "   " + attributeName + ": {" + name + "}[id:" + id + "]";
+                                } else {
+                                    currentEntry += "   " + attributeName + ": " + oldValue + " → " + newValue;
+                                }
 
+                                //System.out.println("id : " + id);
                                 historyMap.put(currentKey, currentEntry);
                             }
                         }
@@ -385,18 +385,14 @@ public class IssuesDAOImpl implements IssuesDAO {
                     JSONObject resultObject = result.getJSONObject("result");
                     if (resultObject.has("description") && resultObject.get("description") instanceof JSONObject) {
                         JSONObject description = resultObject.getJSONObject("description");
-
                         if (description.has("text")) {
                             text = description.getString("text");
                         } else {
-                            // Handle the case where 'text' is not found in the 'description' object.
                             System.err.println("Error: 'text' not found in the 'description' object.");
                         }
                     } else {
-                        // Handle the case where 'description' is not found in the 'result' object.
                     }
                 } else {
-                    // Handle the case where 'result' is not found in the JSON response.
                     System.err.println("Error: 'result' not found in the JSON response.");
                 }
             }
@@ -405,16 +401,172 @@ public class IssuesDAOImpl implements IssuesDAO {
         }
         return text;
     }
-
     @Override
     public String deleteIssue(int issueId) {
         HttpURLConnection connection = null;
-
         try {
             String apiUrl = connectionDao.buildApiUrl("issues/delete.php");
             connection = connectionDao.establishConnection(apiUrl);
+            if (connection != null && issueId != 0) {
+                String jsonInputString = "{\"issueId\": " + issueId + "}";
+                connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    StringBuilder response = new StringBuilder();
+                    String inputLine;
+                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+                    // Parse and process the JSON response if needed
+                    String jsonResponse = response.toString();
+                    return "Issue with ID " + issueId + " deleted successfully. Response: " + jsonResponse;
+                } else {
+                    return "Failed to delete the issue. HTTP Error Code: " + responseCode;
+                }
+            } else {
+                return "Failed to establish a connection.";
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Failed to communicate with the API.";
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+    @Override
+    public String markRead(int folderId) {
+        HttpURLConnection connection = null;
+        try {
+            String apiUrl = connectionDao.buildApiUrl("issues/mark.php");
+            connection = connectionDao.establishConnection(apiUrl);
+            if (connection != null && folderId != 0) {
+                String jsonInputString = "{\"folderId\": " + folderId + ", \"read\": true}";
+                connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    StringBuilder response = new StringBuilder();
+                    String inputLine;
+                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+                    // Parse and process the JSON response if needed
+                    String jsonResponse = response.toString();
+                    return "Issue with ID " + folderId + " deleted successfully. Response: " + jsonResponse;
+                } else {
+                    return "Failed to delete the issue. HTTP Error Code: " + responseCode;
+                }
+            } else {
+                return "Failed to establish a connection.";
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Failed to communicate with the API.";
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+    public String getComment(int issueId, String commentId) {
+        String text = null;
+        HttpURLConnection connection = null;
+        try {
+            String apiUrl = connectionDao.buildApiUrl("issues/comments/load.php");
+            connection = connectionDao.establishConnection(apiUrl);
+            if (connection != null) {
+                String jsonInputString = "{\"issueId\":" + issueId + ",\"commentId\":" + commentId + "}";
+                JSONObject jsonResponse = connectionDao.makeRequestAndGetResponse(connection, jsonInputString);
+                JSONObject result = (JSONObject) jsonResponse.get("result");
+                if (result != null) {
+                    text = (String) result.get("text");
+                }
+            }
+        } catch (JSONException e) {
+        }
+        return text;
+    }
+    public void editDescription(int issueId, String text) {
+        HttpURLConnection connection = null;
+        try {
+            String apiUrl = connectionDao.buildApiUrl("issues/description/edit.php");
+            connection = connectionDao.establishConnection(apiUrl);
+            if (connection != null) {
+                String jsonInputString = "{\"issueId\": " + issueId + ", \"description\": \"" + text + "\", \"descriptionFormat\": 1}";
+                try ( OutputStream os = connection.getOutputStream()) {
+                    byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                    os.write(input, 0, input.length);
+                }
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    System.out.println("Comment added successfully");
+                } else {
+                    System.out.println("Failed to add comment. Response Code: " + responseCode);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public void editComment(int issueId, String text) {
+        HttpURLConnection connection = null;
+        try {
+            String apiUrl = connectionDao.buildApiUrl("issues/comments/edit.php");
+            connection = connectionDao.establishConnection(apiUrl);
+            if (connection != null) {
+                String jsonInputString = "{\"commentId\": " + issueId + ", \"comment\": \"" + text + "\", \"commentFormat\": 1}";
+                try ( OutputStream os = connection.getOutputStream()) {
+                    byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                    os.write(input, 0, input.length);
+                }
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    System.out.println("Comment Edited successfully"+responseCode);
+                } else {
+                    System.out.println("Failed to Edit comment. Response Code: " + responseCode);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public void addComment(int issueId, String text) {
+        HttpURLConnection connection = null;
+        try {
+            String apiUrl = connectionDao.buildApiUrl("issues/comments/add.php");
+            connection = connectionDao.establishConnection(apiUrl);
 
             if (connection != null) {
+                String jsonInputString = "{\"issueId\": " + issueId + ", \"comment\": \"" + text + "\", \"commentFormat\": 1}";
+
+                try ( OutputStream os = connection.getOutputStream()) {
+                    byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                    os.write(input, 0, input.length);
+                }
+
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    System.out.println("Comment added successfully");
+                } else {
+                    System.out.println("Failed to add comment. Response Code: " + responseCode);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public String deleteDescription(int issueId) {
+        HttpURLConnection connection = null;
+        try {
+            String apiUrl = connectionDao.buildApiUrl("issues/description/delete.php");
+            connection = connectionDao.establishConnection(apiUrl);
+
+            if (connection != null && issueId != 0) {
                 String jsonInputString = "{\"issueId\": " + issueId + "}";
                 connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
 
@@ -447,7 +599,72 @@ public class IssuesDAOImpl implements IssuesDAO {
             }
         }
     }
-
+    public void deleteComment(String commentId){
+         HttpURLConnection connection = null;
+        try {
+            String apiUrl = connectionDao.buildApiUrl("issues/comments/delete.php");
+            connection = connectionDao.establishConnection(apiUrl);
+            int commentID = Integer.parseInt(commentId);
+            if (connection != null && commentID != 0) {
+                String jsonInputString = "{\"commentId\": " + commentID + "}";
+                connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    StringBuilder response = new StringBuilder();
+                    String inputLine;
+                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close(); 
+                } else { 
+                }
+            } else { 
+            }
+        } catch (IOException e) {
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+    @Override
+    public String unMark(int folderId) {
+        HttpURLConnection connection = null;
+        try {
+            String apiUrl = connectionDao.buildApiUrl("issues/mark.php");
+            connection = connectionDao.establishConnection(apiUrl);
+            if (connection != null && folderId != 0) {
+                String jsonInputString = "{\"folderId\": " + folderId + ", \"read\": false}";
+                connection.getOutputStream().write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    StringBuilder response = new StringBuilder();
+                    String inputLine;
+                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+                    // Parse and process the JSON response if needed
+                    String jsonResponse = response.toString();
+                    return "Issue with ID " + folderId + " deleted successfully. Response: " + jsonResponse;
+                } else {
+                    return "Failed to delete the issue. HTTP Error Code: " + responseCode;
+                }
+            } else {
+                return "Failed to establish a connection.";
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Failed to communicate with the API.";
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+    @Override
     public void editIssue() {
         HttpURLConnection connection = null;
         try {
@@ -482,14 +699,14 @@ public class IssuesDAOImpl implements IssuesDAO {
                 connection.setDoInput(true);
                 connection.setDoOutput(true);
 
-                try (OutputStream os = connection.getOutputStream()) {
+                try ( OutputStream os = connection.getOutputStream()) {
                     byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
                     os.write(input, 0, input.length);
                 }
 
                 int responseCode = connection.getResponseCode();
                 if (responseCode == HttpURLConnection.HTTP_OK) {
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    try ( BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                         String line;
                         StringBuilder responseStringBuilder = new StringBuilder();
                         while ((line = reader.readLine()) != null) {
@@ -526,10 +743,9 @@ public class IssuesDAOImpl implements IssuesDAO {
             }
         }
     }
-
+    @Override
     public void addIssue() {
         HttpURLConnection connection = null;
-
         try {
             String apiUrl = connectionDao.buildApiUrl("issues/add.php");
             connection = connectionDao.establishConnection(apiUrl);
@@ -568,14 +784,14 @@ public class IssuesDAOImpl implements IssuesDAO {
                 connection.setDoInput(true);
                 connection.setDoOutput(true);
 
-                try (OutputStream os = connection.getOutputStream()) {
+                try ( OutputStream os = connection.getOutputStream()) {
                     byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
                     os.write(input, 0, input.length);
                 }
 
                 int responseCode = connection.getResponseCode();
                 if (responseCode == HttpURLConnection.HTTP_OK) {
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    try ( BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                         StringBuilder responseStringBuilder = new StringBuilder();
                         String line;
                         while ((line = reader.readLine()) != null) {
@@ -597,8 +813,6 @@ public class IssuesDAOImpl implements IssuesDAO {
                             );
 
                         } else {
-                            // Process the response data
-                            // ... (your code to process the response data)
                         }
                     }
                 } else {
@@ -616,6 +830,7 @@ public class IssuesDAOImpl implements IssuesDAO {
         }
     }
 
+    @Override
     public void getIssueResult(int issueId) {
         String apiUrl = connectionDao.buildApiUrl("issues/load.php");
         try {
@@ -644,6 +859,7 @@ public class IssuesDAOImpl implements IssuesDAO {
         }
     }
 
+    @Override
     public void getFile(String id) {
         try {
             URL url = new URL(LoginFrame.apiUrl);
@@ -653,7 +869,7 @@ public class IssuesDAOImpl implements IssuesDAO {
                 apiUrl = apiUrl + "client/file.php?id=" + id;
             } else {
                 apiUrl = apiUrl + "webissues/client/file.php?id=" + id;
-            }  
+            }
             HttpURLConnection connection = (HttpURLConnection) new URL(apiUrl).openConnection();
             connection.setRequestMethod("GET");
             System.out.println("api " + apiUrl);
@@ -662,9 +878,9 @@ public class IssuesDAOImpl implements IssuesDAO {
 
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
-                try (InputStream inputStream = connection.getInputStream()) {
+                try ( InputStream inputStream = connection.getInputStream()) {
                     byte[] imageData;
-                    try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+                    try ( ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
                         byte[] buffer = new byte[16384];
                         int bytesRead;
                         while ((bytesRead = inputStream.read(buffer)) != -1) {
@@ -692,6 +908,7 @@ public class IssuesDAOImpl implements IssuesDAO {
         }
     }
 
+    @Override
     public void displayImage(byte[] imageData) {
         if (imageData != null && imageData.length > 0) {
             try {
@@ -726,7 +943,7 @@ public class IssuesDAOImpl implements IssuesDAO {
 
                         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-                        JButton saveButton = new JButton("SAVE"); 
+                        JButton saveButton = new JButton("SAVE");
                         saveButton.setBackground(Color.decode("#337ab7"));
                         //saveButton.setForeground(Color.decode("#fff"));
                         saveButton.addActionListener(new ActionListener() {
@@ -745,7 +962,7 @@ public class IssuesDAOImpl implements IssuesDAO {
                                 }
                             }
                         });
- 
+
                         JButton cancelButton = new JButton("CANCEL");
                         cancelButton.addActionListener(new ActionListener() {
                             @Override
@@ -761,16 +978,16 @@ public class IssuesDAOImpl implements IssuesDAO {
                         JScrollPane scrollPane = new JScrollPane(panel);
                         frame.add(scrollPane);
                         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-                        int screenWidth = gd.getDisplayMode().getWidth(); 
- 
+                        int screenWidth = gd.getDisplayMode().getWidth();
+
                         if (screenWidth > 1400) {
                             frame.setPreferredSize(new Dimension(1500, 800));
                             frame.pack();
                             frame.setVisible(true);
-                        }else{
+                        } else {
                             frame.setPreferredSize(new Dimension(800, 600));
-                        frame.pack();
-                        frame.setVisible(true);
+                            frame.pack();
+                            frame.setVisible(true);
                         }
 
                     } else {
@@ -784,6 +1001,35 @@ public class IssuesDAOImpl implements IssuesDAO {
             }
         } else {
             System.err.println("Image data is empty or null.");
+        }
+    }
+
+    @Override
+    public void unMarkIssue(int issueId) {
+        String apiUrl = connectionDao.buildApiUrl("issues/load.php");
+        try {
+            HttpURLConnection connection = connectionDao.establishConnection(apiUrl);
+            if (connection != null) {
+                String jsonInputString = "{"
+                        + "\"issueId\": " + issueId + ","
+                        + "\"description\": true,"
+                        + "\"attributes\": true,"
+                        + "\"history\": true,"
+                        + "\"modifiedSince\": 0,"
+                        + "\"filter\": 1,"
+                        + "\"unread\": true,"
+                        + "\"html\": true"
+                        + "}";
+                JSONObject jsonResponse = connectionDao.makeRequestAndGetResponse(connection, jsonInputString);
+                if (jsonResponse != null) {
+                    resultList.clear();
+                    resultList.add(jsonResponse);
+                } else {
+                    System.err.println("Error: 'result' not found in the JSON response.");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

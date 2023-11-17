@@ -85,7 +85,7 @@
                   <Component id="jSeparator1" pref="10" max="32767" attributes="0"/>
                   <EmptySpace min="-2" max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="3" attributes="0">
-                      <Component id="issuename" alignment="3" pref="21" max="32767" attributes="0"/>
+                      <Component id="issuename" alignment="3" max="32767" attributes="0"/>
                       <Component id="nametext" alignment="3" max="32767" attributes="0"/>
                   </Group>
                   <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>

@@ -1,7 +1,6 @@
 package DAOImpl;
 
-import DAO.ProjectsDAO;
-import com.oracle.jrockit.jfr.ContentType; 
+import DAO.ProjectsDAO; 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -51,18 +50,15 @@ public class ProjectsDAOImpl implements ProjectsDAO {
    public List<Project> getProjects() {
     List<Project> projects = new ArrayList<>();
     HttpURLConnection connection = null;
-
     String apiUrl = connectionDao.buildApiUrl("projects/list.php");
     String jsonInputString = "{}";
     connection = connectionDao.establishConnection(apiUrl);
     if (connection != null) {
         try {
-            JSONObject jsonResponse = connectionDao.makeRequestAndGetResponse(connection, jsonInputString);
-            
+            JSONObject jsonResponse = connectionDao.makeRequestAndGetResponse(connection, jsonInputString);            
             if (jsonResponse != null && jsonResponse.has("result")) {
                 JSONObject result = jsonResponse.getJSONObject("result");
-                JSONArray projectsArray = result.getJSONArray("projects");
-                
+                JSONArray projectsArray = result.getJSONArray("projects");                
                 for (int i = 0; i < projectsArray.length(); i++) {
                     JSONObject projectJson = projectsArray.getJSONObject(i);
                     int projectId = projectJson.getInt("id");

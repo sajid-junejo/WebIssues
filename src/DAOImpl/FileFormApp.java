@@ -86,12 +86,7 @@ public class FileFormApp {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String name = nameField.getText();
-                String description = descriptionArea.getText();
-
-                // Perform submission logic here
-                // You can access the selected file using fileChooser.getSelectedFile()
-
-                // After submission, return to the issue details or perform other actions
+                String description = descriptionArea.getText(); 
                 returnToDetails();
             }
         });
